@@ -5,16 +5,44 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
 # --- ページ設定 ---
-st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="centered")
+st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide") # 横長レイアウトに変更
 
 # --- 設定: カテゴリとシート名の対応表 ---
-# ここを「携帯電話」に変更しました
 CATEGORY_MAP = {
     "PC": "PC",
     "訪問車": "訪問車",
     "iPad": "iPad",
     "携帯電話": "携帯電話",
     "その他": "その他"
+}
+
+# --- 設定: 各シートの列定義（保存する順番） ---
+# A~F列（ID, カテゴリ, 品名, 利用者, ステータス, 更新日）は共通のため、G列以降を定義
+COLUMNS_DEF = {
+    "PC": [
+        "購入日", "製品名", "OS", "プロダクトID(シリアルNo)", 
+        "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", 
+        "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム",
+        "チームビューワID", "チームビューワPW", "備考"
+    ],
+    "訪問車": [
+        "登録番号", "使用部署", "洗車グループ", "駐車場", 
+        "タイヤサイズ", "スタッドレス有無", "タイヤ保管場所", 
+        "リース開始日", "リース満了日", "車検満了日", 
+        "駐禁除外指定満了日", "通行禁止許可満了日", "備考"
+    ],
+    "iPad": [
+        "購入日", "ラベル", "AppleID", "型番", "シリアルNo", 
+        "モデル", "ストレージ", "製造番号IMEI", "端末番号", 
+        "使用部署", "キャリア", "備考"
+    ],
+    "携帯電話": [
+        "購入日", "電話番号", "SIM", "メーカー", "型番", 
+        "製造番号", "使用部署", "保管場所", "キャリア", "備考"
+    ],
+    "その他": [
+        "備考"
+    ]
 }
 
 # --- 設定: クラウドの金庫(Secrets)から情報を取得 ---
@@ -35,6 +63,7 @@ def get_all_data():
         try:
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
             records = worksheet.get_all_records()
+            # カテゴリ列を強制的に付与（もし空なら）
             for record in records:
                 record['カテゴリ'] = cat_name
             all_data.extend(records)
@@ -43,6 +72,14 @@ def get_all_data():
         except Exception:
             pass
     return pd.DataFrame(all_data)
+
+# --- ヘルパー関数: 日付文字列をdate型に変換 ---
+def parse_date(date_str):
+    if not date_str: return None
+    try:
+        return datetime.strptime(date_str, '%Y-%m-%d')
+    except:
+        return None
 
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
@@ -62,7 +99,7 @@ try:
     # ==========================================
     with main_tab1:
         st.header("在庫データの検索")
-        search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名など...")
+        search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...")
 
         if search_query and not df.empty:
             filtered_df = df[df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
@@ -81,17 +118,21 @@ try:
                     st.info("データがありません")
                 else:
                     if category == "すべて":
-                        display_df = filtered_df.copy()
+                        # すべて表示のときは、共通項目のみ表示して見やすくする
+                        common_cols = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日']
+                        # 存在する列だけ選ぶ
+                        available_cols = [c for c in common_cols if c in filtered_df.columns]
+                        display_df = filtered_df[available_cols].copy()
+                        st.caption("※「すべて」タブでは共通項目のみ表示しています。詳細は各カテゴリのタブをご覧ください。")
                     else:
+                        # 各カテゴリタブでは、そのカテゴリに関係する列だけを表示
                         display_df = filtered_df[filtered_df['カテゴリ'] == category].copy()
-
-                    # 不要な列を削除（ここも携帯電話に対応）
-                    if category == "訪問車":
-                        display_df = display_df.drop(columns=['OS・詳細'], errors='ignore')
-                    elif category in ["PC", "iPad", "携帯電話"]:
-                        display_df = display_df.drop(columns=['車検期限'], errors='ignore')
-                    elif category == "その他":
-                        display_df = display_df.drop(columns=['車検期限', 'OS・詳細'], errors='ignore')
+                        
+                        # 定義されている列 + 共通列 を表示対象にする
+                        target_cols = ['ID', '品名', '利用者', 'ステータス', '更新日'] + COLUMNS_DEF.get(category, [])
+                        # データフレームに存在しない列は除外（エラー回避）
+                        valid_cols = [c for c in target_cols if c in display_df.columns]
+                        display_df = display_df[valid_cols]
 
                     st.dataframe(display_df, use_container_width=True)
 
@@ -119,61 +160,148 @@ try:
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
                 cell = worksheet.find(input_search_id)
                 if cell:
-                    row_data = worksheet.get_all_records()[cell.row - 2]
-                    st.session_state['form_data'] = {
-                        'ID': row_data['ID'],
-                        '品名': row_data['品名'],
-                        '利用者': row_data['利用者'],
-                        'ステータス': row_data['ステータス'],
-                        '車検期限': row_data.get('車検期限', ''),
-                        'OS・詳細': row_data.get('OS・詳細', '')
-                    }
-                    st.success(f"ID: {input_search_id} を読み込みました。")
+                    # 全データを取得して辞書化
+                    all_records = worksheet.get_all_records()
+                    if len(all_records) >= cell.row - 1:
+                        row_data = all_records[cell.row - 2]
+                        st.session_state['form_data'] = row_data
+                        st.success(f"ID: {input_search_id} を読み込みました。")
+                    else:
+                        st.error("データの読み込み位置がズレています。")
                 else:
                     st.error("指定されたIDは見つかりませんでした。")
                     st.session_state['form_data'] = {}
             except Exception as e:
                 st.error(f"読み込みエラー: {e}")
 
-        # 入力フォーム
+        # --- 入力フォーム ---
         st.subheader("② 詳細情報の入力")
         current_data = st.session_state.get('form_data', {})
-        default_id = current_data.get('ID', '') if current_data.get('ID') == input_search_id else input_search_id
+        # IDが一致する場合のみ初期値をセット
+        is_load_mode = (current_data.get('ID') == input_search_id) and (input_search_id != "")
         
+        def get_val(key):
+            return current_data.get(key, '') if is_load_mode else ''
+
         with st.form("entry_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                input_id = st.text_input("ID (資産番号など)", value=default_id)
-                input_name = st.text_input("品名", value=current_data.get('品名', ''))
-            with col2:
-                input_user = st.text_input("利用者", value=current_data.get('利用者', ''))
+            # === 共通項目 (A-E列) ===
+            st.markdown("##### 📌 基本情報")
+            col_basic1, col_basic2 = st.columns(2)
+            with col_basic1:
+                input_id = st.text_input("ID (資産番号)", value=get_val('ID') or input_search_id)
+                input_name = st.text_input("品名 (管理上の名称)", value=get_val('品名'))
+            with col_basic2:
+                input_user = st.text_input("利用者", value=get_val('利用者'))
                 status_options = ["利用可能", "貸出中", "故障/修理中", "廃棄"]
-                current_status = current_data.get('ステータス', '利用可能')
-                index_status = status_options.index(current_status) if current_status in status_options else 0
-                input_status = st.selectbox("ステータス", status_options, index=index_status)
+                curr_status = get_val('ステータス')
+                idx_status = status_options.index(curr_status) if curr_status in status_options else 0
+                input_status = st.selectbox("ステータス", status_options, index=idx_status)
 
-            input_syaken = ""
-            input_os_detail = ""
-
-            # カテゴリ別入力欄（ここも携帯電話に対応）
-            if selected_category_key == "訪問車":
-                st.markdown("---")
-                st.markdown("**🚗 訪問車 専用項目**")
-                saved_date = current_data.get('車検期限', '')
-                default_date = None
-                if saved_date:
-                    try:
-                        default_date = datetime.strptime(saved_date, '%Y-%m-%d')
-                    except:
-                        default_date = None
-                d = st.date_input("車検満了日", value=default_date)
-                if d: input_syaken = d.strftime('%Y-%m-%d')
+            # === カテゴリ別項目 (G列以降) ===
+            st.markdown("---")
+            st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
             
-            elif selected_category_key in ["PC", "iPad", "携帯電話"]:
-                st.markdown("---")
-                label_text = "OS・スペック" if selected_category_key == "PC" else "電話番号・契約詳細"
-                st.markdown(f"**📱 {selected_category_key} 専用項目**")
-                input_os_detail = st.text_input(label_text, value=current_data.get('OS・詳細', ''))
+            # データを保存するための辞書
+            custom_values = {}
+
+            if selected_category_key == "PC":
+                c1, c2 = st.columns(2)
+                with c1:
+                    d_buy = st.date_input("購入日", value=parse_date(get_val('購入日')))
+                    custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                    custom_values['製品名'] = st.text_input("製品名", value=get_val('製品名'))
+                    custom_values['OS'] = st.text_input("OS", value=get_val('OS'))
+                    custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=get_val('プロダクトID(シリアルNo)'))
+                    custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振", value=get_val('officeのアカウント割振'))
+                with c2:
+                    custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮", value=get_val('ORCA宇都宮'))
+                    custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼", value=get_val('ORCA鹿沼'))
+                    custom_values['ORCA益子'] = st.text_input("ORCA益子", value=get_val('ORCA益子'))
+                    custom_values['チームビューワID'] = st.text_input("チームビューワID", value=get_val('チームビューワID'))
+                    custom_values['チームビューワPW'] = st.text_input("チームビューワPW", value=get_val('チームビューワPW'))
+                
+                st.caption("ウィルスバスター情報")
+                c3, c4, c5 = st.columns(3)
+                with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo", value=get_val('ウィルスバスターシリアルNo'))
+                with c4: 
+                    d_vb = st.date_input("VB期限", value=parse_date(get_val('ウィルスバスター期限')))
+                    custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
+                with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム", value=get_val('ウィルスバスター識別ネーム'))
+                
+                custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
+
+            elif selected_category_key == "訪問車":
+                c1, c2 = st.columns(2)
+                with c1:
+                    custom_values['登録番号'] = st.text_input("登録番号", value=get_val('登録番号'))
+                    custom_values['使用部署'] = st.text_input("使用部署", value=get_val('使用部署'))
+                    custom_values['洗車グループ'] = st.text_input("洗車グループ", value=get_val('洗車グループ'))
+                    custom_values['駐車場'] = st.text_input("駐車場", value=get_val('駐車場'))
+                    custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ", value=get_val('タイヤサイズ'))
+                    custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所", value=get_val('タイヤ保管場所'))
+                    
+                    st.caption("スタッドレス有無")
+                    studless_opts = ["有", "無"]
+                    curr_stud = get_val('スタッドレス有無')
+                    idx_stud = studless_opts.index(curr_stud) if curr_stud in studless_opts else 1
+                    custom_values['スタッドレス有無'] = st.radio("スタッドレス有無", studless_opts, index=idx_stud, horizontal=True)
+
+                with c2:
+                    d_lease_s = st.date_input("リース開始日", value=parse_date(get_val('リース開始日')))
+                    custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
+                    
+                    d_lease_e = st.date_input("リース満了日", value=parse_date(get_val('リース満了日')))
+                    custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
+                    
+                    d_syaken = st.date_input("車検満了日", value=parse_date(get_val('車検満了日')))
+                    custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
+                    
+                    d_park = st.date_input("駐禁除外指定満了日", value=parse_date(get_val('駐禁除外指定満了日')))
+                    custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
+                    
+                    d_road = st.date_input("通行禁止許可満了日", value=parse_date(get_val('通行禁止許可満了日')))
+                    custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
+                
+                custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
+
+            elif selected_category_key == "iPad":
+                c1, c2 = st.columns(2)
+                with c1:
+                    d_buy = st.date_input("購入日", value=parse_date(get_val('購入日')))
+                    custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                    custom_values['ラベル'] = st.text_input("ラベル", value=get_val('ラベル'))
+                    custom_values['AppleID'] = st.text_input("AppleID", value=get_val('AppleID'))
+                    custom_values['型番'] = st.text_input("型番", value=get_val('型番'))
+                    custom_values['シリアルNo'] = st.text_input("シリアルNo", value=get_val('シリアルNo'))
+                    custom_values['モデル'] = st.text_input("モデル", value=get_val('モデル'))
+                with c2:
+                    custom_values['ストレージ'] = st.text_input("ストレージ", value=get_val('ストレージ'))
+                    custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI", value=get_val('製造番号IMEI'))
+                    custom_values['端末番号'] = st.text_input("端末番号", value=get_val('端末番号'))
+                    custom_values['使用部署'] = st.text_input("使用部署", value=get_val('使用部署'))
+                    custom_values['キャリア'] = st.text_input("キャリア", value=get_val('キャリア'))
+                
+                custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
+
+            elif selected_category_key == "携帯電話":
+                c1, c2 = st.columns(2)
+                with c1:
+                    d_buy = st.date_input("購入日", value=parse_date(get_val('購入日')))
+                    custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                    custom_values['電話番号'] = st.text_input("電話番号", value=get_val('電話番号'))
+                    custom_values['SIM'] = st.text_input("SIM", value=get_val('SIM'))
+                    custom_values['メーカー'] = st.text_input("メーカー", value=get_val('メーカー'))
+                    custom_values['型番'] = st.text_input("型番", value=get_val('型番'))
+                with c2:
+                    custom_values['製造番号'] = st.text_input("製造番号", value=get_val('製造番号'))
+                    custom_values['使用部署'] = st.text_input("使用部署", value=get_val('使用部署'))
+                    custom_values['保管場所'] = st.text_input("保管場所", value=get_val('保管場所'))
+                    custom_values['キャリア'] = st.text_input("キャリア", value=get_val('キャリア'))
+                
+                custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
+
+            elif selected_category_key == "その他":
+                custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
 
             st.markdown("---")
             submitted = st.form_submit_button(f"「{selected_category_key}」として登録 / 更新")
@@ -186,18 +314,26 @@ try:
                         worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
                         current_time = datetime.now().strftime('%Y-%m-%d')
                         
-                        new_row = [
-                            input_id, selected_category_key, input_name, input_user, input_status, current_time,
-                            input_syaken, input_os_detail
+                        # 保存用リストを作成 (共通項目 + カテゴリ専用項目)
+                        row_to_save = [
+                            input_id, selected_category_key, input_name, input_user, input_status, current_time
                         ]
+                        
+                        # 定義された順番通りに値を追加
+                        for col_name in COLUMNS_DEF.get(selected_category_key, []):
+                            row_to_save.append(custom_values.get(col_name, ''))
                         
                         cell = worksheet.find(input_id)
                         if cell:
                             r = cell.row
-                            worksheet.update(f"A{r}:H{r}", [new_row])
+                            # 更新範囲を計算 (A列からデータの長さ分まで)
+                            col_letter = chr(64 + len(row_to_save)) #簡易的な列変換
+                            if len(row_to_save) > 26: col_letter = 'Z' #26超える場合はAAなど対応必要だが一旦簡易対応
+                            
+                            worksheet.update(f"A{r}", [row_to_save])
                             st.success(f"更新完了！")
                         else:
-                            worksheet.append_row(new_row)
+                            worksheet.append_row(row_to_save)
                             st.success(f"新規登録完了！")
                         
                         get_all_data.clear()
