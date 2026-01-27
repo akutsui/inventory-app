@@ -8,7 +8,6 @@ from datetime import datetime
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="centered")
 
 # --- 設定: カテゴリとシート名の対応表 ---
-# 左がアプリ上の表示名、右がスプレッドシートのタブ名
 CATEGORY_MAP = {
     "PC": "PC",
     "訪問車": "訪問車",
@@ -34,7 +33,6 @@ def get_all_data():
                 record['カテゴリ'] = cat_name
             all_data.extend(records)
         except gspread.WorksheetNotFound:
-            # シートがない場合は無視して続行（エラーで止めない）
             pass
     return pd.DataFrame(all_data)
 
@@ -61,7 +59,6 @@ try:
 
         st.markdown("---")
 
-        # カテゴリタブ（データが存在しなくてもタブ自体は固定表示）
         categories = ["すべて"] + list(CATEGORY_MAP.keys())
         cat_tabs = st.tabs(categories)
 
@@ -70,21 +67,30 @@ try:
                 if df.empty:
                     st.info("データがありません")
                 else:
+                    # 1. データを絞り込む
                     if category == "すべて":
-                        display_df = filtered_df
+                        display_df = filtered_df.copy()
                     else:
-                        display_df = filtered_df[filtered_df['カテゴリ'] == category]
+                        display_df = filtered_df[filtered_df['カテゴリ'] == category].copy()
 
+                    # 2. 不要な列を削除 (エラー回避の try-except 的な処理)
+                    if category == "訪問車":
+                        display_df = display_df.drop(columns=['OS・詳細'], errors='ignore')
+                    elif category in ["PC", "iPad", "ガラケー"]:
+                        display_df = display_df.drop(columns=['車検期限'], errors='ignore')
+                    elif category == "その他":
+                        display_df = display_df.drop(columns=['車検期限', 'OS・詳細'], errors='ignore')
+
+                    # 3. 表示
                     st.dataframe(display_df, use_container_width=True)
 
     # ==========================================
-    # タブ2：登録・更新（表示切り替え機能付き）
+    # タブ2：登録・更新
     # ==========================================
     with main_tab2:
         st.header("データの登録")
         
         st.subheader("① カテゴリを選択")
-        # カテゴリ選択ボタン
         selected_category_key = st.radio("登録するカテゴリ", list(CATEGORY_MAP.keys()), horizontal=True)
         target_sheet_name = CATEGORY_MAP[selected_category_key]
 
@@ -98,28 +104,21 @@ try:
                 input_user = st.text_input("利用者")
                 input_status = st.selectbox("ステータス", ["利用可能", "貸出中", "故障/修理中", "廃棄"])
 
-            # 変数の初期化（表示されない場合は空文字が入るようにする）
             input_syaken = ""
             input_os_detail = ""
 
-            # === 条件分岐による表示制御 ===
-            # ここで if を使うことで、該当しない項目は画面に一切表示されません
-
-            # パターンA: 訪問車の場合 -> 車検日だけ表示
+            # 入力項目の表示制御
             if selected_category_key == "訪問車":
                 st.markdown("---")
                 st.markdown("**🚗 訪問車 専用項目**")
                 d = st.date_input("車検満了日", value=None)
                 if d: input_syaken = d.strftime('%Y-%m-%d')
             
-            # パターンB: IT機器系の場合 -> スペック/電話番号だけ表示
             elif selected_category_key in ["PC", "iPad", "ガラケー"]:
                 st.markdown("---")
                 label_text = "OS・スペック" if selected_category_key == "PC" else "電話番号・契約詳細"
                 st.markdown(f"**📱 {selected_category_key} 専用項目**")
                 input_os_detail = st.text_input(label_text)
-
-            # パターンC: その他 -> 専用項目なし（何もしない）
 
             st.markdown("---")
             submitted = st.form_submit_button(f"「{selected_category_key}」として登録")
@@ -130,9 +129,10 @@ try:
                 else:
                     try:
                         worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
-                        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         
-                        # G列(車検)とH列(詳細)は、表示されていなければ空文字のまま保存されます
+                        # 日付のみのフォーマットに変更しました
+                        current_time = datetime.now().strftime('%Y-%m-%d')
+                        
                         new_row = [
                             input_id, selected_category_key, input_name, input_user, input_status, current_time,
                             input_syaken, input_os_detail
@@ -150,7 +150,7 @@ try:
                         st.rerun()
 
                     except gspread.WorksheetNotFound:
-                        st.error(f"エラー: スプレッドシートに「{target_sheet_name}」という名前のタブが見つかりません。作成してください。")
+                        st.error(f"エラー: シート「{target_sheet_name}」が見つかりません。")
                     except Exception as e:
                         st.error(f"書き込みエラー: {e}")
 
