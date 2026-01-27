@@ -105,13 +105,10 @@ def parse_date(date_str):
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
     
-    # フォーム開始
     with st.form("edit_dialog_form"):
-        # IDとカテゴリは変更不可（キーになるため）
         st.write(f"**ID:** {row_data['ID']}")
         st.write(f"**カテゴリ:** {row_data['カテゴリ']}")
         
-        # 基本情報の入力欄
         col1, col2 = st.columns(2)
         with col1:
             new_name = st.text_input("品名", value=row_data['品名'])
@@ -124,7 +121,6 @@ def show_detail_dialog(row_data):
         
         st.markdown("---")
         
-        # カテゴリ別詳細項目の入力欄
         cat = row_data['カテゴリ']
         custom_values = {}
 
@@ -163,10 +159,8 @@ def show_detail_dialog(row_data):
                 custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ", value=row_data.get('タイヤサイズ'))
                 custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所", value=row_data.get('タイヤ保管場所'))
                 
-                studless_opts = ["有", "無"]
-                curr_stud = row_data.get('スタッドレス有無')
-                idx_stud = studless_opts.index(curr_stud) if curr_stud in studless_opts else 1
-                custom_values['スタッドレス有無'] = st.radio("スタッドレス有無", studless_opts, index=idx_stud, horizontal=True)
+                # 【変更】ラジオボタンをやめてフリー入力に変更
+                custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無", value=row_data.get('スタッドレス有無'))
 
             with c2:
                 d_lease_s = st.date_input("リース開始日", value=parse_date(row_data.get('リース開始日')))
@@ -223,35 +217,27 @@ def show_detail_dialog(row_data):
 
         st.markdown("---")
         
-        # 保存ボタン
         if st.form_submit_button("✅ この内容で更新する"):
             try:
                 target_sheet_name = CATEGORY_MAP[cat]
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
-                
-                # 更新日の設定
                 current_time = datetime.now().strftime('%Y-%m-%d')
                 
-                # 保存用データの作成
                 row_to_save = [
                     row_data['ID'], cat, new_name, new_user, new_status, current_time
                 ]
-                # カテゴリ固有の列を追加
                 for col_name in COLUMNS_DEF.get(cat, []):
                     row_to_save.append(custom_values.get(col_name, ''))
                 
-                # スプレッドシートを更新
                 cell = worksheet.find(row_data['ID'])
                 if cell:
                     r = cell.row
-                    # 簡易的にA列から必要分だけ更新
                     worksheet.update(f"A{r}", [row_to_save])
                     st.toast("更新しました！", icon="✅")
-                    get_all_data.clear() # キャッシュクリア
-                    st.rerun() # リロード
+                    get_all_data.clear()
+                    st.rerun()
                 else:
                     st.error("エラー: IDが見つかりませんでした。")
-                    
             except Exception as e:
                 st.error(f"更新エラー: {e}")
 
@@ -384,7 +370,7 @@ try:
                                     st.rerun()
 
     # ==========================================
-    # タブ2：新規登録（呼び出し機能はポップアップに統合したので削除）
+    # タブ2：新規登録
     # ==========================================
     with main_tab2:
         st.header("新規データの登録")
@@ -394,7 +380,6 @@ try:
         selected_category_key = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True, key="new_reg_cat")
         target_sheet_name = CATEGORY_MAP[selected_category_key]
 
-        # 新規登録フォーム
         st.subheader("② 詳細情報の入力")
         with st.form("new_entry_form"):
             col_basic1, col_basic2 = st.columns(2)
@@ -410,7 +395,6 @@ try:
             
             custom_values = {}
 
-            # 新規登録用の入力フィールド定義（ポップアップと同じ内容）
             if selected_category_key == "PC":
                 c1, c2 = st.columns(2)
                 with c1:
@@ -445,7 +429,8 @@ try:
                     custom_values['駐車場'] = st.text_input("駐車場")
                     custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ")
                     custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所")
-                    custom_values['スタッドレス有無'] = st.radio("スタッドレス有無", ["有", "無"], index=1, horizontal=True)
+                    # 【変更】フリー入力に変更
+                    custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無")
                 with c2:
                     d_lease_s = st.date_input("リース開始日", value=None)
                     custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
@@ -507,7 +492,6 @@ try:
                         for col_name in COLUMNS_DEF.get(selected_category_key, []):
                             row_to_save.append(custom_values.get(col_name, ''))
                         
-                        # 新規なのでID重複チェック
                         if worksheet.find(input_id):
                             st.error(f"エラー: ID '{input_id}' は既に登録されています。")
                         else:
