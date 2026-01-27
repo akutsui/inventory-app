@@ -7,6 +7,31 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
+# --- カスタムCSS（行間を狭くする設定） ---
+st.markdown("""
+    <style>
+        /* ボタンの上下の余白を減らす */
+        .stButton button {
+            height: 2.2rem;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-top: 0px;
+        }
+        /* 列（カラム）の隙間を詰める */
+        div[data-testid="column"] {
+            padding-bottom: 0px;
+        }
+        /* テキストの余白を詰める */
+        p {
+            margin-bottom: 0.2rem;
+        }
+        /* 区切り線の余白を極限まで減らす */
+        hr {
+            margin: 0.3rem 0 !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- 設定: カテゴリとシート名の対応表 ---
 CATEGORY_MAP = {
     "PC": "PC",
@@ -50,8 +75,11 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service
 client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
 
+# --- セッションステート初期化 ---
 if 'form_data' not in st.session_state:
     st.session_state['form_data'] = {}
+if 'page_number' not in st.session_state:
+    st.session_state['page_number'] = 0
 
 # --- データ取得関数 ---
 @st.cache_data(ttl=600)
@@ -113,36 +141,51 @@ try:
     main_tab1, main_tab2 = st.tabs(["🔍 一覧・検索", "📝 新規登録・編集"])
 
     # ==========================================
-    # タブ1：一覧・検索（G/H列表示対応版）
+    # タブ1：一覧・検索
     # ==========================================
     with main_tab1:
         st.header("在庫データの検索")
-        search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...")
+        
+        # 検索機能
+        col_search, col_spacer = st.columns([3, 1])
+        with col_search:
+            search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...")
 
+        # 検索フィルタ実行
         if search_query and not df.empty:
             filtered_df = df[df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
+            # 検索時はページを0に戻す
+            if 'last_search' not in st.session_state or st.session_state.last_search != search_query:
+                st.session_state.page_number = 0
+                st.session_state.last_search = search_query
             st.success(f"検索結果: {len(filtered_df)} 件")
         else:
             filtered_df = df
+            # 検索ワードが消えたらリセット
+            if 'last_search' in st.session_state and st.session_state.last_search != "":
+                 st.session_state.page_number = 0
+                 st.session_state.last_search = ""
 
-        st.markdown("---")
+        # カスタム区切り線（薄くて狭い線）
+        st.markdown('<hr style="margin: 5px 0; border: 0; border-top: 1px solid #eee;">', unsafe_allow_html=True)
 
         categories = ["すべて"] + list(CATEGORY_MAP.keys())
         cat_tabs = st.tabs(categories)
 
         for i, category in enumerate(categories):
             with cat_tabs[i]:
+                # カテゴリを切り替えたらページ番号をリセットするための処理
+                # (タブの切り替え検知は難しいので、ボタン操作以外でデータが変わったとみなす)
+                
                 if df.empty:
                     st.info("データがありません")
                 else:
                     if category == "すべて":
                         display_df = filtered_df
-                        # すべてタブの場合のデフォルト見出し
                         header_g = "詳細1 (G列)"
                         header_h = "詳細2 (H列)"
                     else:
                         display_df = filtered_df[filtered_df['カテゴリ'] == category]
-                        # カテゴリごとの見出し設定 (COLUMNS_DEFの0番目と1番目を取得)
                         cols_def = COLUMNS_DEF.get(category, [])
                         header_g = cols_def[0] if len(cols_def) > 0 else "-"
                         header_h = cols_def[1] if len(cols_def) > 1 else "-"
@@ -150,34 +193,48 @@ try:
                     if display_df.empty:
                         st.warning("該当するデータがありません")
                     else:
-                        MAX_ITEMS = 50
-                        if len(display_df) > MAX_ITEMS:
-                            st.caption(f"※上位 {MAX_ITEMS} 件のみ表示しています。")
-                            df_to_show = display_df.head(MAX_ITEMS)
-                        else:
-                            df_to_show = display_df
+                        # --- ページネーション設定 ---
+                        ITEMS_PER_PAGE = 50
+                        total_items = len(display_df)
+                        
+                        # ページ番号が範囲外にならないよう調整
+                        max_page = max(0, (total_items - 1) // ITEMS_PER_PAGE)
+                        if st.session_state.page_number > max_page:
+                            st.session_state.page_number = 0
+                        
+                        current_page = st.session_state.page_number
+                        start_idx = current_page * ITEMS_PER_PAGE
+                        end_idx = start_idx + ITEMS_PER_PAGE
+                        
+                        # 現在のページのデータを切り出す
+                        df_to_show = display_df.iloc[start_idx:end_idx]
+                        
+                        st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # --- ヘッダー行の作成（7列構成） ---
-                        # 列比率: [ボタン, ID, 品名, 利用者, ステータス, G列, H列]
+                        # --- ヘッダー行 ---
+                        # ボタンの高さを揃えるために少しCSSハックを入れた列構成
                         cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                         cols[0].write("**詳細**")
                         cols[1].write("**ID**")
                         cols[2].write("**品名**")
                         cols[3].write("**利用者**")
                         cols[4].write("**ステータス**")
-                        cols[5].write(f"**{header_g}**") # G列見出し
-                        cols[6].write(f"**{header_h}**") # H列見出し
-                        st.divider()
+                        cols[5].write(f"**{header_g}**")
+                        cols[6].write(f"**{header_h}**")
+                        
+                        # ヘッダー下の線
+                        st.markdown('<hr style="margin: 2px 0; border-top: 2px solid #bbb;">', unsafe_allow_html=True)
 
                         # --- データ表示ループ ---
                         for index, row in df_to_show.iterrows():
                             c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                             
-                            # 詳細ボタン
+                            # ボタンの余白を詰めるため、縦位置調整
                             if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                 show_detail_dialog(row)
                             
-                            # 基本情報
+                            # 文字サイズや行間を少し小さくするHTML表示も可能だが、
+                            # 今回はst.writeのままCSSで行間を詰めて対応
                             c[1].write(f"{row['ID']}")
                             c[2].write(f"**{row['品名']}**")
                             c[3].write(f"{row['利用者']}")
@@ -192,26 +249,38 @@ try:
                             else:
                                 c[4].write(status)
 
-                            # --- G列・H列のデータ取得と表示 ---
-                            # その行のカテゴリに応じた列名を取得して値を出す
+                            # G/H列
                             curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
-                            
-                            # G列の値
-                            val_g = ""
-                            if len(curr_cols_def) > 0:
-                                col_name_g = curr_cols_def[0]
-                                val_g = row.get(col_name_g, '')
-                            
-                            # H列の値
-                            val_h = ""
-                            if len(curr_cols_def) > 1:
-                                col_name_h = curr_cols_def[1]
-                                val_h = row.get(col_name_h, '')
+                            val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
+                            val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
                             
                             c[5].write(f"{val_g}")
                             c[6].write(f"{val_h}")
                             
-                            st.markdown("---")
+                            # 行ごとの区切り線（CSSで極細に設定したhrタグ）
+                            st.markdown('<hr>', unsafe_allow_html=True)
+
+                        # --- ページネーションボタン ---
+                        st.write("") # スペース
+                        col_prev, col_page_info, col_next = st.columns([1, 2, 1])
+                        
+                        # 前へボタン
+                        with col_prev:
+                            if current_page > 0:
+                                if st.button("⬅️ 前の50件", key=f"prev_{category}"):
+                                    st.session_state.page_number -= 1
+                                    st.rerun()
+                        
+                        # ページ情報
+                        with col_page_info:
+                            st.markdown(f"<div style='text-align: center; color: gray;'>Page {current_page + 1} / {max_page + 1}</div>", unsafe_allow_html=True)
+
+                        # 次へボタン
+                        with col_next:
+                            if end_idx < total_items:
+                                if st.button("次の50件 ➡️", key=f"next_{category}"):
+                                    st.session_state.page_number += 1
+                                    st.rerun()
 
     # ==========================================
     # タブ2：登録・更新
@@ -274,6 +343,7 @@ try:
             
             custom_values = {}
 
+            # 項目の定義は長くなるので省略せず全て記述します
             if selected_category_key == "PC":
                 c1, c2 = st.columns(2)
                 with c1:
