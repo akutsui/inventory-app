@@ -113,7 +113,7 @@ try:
     main_tab1, main_tab2 = st.tabs(["🔍 一覧・検索", "📝 新規登録・編集"])
 
     # ==========================================
-    # タブ1：一覧・検索
+    # タブ1：一覧・検索（G/H列表示対応版）
     # ==========================================
     with main_tab1:
         st.header("在庫データの検索")
@@ -137,52 +137,79 @@ try:
                 else:
                     if category == "すべて":
                         display_df = filtered_df
+                        # すべてタブの場合のデフォルト見出し
+                        header_g = "詳細1 (G列)"
+                        header_h = "詳細2 (H列)"
                     else:
                         display_df = filtered_df[filtered_df['カテゴリ'] == category]
+                        # カテゴリごとの見出し設定 (COLUMNS_DEFの0番目と1番目を取得)
+                        cols_def = COLUMNS_DEF.get(category, [])
+                        header_g = cols_def[0] if len(cols_def) > 0 else "-"
+                        header_h = cols_def[1] if len(cols_def) > 1 else "-"
 
                     if display_df.empty:
                         st.warning("該当するデータがありません")
                     else:
-                        # 最大50件表示
                         MAX_ITEMS = 50
                         if len(display_df) > MAX_ITEMS:
-                            st.caption(f"※データが多いため、上位 {MAX_ITEMS} 件のみ表示しています。")
+                            st.caption(f"※上位 {MAX_ITEMS} 件のみ表示しています。")
                             df_to_show = display_df.head(MAX_ITEMS)
                         else:
                             df_to_show = display_df
 
-                        # ヘッダー
-                        h_col1, h_col2, h_col3, h_col4, h_col5 = st.columns([1, 2, 3, 2, 2])
-                        h_col1.write("**詳細**")
-                        h_col2.write("**ID**")
-                        h_col3.write("**品名**")
-                        h_col4.write("**利用者**")
-                        h_col5.write("**ステータス**")
+                        # --- ヘッダー行の作成（7列構成） ---
+                        # 列比率: [ボタン, ID, 品名, 利用者, ステータス, G列, H列]
+                        cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
+                        cols[0].write("**詳細**")
+                        cols[1].write("**ID**")
+                        cols[2].write("**品名**")
+                        cols[3].write("**利用者**")
+                        cols[4].write("**ステータス**")
+                        cols[5].write(f"**{header_g}**") # G列見出し
+                        cols[6].write(f"**{header_h}**") # H列見出し
                         st.divider()
 
-                        # データ表示ループ
-                        # iterrows() の index を使ってユニークなキーを作る
+                        # --- データ表示ループ ---
                         for index, row in df_to_show.iterrows():
-                            c1, c2, c3, c4, c5 = st.columns([1, 2, 3, 2, 2])
+                            c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                             
-                            # 【修正点】IDではなく index を使ってキーを生成
-                            # これならIDが空欄でも重複していてもエラーにならない
-                            if c1.button("詳細", key=f"btn_{category}_{index}"):
+                            # 詳細ボタン
+                            if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                 show_detail_dialog(row)
                             
-                            c2.write(f"{row['ID']}")
-                            c3.write(f"**{row['品名']}**")
-                            c4.write(f"{row['利用者']}")
+                            # 基本情報
+                            c[1].write(f"{row['ID']}")
+                            c[2].write(f"**{row['品名']}**")
+                            c[3].write(f"{row['利用者']}")
                             
                             status = row['ステータス']
                             if status == "利用可能":
-                                c5.info(status, icon="✅")
+                                c[4].info(status, icon="✅")
                             elif status == "貸出中":
-                                c5.warning(status, icon="🏃")
+                                c[4].warning(status, icon="🏃")
                             elif status == "故障/修理中":
-                                c5.error(status, icon="⚠️")
+                                c[4].error(status, icon="⚠️")
                             else:
-                                c5.write(status)
+                                c[4].write(status)
+
+                            # --- G列・H列のデータ取得と表示 ---
+                            # その行のカテゴリに応じた列名を取得して値を出す
+                            curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
+                            
+                            # G列の値
+                            val_g = ""
+                            if len(curr_cols_def) > 0:
+                                col_name_g = curr_cols_def[0]
+                                val_g = row.get(col_name_g, '')
+                            
+                            # H列の値
+                            val_h = ""
+                            if len(curr_cols_def) > 1:
+                                col_name_h = curr_cols_def[1]
+                                val_h = row.get(col_name_h, '')
+                            
+                            c[5].write(f"{val_g}")
+                            c[6].write(f"{val_h}")
                             
                             st.markdown("---")
 
