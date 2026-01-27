@@ -5,11 +5,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
 # --- 設定: クラウドの金庫(Secrets)から情報を取得 ---
-# ファイル読み込みではなく、st.secretsから辞書として取得する形に変更
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
-# ここが変更点です！
-# st.secrets という金庫から "gcp_service_account" という名前の情報を探します
+# st.secrets から認証情報を取得
 creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
 
 client = gspread.authorize(creds)
@@ -82,4 +80,3 @@ try:
 
 except Exception as e:
     st.error(f"エラーが発生しました: {e}")
-
