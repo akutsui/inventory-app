@@ -91,7 +91,6 @@ def show_detail_dialog(row_data):
     
     st.markdown("---")
     
-    # カテゴリに応じた詳細項目を表示
     target_cols = COLUMNS_DEF.get(row_data['カテゴリ'], [])
     for col_key in target_cols:
         val = row_data.get(col_key, '')
@@ -114,13 +113,12 @@ try:
     main_tab1, main_tab2 = st.tabs(["🔍 一覧・検索", "📝 新規登録・編集"])
 
     # ==========================================
-    # タブ1：一覧・検索（ボタン付きリスト形式）
+    # タブ1：一覧・検索
     # ==========================================
     with main_tab1:
         st.header("在庫データの検索")
         search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...")
 
-        # 検索フィルタ
         if search_query and not df.empty:
             filtered_df = df[df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
             st.success(f"検索結果: {len(filtered_df)} 件")
@@ -137,7 +135,6 @@ try:
                 if df.empty:
                     st.info("データがありません")
                 else:
-                    # カテゴリフィルタ
                     if category == "すべて":
                         display_df = filtered_df
                     else:
@@ -146,41 +143,37 @@ try:
                     if display_df.empty:
                         st.warning("該当するデータがありません")
                     else:
-                        # === ここが変更点: 表ではなく「リスト」を作る ===
-                        
-                        # 動作を軽くするため、表示は最大50件に制限する
+                        # 最大50件表示
                         MAX_ITEMS = 50
                         if len(display_df) > MAX_ITEMS:
-                            st.caption(f"※データが多いため、上位 {MAX_ITEMS} 件のみ表示しています。検索機能を使って絞り込んでください。")
+                            st.caption(f"※データが多いため、上位 {MAX_ITEMS} 件のみ表示しています。")
                             df_to_show = display_df.head(MAX_ITEMS)
                         else:
                             df_to_show = display_df
 
-                        # ヘッダー行（見出し）
-                        # 列の幅比率: [ボタン, ID, 品名, 利用者, ステータス]
+                        # ヘッダー
                         h_col1, h_col2, h_col3, h_col4, h_col5 = st.columns([1, 2, 3, 2, 2])
                         h_col1.write("**詳細**")
                         h_col2.write("**ID**")
                         h_col3.write("**品名**")
                         h_col4.write("**利用者**")
                         h_col5.write("**ステータス**")
-                        st.divider() # 線を引く
+                        st.divider()
 
-                        # データ行をループして表示
+                        # データ表示ループ
+                        # iterrows() の index を使ってユニークなキーを作る
                         for index, row in df_to_show.iterrows():
-                            # 各行のカラム定義
                             c1, c2, c3, c4, c5 = st.columns([1, 2, 3, 2, 2])
                             
-                            # 左端にボタンを配置 (keyをユニークにする必要がある)
-                            if c1.button("詳細", key=f"btn_{category}_{row['ID']}"):
+                            # 【修正点】IDではなく index を使ってキーを生成
+                            # これならIDが空欄でも重複していてもエラーにならない
+                            if c1.button("詳細", key=f"btn_{category}_{index}"):
                                 show_detail_dialog(row)
                             
-                            # 各データを表示
                             c2.write(f"{row['ID']}")
-                            c3.write(f"**{row['品名']}**") # 品名は太字
+                            c3.write(f"**{row['品名']}**")
                             c4.write(f"{row['利用者']}")
                             
-                            # ステータスの色付け（簡易的）
                             status = row['ステータス']
                             if status == "利用可能":
                                 c5.info(status, icon="✅")
@@ -191,7 +184,7 @@ try:
                             else:
                                 c5.write(status)
                             
-                            st.markdown("---") # 行ごとの区切り線
+                            st.markdown("---")
 
     # ==========================================
     # タブ2：登録・更新
