@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (タブ固定の修正 & 行間調整) ---
+# --- CSS (強力な固定設定 & レイアウト調整) ---
 st.markdown("""
     <style>
         /* === 1. メインエリアの上部余白 === */
@@ -17,11 +17,12 @@ st.markdown("""
         }
 
         /* === 2. タイトル(h1)の固定 === */
+        /* タイトルを含むコンテナを固定 */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky;
-            top: 2.875rem; /* Streamlitヘッダーの下 */
+            top: 2.875rem; /* Streamlit標準ヘッダーの下 */
             background-color: white;
-            z-index: 999;
+            z-index: 1000; /* 最前面 */
             padding-top: 0.5rem;
             padding-bottom: 0.5rem;
             border-bottom: 2px solid #f0f2f6;
@@ -34,19 +35,19 @@ st.markdown("""
         }
 
         /* === 3. タブバーの固定（ここを修正） === */
-        /* stTabsの一番上の要素（ボタンリスト）を狙い撃ち */
-        div[data-testid="stTabs"] > div:first-child {
+        /* タブコンポーネント内の「ボタンリスト」を直接指名 */
+        .stTabs [data-baseweb="tab-list"] {
             position: sticky;
-            top: 6.5rem; /* タイトルの高さ分ずらして固定 */
+            top: 6rem; /* タイトルの高さ分(約6rem)空けて固定 */
             background-color: white;
-            z-index: 998;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #ccc;
+            z-index: 999; /* タイトルの次に前面 */
+            padding-top: 1rem;
+            padding-bottom: 0rem;
+            box-shadow: 0 4px 4px -4px #eee; /* 下に影をつける */
         }
-        
-        /* タブのボタン自体の背景も白くしておく（念のため） */
-        div[data-testid="stTabs"] button {
+
+        /* タブボタン自体の背景も白にする（透過防止） */
+        .stTabs [data-baseweb="tab"] {
             background-color: white;
         }
 
