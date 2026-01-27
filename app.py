@@ -4,12 +4,17 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
+# --- 【追加】ページ設定（ブラウザのタブ名とアイコン） ---
+# ※これは必ず import の直後、かつ他の st コマンドより前に書く必要があります
+st.set_page_config(
+    page_title="総務備品管理アプリ",  # タブに表示される名前
+    page_icon="🏢",                 # タブに表示されるアイコン（ビル）
+    layout="centered"               # レイアウト（centered または wide）
+)
+
 # --- 設定: クラウドの金庫(Secrets)から情報を取得 ---
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-
-# st.secrets から認証情報を取得
 creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
-
 client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
 
@@ -33,7 +38,6 @@ try:
     # === タブ1：一覧表示 ===
     with tab1:
         st.header("在庫一覧")
-        # フィルタ機能
         category_filter = st.selectbox("カテゴリで絞り込み", ["すべて"] + list(df['カテゴリ'].unique()) if not df.empty else ["すべて"])
         
         if category_filter != "すべて":
