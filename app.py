@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (強力な固定設定 & レイアウト調整) ---
+# --- CSS (最強の固定設定) ---
 st.markdown("""
     <style>
         /* === 1. メインエリアの上部余白 === */
@@ -17,38 +17,41 @@ st.markdown("""
         }
 
         /* === 2. タイトル(h1)の固定 === */
-        /* タイトルを含むコンテナを固定 */
+        /* タイトルを含むコンテナ全体を固定 */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
-            position: sticky;
-            top: 2.875rem; /* Streamlit標準ヘッダーの下 */
-            background-color: white;
-            z-index: 1000; /* 最前面 */
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
+            position: sticky !important;
+            top: 2.875rem !important; /* Streamlitヘッダーの直下 */
+            background-color: white !important;
+            z-index: 1000 !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
             border-bottom: 2px solid #f0f2f6;
+            margin-bottom: 0 !important;
         }
         
+        /* タイトルの文字自体の余白調整 */
         h1 {
             margin: 0 !important;
             padding: 0 !important;
-            font-size: 1.8rem;
+            font-size: 1.8rem !important;
         }
 
-        /* === 3. タブバーの固定（ここを修正） === */
-        /* タブコンポーネント内の「ボタンリスト」を直接指名 */
-        .stTabs [data-baseweb="tab-list"] {
-            position: sticky;
-            top: 6rem; /* タイトルの高さ分(約6rem)空けて固定 */
-            background-color: white;
-            z-index: 999; /* タイトルの次に前面 */
-            padding-top: 1rem;
-            padding-bottom: 0rem;
-            box-shadow: 0 4px 4px -4px #eee; /* 下に影をつける */
+        /* === 3. タブバーの固定（複数の指定方法で強制適用） === */
+        div[data-baseweb="tab-list"],
+        div[role="tablist"],
+        div[data-testid="stTabs"] > div:first-child {
+            position: sticky !important;
+            top: 6.5rem !important; /* タイトルの高さ分(約6rem)空けて固定 */
+            background-color: white !important;
+            z-index: 999 !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* 薄い影 */
         }
 
-        /* タブボタン自体の背景も白にする（透過防止） */
-        .stTabs [data-baseweb="tab"] {
-            background-color: white;
+        /* タブボタンの背景も白くする */
+        div[data-testid="stTabs"] button {
+            background-color: white !important;
         }
 
         /* === 4. 一覧リストのスタイル調整 === */
