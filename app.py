@@ -4,23 +4,25 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
-# --- 設定 ---
-# JSONファイルの名前（ステップ2でダウンロードしたもの）
-JSON_FILE = 'credentials.json' 
-# スプレッドシートの名前
+# --- 設定: クラウドの金庫(Secrets)から情報を取得 ---
+# ファイル読み込みではなく、st.secretsから辞書として取得する形に変更
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+
+# ここが変更点です！
+# st.secrets という金庫から "gcp_service_account" という名前の情報を探します
+creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+
+client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
 
-# --- 認証とデータ取得の関数 ---
+# --- データ取得関数 ---
 def get_data():
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name(JSON_FILE, scope)
-    client = gspread.authorize(creds)
     sheet = client.open(SPREADSHEET_NAME).worksheet('data')
     data = sheet.get_all_records()
     return sheet, data
 
 # --- アプリの画面構成 ---
-st.title('📱 チーム備品管理アプリ')
+st.title('📱 総務備品管理アプリ')
 
 try:
     # データを読み込む
@@ -33,7 +35,6 @@ try:
     # === タブ1：一覧表示 ===
     with tab1:
         st.header("在庫一覧")
-        
         # フィルタ機能
         category_filter = st.selectbox("カテゴリで絞り込み", ["すべて"] + list(df['カテゴリ'].unique()) if not df.empty else ["すべて"])
         
@@ -43,7 +44,6 @@ try:
             display_df = df
             
         st.dataframe(display_df, use_container_width=True)
-        
         st.info(f"合計登録数: {len(df)} 件")
 
     # === タブ2：登録・更新 ===
@@ -69,21 +69,16 @@ try:
                     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     new_row = [input_id, input_category, input_name, input_user, input_status, current_time]
                     
-                    # IDが既に存在するかチェック（簡易的な更新処理）
                     cell = sheet.find(input_id)
                     if cell:
-                        # 更新処理
                         r = cell.row
                         sheet.update(f"A{r}:F{r}", [new_row])
                         st.success(f"ID: {input_id} を更新しました！")
                     else:
-                        # 新規登録
                         sheet.append_row(new_row)
                         st.success(f"ID: {input_id} を新規登録しました！")
                     
-                    # 画面をリロードしてデータを最新にする
                     st.rerun()
 
 except Exception as e:
     st.error(f"エラーが発生しました: {e}")
-    st.warning("ヒント: JSONファイル名が合っているか、スプレッドシートが共有されているか確認してください。")
