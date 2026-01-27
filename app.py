@@ -7,9 +7,10 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (行間調整) ---
+# --- CSS (行間調整 ＆ 固定ヘッダー設定) ---
 st.markdown("""
     <style>
+        /* === 既存のスタイル（行間詰め） === */
         .stButton button {
             height: 2.2rem;
             padding-top: 0;
@@ -24,6 +25,36 @@ st.markdown("""
         }
         hr {
             margin: 0.3rem 0 !important;
+        }
+
+        /* === 【追加】タイトルとタブの固定設定 === */
+        
+        /* 1. タイトル(h1)を固定 */
+        h1 {
+            position: sticky;
+            top: 0;              /* 一番上に吸着 */
+            z-index: 999;        /* 他の要素より手前に表示 */
+            background-color: white; /* 背景を白にして下の文字が透けないようにする */
+            padding-top: 1rem;
+            padding-bottom: 0.5rem;
+            margin-top: 0 !important;
+            border-bottom: 2px solid #f0f2f6; /* 薄い線を入れる */
+        }
+
+        /* 2. タブバーを固定 */
+        div[data-testid="stTabs"] > div:first-child {
+            position: sticky;
+            top: 4.5rem;         /* タイトルの高さ分だけ下げた位置に吸着 */
+            z-index: 998;
+            background-color: white;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        /* メインエリアの上部余白調整 */
+        .block-container {
+            padding-top: 1.5rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -100,7 +131,7 @@ def parse_date(date_str):
     except:
         return None
 
-# --- 【重要】ポップアップ詳細・編集画面 ---
+# --- ポップアップ詳細・編集画面 ---
 @st.dialog("📝 詳細情報の編集")
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
@@ -158,10 +189,7 @@ def show_detail_dialog(row_data):
                 custom_values['駐車場'] = st.text_input("駐車場", value=row_data.get('駐車場'))
                 custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ", value=row_data.get('タイヤサイズ'))
                 custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所", value=row_data.get('タイヤ保管場所'))
-                
-                # 【変更】ラジオボタンをやめてフリー入力に変更
                 custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無", value=row_data.get('スタッドレス有無'))
-
             with c2:
                 d_lease_s = st.date_input("リース開始日", value=parse_date(row_data.get('リース開始日')))
                 custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
@@ -429,7 +457,7 @@ try:
                     custom_values['駐車場'] = st.text_input("駐車場")
                     custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ")
                     custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所")
-                    # 【変更】フリー入力に変更
+                    # 【変更】フリー入力
                     custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無")
                 with c2:
                     d_lease_s = st.date_input("リース開始日", value=None)
