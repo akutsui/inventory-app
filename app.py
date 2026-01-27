@@ -47,7 +47,8 @@ CATEGORY_MAP = {
 # --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
     "PC": [
-        "購入日", "製品名", "OS", "プロダクトID(シリアルNo)", 
+        # 【削除】製品名
+        "購入日", "OS", "プロダクトID(シリアルNo)", 
         "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", 
         "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム",
         "チームビューワID", "チームビューワPW", "備考"
@@ -136,7 +137,7 @@ def show_detail_dialog(row_data):
             with c1:
                 d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                custom_values['製品名'] = st.text_input("製品名", value=row_data.get('製品名'))
+                # 【削除】製品名
                 custom_values['OS'] = st.text_input("OS", value=row_data.get('OS'))
                 custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=row_data.get('プロダクトID(シリアルNo)'))
                 custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振", value=row_data.get('officeのアカウント割振'))
@@ -315,7 +316,6 @@ try:
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
                         # --- 【重要】見出し行（固定表示） ---
-                        # この行はスクロール枠の外にあるので、スクロールしても常に表示されます！
                         cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                         cols[0].write("**編集**")
                         cols[1].write("**ID**")
@@ -326,7 +326,6 @@ try:
                         cols[6].write(f"**{header_h}**")
                         
                         # --- 【重要】ここからスクロール領域（フレーム） ---
-                        # height=500px の固定枠を作り、その中でリストをスクロールさせます
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
                                 c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -407,7 +406,7 @@ try:
                 with c1:
                     d_buy = st.date_input("購入日", value=None)
                     custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                    custom_values['製品名'] = st.text_input("製品名")
+                    # 【削除】製品名
                     custom_values['OS'] = st.text_input("OS")
                     custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)")
                     custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振")
