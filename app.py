@@ -50,11 +50,10 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service
 client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
 
-# --- セッションステート初期化 ---
 if 'form_data' not in st.session_state:
     st.session_state['form_data'] = {}
 
-# --- データ取得関数（キャッシュ付き） ---
+# --- データ取得関数 ---
 @st.cache_data(ttl=600)
 def get_all_data():
     all_data = []
@@ -71,7 +70,6 @@ def get_all_data():
             pass
     return pd.DataFrame(all_data)
 
-# --- 日付変換ヘルパー ---
 def parse_date(date_str):
     if not date_str: return None
     try:
@@ -79,10 +77,9 @@ def parse_date(date_str):
     except:
         return None
 
-# --- 【新機能】詳細ポップアップ (Dialog) ---
+# --- ポップアップ詳細画面 (Dialog) ---
 @st.dialog("📋 備品詳細情報")
 def show_detail_dialog(row_data):
-    # 基本情報
     st.subheader(f"{row_data['品名']}")
     st.caption(f"ID: {row_data['ID']} / カテゴリ: {row_data['カテゴリ']}")
     
@@ -94,13 +91,11 @@ def show_detail_dialog(row_data):
     
     st.markdown("---")
     
-    # 詳細項目を列挙
-    # 隠されている項目も含めて全て表示する
+    # カテゴリに応じた詳細項目を表示
     target_cols = COLUMNS_DEF.get(row_data['カテゴリ'], [])
-    
     for col_key in target_cols:
         val = row_data.get(col_key, '')
-        if val: # 値がある場合のみ表示
+        if val: 
             st.write(f"**{col_key}:** {val}")
     
     st.markdown("---")
@@ -119,12 +114,13 @@ try:
     main_tab1, main_tab2 = st.tabs(["🔍 一覧・検索", "📝 新規登録・編集"])
 
     # ==========================================
-    # タブ1：一覧・検索（ポップアップ機能付き）
+    # タブ1：一覧・検索（ボタン付きリスト形式）
     # ==========================================
     with main_tab1:
         st.header("在庫データの検索")
         search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...")
 
+        # 検索フィルタ
         if search_query and not df.empty:
             filtered_df = df[df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
             st.success(f"検索結果: {len(filtered_df)} 件")
@@ -141,41 +137,61 @@ try:
                 if df.empty:
                     st.info("データがありません")
                 else:
-                    # 表示用データの作成
+                    # カテゴリフィルタ
                     if category == "すべて":
-                        # 一覧では見やすくするため共通項目のみにする
-                        common_cols = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日']
-                        available_cols = [c for c in common_cols if c in filtered_df.columns]
-                        display_df = filtered_df[available_cols].copy()
-                        st.caption("👇 行をクリックして選択すると、詳細ポップアップボタンが表示されます")
+                        display_df = filtered_df
                     else:
-                        display_df = filtered_df[filtered_df['カテゴリ'] == category].copy()
-                        # 不要な列を一覧から隠す
-                        target_cols = ['ID', '品名', '利用者', 'ステータス', '更新日'] + COLUMNS_DEF.get(category, [])
-                        valid_cols = [c for c in target_cols if c in display_df.columns]
-                        display_df = display_df[valid_cols]
-                        st.caption("👇 行をクリックして選択すると、詳細ポップアップボタンが表示されます")
+                        display_df = filtered_df[filtered_df['カテゴリ'] == category]
 
-                    # --- テーブル表示 (選択モード有効) ---
-                    selection = st.dataframe(
-                        display_df,
-                        use_container_width=True,
-                        on_select="rerun",           # 選択したらリロードしてボタンを出す
-                        selection_mode="single-row"  # 1行だけ選択可能
-                    )
-
-                    # --- 行が選択されたらボタンを表示 ---
-                    if len(selection.selection.rows) > 0:
-                        # 選択された行のインデックスを取得
-                        selected_index = selection.selection.rows[0]
-                        # 表示中のデータフレームからIDを取得
-                        selected_id = display_df.iloc[selected_index]['ID']
+                    if display_df.empty:
+                        st.warning("該当するデータがありません")
+                    else:
+                        # === ここが変更点: 表ではなく「リスト」を作る ===
                         
-                        # ボタンを表示
-                        if st.button(f"🔍 {selected_id} の詳細をポップアップで見る", key=f"btn_{category}_{i}"):
-                            # 全データ(df)から該当IDの完全な情報を探す（隠れた列も取得するため）
-                            full_row_data = df[df['ID'] == selected_id].iloc[0]
-                            show_detail_dialog(full_row_data)
+                        # 動作を軽くするため、表示は最大50件に制限する
+                        MAX_ITEMS = 50
+                        if len(display_df) > MAX_ITEMS:
+                            st.caption(f"※データが多いため、上位 {MAX_ITEMS} 件のみ表示しています。検索機能を使って絞り込んでください。")
+                            df_to_show = display_df.head(MAX_ITEMS)
+                        else:
+                            df_to_show = display_df
+
+                        # ヘッダー行（見出し）
+                        # 列の幅比率: [ボタン, ID, 品名, 利用者, ステータス]
+                        h_col1, h_col2, h_col3, h_col4, h_col5 = st.columns([1, 2, 3, 2, 2])
+                        h_col1.write("**詳細**")
+                        h_col2.write("**ID**")
+                        h_col3.write("**品名**")
+                        h_col4.write("**利用者**")
+                        h_col5.write("**ステータス**")
+                        st.divider() # 線を引く
+
+                        # データ行をループして表示
+                        for index, row in df_to_show.iterrows():
+                            # 各行のカラム定義
+                            c1, c2, c3, c4, c5 = st.columns([1, 2, 3, 2, 2])
+                            
+                            # 左端にボタンを配置 (keyをユニークにする必要がある)
+                            if c1.button("詳細", key=f"btn_{category}_{row['ID']}"):
+                                show_detail_dialog(row)
+                            
+                            # 各データを表示
+                            c2.write(f"{row['ID']}")
+                            c3.write(f"**{row['品名']}**") # 品名は太字
+                            c4.write(f"{row['利用者']}")
+                            
+                            # ステータスの色付け（簡易的）
+                            status = row['ステータス']
+                            if status == "利用可能":
+                                c5.info(status, icon="✅")
+                            elif status == "貸出中":
+                                c5.warning(status, icon="🏃")
+                            elif status == "故障/修理中":
+                                c5.error(status, icon="⚠️")
+                            else:
+                                c5.write(status)
+                            
+                            st.markdown("---") # 行ごとの区切り線
 
     # ==========================================
     # タブ2：登録・更新
@@ -195,7 +211,6 @@ try:
             st.write("") 
             load_btn = st.button("📥 データを呼び出す")
 
-        # 呼び出し処理
         if load_btn and input_search_id:
             try:
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
@@ -214,7 +229,6 @@ try:
             except Exception as e:
                 st.error(f"読み込みエラー: {e}")
 
-        # --- 入力フォーム ---
         st.subheader("② 詳細情報の入力")
         current_data = st.session_state.get('form_data', {})
         is_load_mode = (current_data.get('ID') == input_search_id) and (input_search_id != "")
@@ -235,7 +249,6 @@ try:
                 idx_status = status_options.index(curr_status) if curr_status in status_options else 0
                 input_status = st.selectbox("ステータス", status_options, index=idx_status)
 
-            # === カテゴリ別項目 ===
             st.markdown("---")
             st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
             
@@ -345,7 +358,6 @@ try:
                     try:
                         worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
                         current_time = datetime.now().strftime('%Y-%m-%d')
-                        
                         row_to_save = [
                             input_id, selected_category_key, input_name, input_user, input_status, current_time
                         ]
@@ -360,7 +372,6 @@ try:
                         else:
                             worksheet.append_row(row_to_save)
                             st.success(f"新規登録完了！")
-                        
                         get_all_data.clear()
                         st.session_state['form_data'] = {}
                         st.rerun()
