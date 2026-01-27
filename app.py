@@ -7,35 +7,47 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (強力な固定設定 ＆ 行間調整) ---
+# --- CSS (強力な固定設定 & レイアウト調整) ---
 st.markdown("""
     <style>
-        /* === 1. タイトル(h1)を強力に固定 === */
-        h1 {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background-color: white; /* 背景色 */
-            padding-top: 1.5rem;
-            padding-bottom: 0.5rem;
-            margin-top: 0 !important;
-            border-bottom: 1px solid #f0f0f0; /* 境界線 */
+        /* === 1. メインエリアの上部余白を調整 === */
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 5rem;
         }
 
-        /* === 2. タブのボタン部分を強力に固定 === */
-        /* Streamlitのタブコンテナを直接指名 */
+        /* === 2. タイトル(h1)の固定設定 === */
+        /* Streamlitの標準ヘッダー(約3.75rem)の下に固定 */
+        div[data-testid="stVerticalBlock"] > div:has(h1) {
+            position: sticky;
+            top: 2.875rem; 
+            background-color: white;
+            z-index: 999;
+            padding-top: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f0f2f6;
+        }
+        
+        /* タイトル文字自体の余白を詰める */
+        h1 {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 2rem;
+        }
+
+        /* === 3. タブバーの固定設定 === */
+        /* タイトルの高さ分(約5rem)ずらして固定 */
         [data-baseweb="tab-list"] {
             position: sticky;
-            top: 5rem; /* タイトルの高さ分ずらす */
-            z-index: 999;
+            top: 7rem;
             background-color: white;
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid #ccc; /* タブ下の線 */
+            z-index: 998;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            box-shadow: 0 4px 6px -4px #ddd; /* 下に影をつけて浮いてる感を出す */
         }
 
-        /* === 3. 以下、行間詰めの設定 === */
+        /* === 4. 一覧リストのスタイル調整 === */
         .stButton button {
             height: 2.2rem;
             padding-top: 0;
@@ -50,11 +62,6 @@ st.markdown("""
         }
         hr {
             margin: 0.3rem 0 !important;
-        }
-        
-        /* メインエリアの上部余白を確保して隠れないようにする */
-        .block-container {
-            padding-top: 1rem;
         }
     </style>
 """, unsafe_allow_html=True)
