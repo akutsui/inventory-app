@@ -5,7 +5,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 
 # --- ページ設定 ---
-st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide") # 横長レイアウトに変更
+st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
 # --- 設定: カテゴリとシート名の対応表 ---
 CATEGORY_MAP = {
@@ -16,8 +16,7 @@ CATEGORY_MAP = {
     "その他": "その他"
 }
 
-# --- 設定: 各シートの列定義（保存する順番） ---
-# A~F列（ID, カテゴリ, 品名, 利用者, ステータス, 更新日）は共通のため、G列以降を定義
+# --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
     "PC": [
         "購入日", "製品名", "OS", "プロダクトID(シリアルNo)", 
@@ -37,7 +36,7 @@ COLUMNS_DEF = {
         "使用部署", "キャリア", "備考"
     ],
     "携帯電話": [
-        "購入日", "電話番号", "SIM", "メーカー", "型番", 
+        "購入日", "電話番号", "SIM", "メーカー", 
         "製造番号", "使用部署", "保管場所", "キャリア", "備考"
     ],
     "その他": [
@@ -51,11 +50,11 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service
 client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
 
-# --- セッションステートの初期化 ---
+# --- セッションステート初期化 ---
 if 'form_data' not in st.session_state:
     st.session_state['form_data'] = {}
 
-# --- データ取得関数（キャッシュ機能付き） ---
+# --- データ取得関数（キャッシュ付き） ---
 @st.cache_data(ttl=600)
 def get_all_data():
     all_data = []
@@ -63,7 +62,6 @@ def get_all_data():
         try:
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
             records = worksheet.get_all_records()
-            # カテゴリ列を強制的に付与（もし空なら）
             for record in records:
                 record['カテゴリ'] = cat_name
             all_data.extend(records)
@@ -73,7 +71,7 @@ def get_all_data():
             pass
     return pd.DataFrame(all_data)
 
-# --- ヘルパー関数: 日付文字列をdate型に変換 ---
+# --- 日付変換ヘルパー ---
 def parse_date(date_str):
     if not date_str: return None
     try:
@@ -81,10 +79,36 @@ def parse_date(date_str):
     except:
         return None
 
+# --- 【新機能】詳細ポップアップ (Dialog) ---
+@st.dialog("📋 備品詳細情報")
+def show_detail_dialog(row_data):
+    # 基本情報
+    st.subheader(f"{row_data['品名']}")
+    st.caption(f"ID: {row_data['ID']} / カテゴリ: {row_data['カテゴリ']}")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write(f"**👤 利用者:** {row_data['利用者']}")
+    with col2:
+        st.write(f"**📌 ステータス:** {row_data['ステータス']}")
+    
+    st.markdown("---")
+    
+    # 詳細項目を列挙
+    # 隠されている項目も含めて全て表示する
+    target_cols = COLUMNS_DEF.get(row_data['カテゴリ'], [])
+    
+    for col_key in target_cols:
+        val = row_data.get(col_key, '')
+        if val: # 値がある場合のみ表示
+            st.write(f"**{col_key}:** {val}")
+    
+    st.markdown("---")
+    st.caption(f"最終更新日: {row_data.get('更新日', '')}")
+
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
 
-# 手動更新ボタン
 if st.sidebar.button("🔄 データを最新にする"):
     get_all_data.clear()
     st.rerun()
@@ -95,7 +119,7 @@ try:
     main_tab1, main_tab2 = st.tabs(["🔍 一覧・検索", "📝 新規登録・編集"])
 
     # ==========================================
-    # タブ1：一覧・検索
+    # タブ1：一覧・検索（ポップアップ機能付き）
     # ==========================================
     with main_tab1:
         st.header("在庫データの検索")
@@ -117,24 +141,41 @@ try:
                 if df.empty:
                     st.info("データがありません")
                 else:
+                    # 表示用データの作成
                     if category == "すべて":
-                        # すべて表示のときは、共通項目のみ表示して見やすくする
+                        # 一覧では見やすくするため共通項目のみにする
                         common_cols = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日']
-                        # 存在する列だけ選ぶ
                         available_cols = [c for c in common_cols if c in filtered_df.columns]
                         display_df = filtered_df[available_cols].copy()
-                        st.caption("※「すべて」タブでは共通項目のみ表示しています。詳細は各カテゴリのタブをご覧ください。")
+                        st.caption("👇 行をクリックして選択すると、詳細ポップアップボタンが表示されます")
                     else:
-                        # 各カテゴリタブでは、そのカテゴリに関係する列だけを表示
                         display_df = filtered_df[filtered_df['カテゴリ'] == category].copy()
-                        
-                        # 定義されている列 + 共通列 を表示対象にする
+                        # 不要な列を一覧から隠す
                         target_cols = ['ID', '品名', '利用者', 'ステータス', '更新日'] + COLUMNS_DEF.get(category, [])
-                        # データフレームに存在しない列は除外（エラー回避）
                         valid_cols = [c for c in target_cols if c in display_df.columns]
                         display_df = display_df[valid_cols]
+                        st.caption("👇 行をクリックして選択すると、詳細ポップアップボタンが表示されます")
 
-                    st.dataframe(display_df, use_container_width=True)
+                    # --- テーブル表示 (選択モード有効) ---
+                    selection = st.dataframe(
+                        display_df,
+                        use_container_width=True,
+                        on_select="rerun",           # 選択したらリロードしてボタンを出す
+                        selection_mode="single-row"  # 1行だけ選択可能
+                    )
+
+                    # --- 行が選択されたらボタンを表示 ---
+                    if len(selection.selection.rows) > 0:
+                        # 選択された行のインデックスを取得
+                        selected_index = selection.selection.rows[0]
+                        # 表示中のデータフレームからIDを取得
+                        selected_id = display_df.iloc[selected_index]['ID']
+                        
+                        # ボタンを表示
+                        if st.button(f"🔍 {selected_id} の詳細をポップアップで見る", key=f"btn_{category}_{i}"):
+                            # 全データ(df)から該当IDの完全な情報を探す（隠れた列も取得するため）
+                            full_row_data = df[df['ID'] == selected_id].iloc[0]
+                            show_detail_dialog(full_row_data)
 
     # ==========================================
     # タブ2：登録・更新
@@ -160,7 +201,6 @@ try:
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
                 cell = worksheet.find(input_search_id)
                 if cell:
-                    # 全データを取得して辞書化
                     all_records = worksheet.get_all_records()
                     if len(all_records) >= cell.row - 1:
                         row_data = all_records[cell.row - 2]
@@ -177,14 +217,12 @@ try:
         # --- 入力フォーム ---
         st.subheader("② 詳細情報の入力")
         current_data = st.session_state.get('form_data', {})
-        # IDが一致する場合のみ初期値をセット
         is_load_mode = (current_data.get('ID') == input_search_id) and (input_search_id != "")
         
         def get_val(key):
             return current_data.get(key, '') if is_load_mode else ''
 
         with st.form("entry_form"):
-            # === 共通項目 (A-E列) ===
             st.markdown("##### 📌 基本情報")
             col_basic1, col_basic2 = st.columns(2)
             with col_basic1:
@@ -197,11 +235,10 @@ try:
                 idx_status = status_options.index(curr_status) if curr_status in status_options else 0
                 input_status = st.selectbox("ステータス", status_options, index=idx_status)
 
-            # === カテゴリ別項目 (G列以降) ===
+            # === カテゴリ別項目 ===
             st.markdown("---")
             st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
             
-            # データを保存するための辞書
             custom_values = {}
 
             if selected_category_key == "PC":
@@ -227,7 +264,6 @@ try:
                     d_vb = st.date_input("VB期限", value=parse_date(get_val('ウィルスバスター期限')))
                     custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
                 with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム", value=get_val('ウィルスバスター識別ネーム'))
-                
                 custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
 
             elif selected_category_key == "訪問車":
@@ -261,7 +297,6 @@ try:
                     
                     d_road = st.date_input("通行禁止許可満了日", value=parse_date(get_val('通行禁止許可満了日')))
                     custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
-                
                 custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
 
             elif selected_category_key == "iPad":
@@ -280,7 +315,6 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号", value=get_val('端末番号'))
                     custom_values['使用部署'] = st.text_input("使用部署", value=get_val('使用部署'))
                     custom_values['キャリア'] = st.text_input("キャリア", value=get_val('キャリア'))
-                
                 custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
 
             elif selected_category_key == "携帯電話":
@@ -291,13 +325,11 @@ try:
                     custom_values['電話番号'] = st.text_input("電話番号", value=get_val('電話番号'))
                     custom_values['SIM'] = st.text_input("SIM", value=get_val('SIM'))
                     custom_values['メーカー'] = st.text_input("メーカー", value=get_val('メーカー'))
-                    custom_values['型番'] = st.text_input("型番", value=get_val('型番'))
                 with c2:
                     custom_values['製造番号'] = st.text_input("製造番号", value=get_val('製造番号'))
                     custom_values['使用部署'] = st.text_input("使用部署", value=get_val('使用部署'))
                     custom_values['保管場所'] = st.text_input("保管場所", value=get_val('保管場所'))
                     custom_values['キャリア'] = st.text_input("キャリア", value=get_val('キャリア'))
-                
                 custom_values['備考'] = st.text_area("備考", value=get_val('備考'))
 
             elif selected_category_key == "その他":
@@ -314,22 +346,15 @@ try:
                         worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
                         current_time = datetime.now().strftime('%Y-%m-%d')
                         
-                        # 保存用リストを作成 (共通項目 + カテゴリ専用項目)
                         row_to_save = [
                             input_id, selected_category_key, input_name, input_user, input_status, current_time
                         ]
-                        
-                        # 定義された順番通りに値を追加
                         for col_name in COLUMNS_DEF.get(selected_category_key, []):
                             row_to_save.append(custom_values.get(col_name, ''))
                         
                         cell = worksheet.find(input_id)
                         if cell:
                             r = cell.row
-                            # 更新範囲を計算 (A列からデータの長さ分まで)
-                            col_letter = chr(64 + len(row_to_save)) #簡易的な列変換
-                            if len(row_to_save) > 26: col_letter = 'Z' #26超える場合はAAなど対応必要だが一旦簡易対応
-                            
                             worksheet.update(f"A{r}", [row_to_save])
                             st.success(f"更新完了！")
                         else:
@@ -339,7 +364,6 @@ try:
                         get_all_data.clear()
                         st.session_state['form_data'] = {}
                         st.rerun()
-
                     except Exception as e:
                         st.error(f"書き込みエラー: {e}")
 
