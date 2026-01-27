@@ -8,11 +8,12 @@ from datetime import datetime
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="centered")
 
 # --- 設定: カテゴリとシート名の対応表 ---
+# ここを「携帯電話」に変更しました
 CATEGORY_MAP = {
     "PC": "PC",
     "訪問車": "訪問車",
     "iPad": "iPad",
-    "ガラケー": "ガラケー",
+    "携帯電話": "携帯電話",
     "その他": "その他"
 }
 
@@ -26,16 +27,12 @@ SPREADSHEET_NAME = 'management_db'
 if 'form_data' not in st.session_state:
     st.session_state['form_data'] = {}
 
-# --- 【重要】データ取得関数（キャッシュ機能付き） ---
-# ttl=600 とは「600秒間（10分間）は保存したデータを使う」という意味です。
-# これにより、Googleへのアクセス回数が激減します。
+# --- データ取得関数（キャッシュ機能付き） ---
 @st.cache_data(ttl=600)
 def get_all_data():
     all_data = []
-    # 全シートを巡回
     for cat_name, sheet_name in CATEGORY_MAP.items():
         try:
-            # エラー対策: 毎回clientを開き直さず、既存の接続を利用
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
             records = worksheet.get_all_records()
             for record in records:
@@ -44,21 +41,18 @@ def get_all_data():
         except gspread.WorksheetNotFound:
             pass
         except Exception:
-            # API制限などで一時的に読めない場合もアプリを止めない
             pass
-            
     return pd.DataFrame(all_data)
 
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
 
-# サイドバーに手動更新ボタンを設置（キャッシュを強制クリアする機能）
+# 手動更新ボタン
 if st.sidebar.button("🔄 データを最新にする"):
     get_all_data.clear()
     st.rerun()
 
 try:
-    # キャッシュされたデータを読み込む
     df = get_all_data()
 
     main_tab1, main_tab2 = st.tabs(["🔍 一覧・検索", "📝 新規登録・編集"])
@@ -71,7 +65,6 @@ try:
         search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名など...")
 
         if search_query and not df.empty:
-            # データフレームを文字列化して検索
             filtered_df = df[df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
             st.success(f"検索結果: {len(filtered_df)} 件")
         else:
@@ -85,17 +78,17 @@ try:
         for i, category in enumerate(categories):
             with cat_tabs[i]:
                 if df.empty:
-                    st.info("データがありません（または読み込みエラー）")
+                    st.info("データがありません")
                 else:
                     if category == "すべて":
                         display_df = filtered_df.copy()
                     else:
                         display_df = filtered_df[filtered_df['カテゴリ'] == category].copy()
 
-                    # 不要な列を削除
+                    # 不要な列を削除（ここも携帯電話に対応）
                     if category == "訪問車":
                         display_df = display_df.drop(columns=['OS・詳細'], errors='ignore')
-                    elif category in ["PC", "iPad", "ガラケー"]:
+                    elif category in ["PC", "iPad", "携帯電話"]:
                         display_df = display_df.drop(columns=['車検期限'], errors='ignore')
                     elif category == "その他":
                         display_df = display_df.drop(columns=['車検期限', 'OS・詳細'], errors='ignore')
@@ -120,7 +113,7 @@ try:
             st.write("") 
             load_btn = st.button("📥 データを呼び出す")
 
-        # 呼び出し処理（ここはGoogleにアクセスする必要があるため直接呼ぶ）
+        # 呼び出し処理
         if load_btn and input_search_id:
             try:
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
@@ -162,6 +155,7 @@ try:
             input_syaken = ""
             input_os_detail = ""
 
+            # カテゴリ別入力欄（ここも携帯電話に対応）
             if selected_category_key == "訪問車":
                 st.markdown("---")
                 st.markdown("**🚗 訪問車 専用項目**")
@@ -175,7 +169,7 @@ try:
                 d = st.date_input("車検満了日", value=default_date)
                 if d: input_syaken = d.strftime('%Y-%m-%d')
             
-            elif selected_category_key in ["PC", "iPad", "ガラケー"]:
+            elif selected_category_key in ["PC", "iPad", "携帯電話"]:
                 st.markdown("---")
                 label_text = "OS・スペック" if selected_category_key == "PC" else "電話番号・契約詳細"
                 st.markdown(f"**📱 {selected_category_key} 専用項目**")
@@ -206,7 +200,6 @@ try:
                             worksheet.append_row(new_row)
                             st.success(f"新規登録完了！")
                         
-                        # 【重要】データが変わったので、キャッシュを捨てて次回の読み込みで最新にする
                         get_all_data.clear()
                         st.session_state['form_data'] = {}
                         st.rerun()
@@ -215,5 +208,4 @@ try:
                         st.error(f"書き込みエラー: {e}")
 
 except Exception as e:
-    st.error(f"通信エラー: {e}")
-    st.info("※短時間にアクセスしすぎた可能性があります。左上の「データを最新にする」ボタンを押すか、1分ほど待ってから再読み込みしてください。")
+    st.error(f"エラー: {e}")
