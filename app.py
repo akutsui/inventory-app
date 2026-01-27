@@ -7,68 +7,30 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (最強の固定設定) ---
+# --- CSS (行間を詰める設定のみ残す) ---
 st.markdown("""
     <style>
-        /* === 1. メインエリアの上部余白 === */
-        .block-container {
-            padding-top: 1rem;
-            padding-bottom: 5rem;
-        }
-
-        /* === 2. タイトル(h1)の固定 === */
-        /* タイトルを含むコンテナ全体を固定 */
-        div[data-testid="stVerticalBlock"] > div:has(h1) {
-            position: sticky !important;
-            top: 2.875rem !important; /* Streamlitヘッダーの直下 */
-            background-color: white !important;
-            z-index: 1000 !important;
-            padding-top: 0.5rem !important;
-            padding-bottom: 0.5rem !important;
-            border-bottom: 2px solid #f0f2f6;
-            margin-bottom: 0 !important;
-        }
-        
-        /* タイトルの文字自体の余白調整 */
-        h1 {
-            margin: 0 !important;
-            padding: 0 !important;
-            font-size: 1.8rem !important;
-        }
-
-        /* === 3. タブバーの固定（複数の指定方法で強制適用） === */
-        div[data-baseweb="tab-list"],
-        div[role="tablist"],
-        div[data-testid="stTabs"] > div:first-child {
-            position: sticky !important;
-            top: 6.5rem !important; /* タイトルの高さ分(約6rem)空けて固定 */
-            background-color: white !important;
-            z-index: 999 !important;
-            padding-top: 0.5rem !important;
-            padding-bottom: 0.5rem !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* 薄い影 */
-        }
-
-        /* タブボタンの背景も白くする */
-        div[data-testid="stTabs"] button {
-            background-color: white !important;
-        }
-
-        /* === 4. 一覧リストのスタイル調整 === */
+        /* ボタンなどの余白を詰める */
         .stButton button {
-            height: 2.2rem;
+            height: 2.0rem;
             padding-top: 0;
             padding-bottom: 0;
             margin-top: 0px;
+            font-size: 0.9rem;
         }
         div[data-testid="column"] {
             padding-bottom: 0px;
         }
         p {
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.1rem;
+            font-size: 0.95rem;
         }
         hr {
-            margin: 0.3rem 0 !important;
+            margin: 0.2rem 0 !important;
+        }
+        /* スクロール枠内の余白調整 */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            padding: 0.5rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -184,7 +146,6 @@ def show_detail_dialog(row_data):
                 custom_values['ORCA益子'] = st.text_input("ORCA益子", value=row_data.get('ORCA益子'))
                 custom_values['チームビューワID'] = st.text_input("チームビューワID", value=row_data.get('チームビューワID'))
                 custom_values['チームビューワPW'] = st.text_input("チームビューワPW", value=row_data.get('チームビューワPW'))
-            
             st.caption("ウィルスバスター情報")
             c3, c4, c5 = st.columns(3)
             with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo", value=row_data.get('ウィルスバスターシリアルNo'))
@@ -207,16 +168,12 @@ def show_detail_dialog(row_data):
             with c2:
                 d_lease_s = st.date_input("リース開始日", value=parse_date(row_data.get('リース開始日')))
                 custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
-                
                 d_lease_e = st.date_input("リース満了日", value=parse_date(row_data.get('リース満了日')))
                 custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
-                
                 d_syaken = st.date_input("車検満了日", value=parse_date(row_data.get('車検満了日')))
                 custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
-                
                 d_park = st.date_input("駐禁除外指定満了日", value=parse_date(row_data.get('駐禁除外指定満了日')))
                 custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
-                
                 d_road = st.date_input("通行禁止許可満了日", value=parse_date(row_data.get('通行禁止許可満了日')))
                 custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
@@ -317,6 +274,7 @@ try:
                  st.session_state.page_number = 0
                  st.session_state.last_search = ""
 
+        # ここで薄い区切り線
         st.markdown('<hr style="margin: 5px 0; border: 0; border-top: 1px solid #eee;">', unsafe_allow_html=True)
 
         categories = ["すべて"] + list(CATEGORY_MAP.keys())
@@ -340,6 +298,7 @@ try:
                     if display_df.empty:
                         st.warning("該当するデータがありません")
                     else:
+                        # ページネーション設定
                         ITEMS_PER_PAGE = 50
                         total_items = len(display_df)
                         max_page = max(0, (total_items - 1) // ITEMS_PER_PAGE)
@@ -352,8 +311,11 @@ try:
                         
                         df_to_show = display_df.iloc[start_idx:end_idx]
                         
+                        # 件数表示
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
+                        # --- 【重要】見出し行（固定表示） ---
+                        # この行はスクロール枠の外にあるので、スクロールしても常に表示されます！
                         cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                         cols[0].write("**編集**")
                         cols[1].write("**ID**")
@@ -362,37 +324,40 @@ try:
                         cols[4].write("**ステータス**")
                         cols[5].write(f"**{header_g}**")
                         cols[6].write(f"**{header_h}**")
-                        st.markdown('<hr style="margin: 2px 0; border-top: 2px solid #bbb;">', unsafe_allow_html=True)
+                        
+                        # --- 【重要】ここからスクロール領域（フレーム） ---
+                        # height=500px の固定枠を作り、その中でリストをスクロールさせます
+                        with st.container(height=500, border=True):
+                            for index, row in df_to_show.iterrows():
+                                c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
+                                
+                                if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                    show_detail_dialog(row)
+                                
+                                c[1].write(f"{row['ID']}")
+                                c[2].write(f"**{row['品名']}**")
+                                c[3].write(f"{row['利用者']}")
+                                
+                                status = row['ステータス']
+                                if status == "利用可能":
+                                    c[4].info(status, icon="✅")
+                                elif status == "貸出中":
+                                    c[4].warning(status, icon="🏃")
+                                elif status == "故障/修理中":
+                                    c[4].error(status, icon="⚠️")
+                                else:
+                                    c[4].write(status)
 
-                        for index, row in df_to_show.iterrows():
-                            c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
-                            
-                            if c[0].button("詳細", key=f"btn_{category}_{index}"):
-                                show_detail_dialog(row)
-                            
-                            c[1].write(f"{row['ID']}")
-                            c[2].write(f"**{row['品名']}**")
-                            c[3].write(f"{row['利用者']}")
-                            
-                            status = row['ステータス']
-                            if status == "利用可能":
-                                c[4].info(status, icon="✅")
-                            elif status == "貸出中":
-                                c[4].warning(status, icon="🏃")
-                            elif status == "故障/修理中":
-                                c[4].error(status, icon="⚠️")
-                            else:
-                                c[4].write(status)
+                                curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
+                                val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
+                                val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
+                                
+                                c[5].write(f"{val_g}")
+                                c[6].write(f"{val_h}")
+                                
+                                st.markdown('<hr>', unsafe_allow_html=True)
 
-                            curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
-                            val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
-                            val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
-                            
-                            c[5].write(f"{val_g}")
-                            c[6].write(f"{val_h}")
-                            
-                            st.markdown('<hr>', unsafe_allow_html=True)
-
+                        # --- ページネーション（スクロール枠の下） ---
                         st.write("")
                         col_prev, col_page_info, col_next = st.columns([1, 2, 1])
                         
