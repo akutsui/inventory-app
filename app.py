@@ -72,6 +72,11 @@ st.markdown("""
         div[data-testid="stVerticalBlockBorderWrapper"] {
             padding: 0.5rem;
         }
+        
+        /* アラートエリアのスタイル調整 */
+        div[data-testid="stAlert"] {
+            padding: 0.5rem;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -144,7 +149,6 @@ def get_all_data():
     
     df = pd.DataFrame(all_data)
     
-    # 並べ替え処理: 「廃棄」を一番下にする
     if not df.empty:
         df['sort_order'] = df['ステータス'].apply(lambda x: 1 if x == '廃棄' else 0)
         df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
@@ -318,6 +322,7 @@ with st.sidebar:
 
         **2. 期日アラート**
         * 期限が **45日以内**（車）または **5年経過**（iPad）の場合、検索窓の下に赤字で警告が出ます。
+        * アラート右側の **「詳細」ボタン** を押すと、その場で編集・確認ができます。
         * 「廃棄」済みのものは表示されません。
 
         **3. 編集・更新**
@@ -339,18 +344,20 @@ try:
     with main_tab1:
         st.markdown("#### 在庫データの検索")
         
-        # --- アラート機能 ---
+        # --- アラートデータの収集 ---
+        alert_items = []
+        today = datetime.now().date()
+        
         if not df.empty:
-            alert_html = ""
-            today = datetime.now().date()
-            
             for index, row in df.iterrows():
                 if row.get('ステータス') == '廃棄':
                     continue
 
                 cat = row.get('カテゴリ')
                 name = row.get('品名', '名称不明')
-                uid = row.get('ID', '')
+                
+                # アラート条件チェック
+                msg_list = []
                 
                 if cat == "訪問車":
                     reg_num = row.get('登録番号', '')
@@ -363,9 +370,16 @@ try:
                         if dt:
                             diff = (dt.date() - today).days
                             if diff < 0:
-                                alert_html += f"<li><b>訪問車【{display_text}】</b>: {col} を <b style='text-decoration: underline;'>過ぎています！</b> ({val})</li>"
+                                msg_list.append(f"{col} を過ぎています ({val})")
                             elif diff <= 45:
-                                alert_html += f"<li><b>訪問車【{display_text}】</b>: {col} まであと <b>{diff}日</b> です ({val})</li>"
+                                msg_list.append(f"{col} まであと {diff}日 ({val})")
+                    
+                    if msg_list:
+                        alert_items.append({
+                            "row": row,
+                            "title": f"訪問車【{display_text}】",
+                            "messages": msg_list
+                        })
                 
                 elif cat == "iPad":
                     label = row.get('ラベル', '')
@@ -380,20 +394,35 @@ try:
                             target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
                         
                         if today >= target_date:
-                            alert_html += f"<li><b>iPad【{display_text}】</b>: 購入から5年が経過しました ({val})</li>"
+                            msg_list.append(f"購入から5年が経過しました ({val})")
+                    
+                    if msg_list:
+                        alert_items.append({
+                            "row": row,
+                            "title": f"iPad【{display_text}】",
+                            "messages": msg_list
+                        })
 
-            if alert_html:
-                st.markdown(
-                    f"""
-                    <div style='color: #8B0000; background-color: #FFEEEE; padding: 15px; border: 1px solid #FFCCCC; border-radius: 5px; margin-bottom: 15px; font-size: 0.95rem;'>
-                        <strong style='font-size: 1rem;'>⚠️ 期日アラート</strong>
-                        <ul style='margin-top: 5px; margin-bottom: 0; padding-left: 20px;'>
-                            {alert_html}
-                        </ul>
-                    </div>
-                    """, 
-                    unsafe_allow_html=True
-                )
+        # --- アラートの表示 (Native Streamlit Components) ---
+        if alert_items:
+            # コンテナで枠を作る
+            with st.container(border=True):
+                st.markdown("##### ⚠️ 期日アラート")
+                for i, item in enumerate(alert_items):
+                    # 警告文とボタンを横並びにする
+                    c1, c2 = st.columns([5, 1])
+                    
+                    # 警告テキスト作成
+                    alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
+                    c1.markdown(f":red[{alert_str}]")
+                    
+                    # 詳細ボタン (キーを一意にする)
+                    if c2.button("詳細", key=f"alert_btn_{i}"):
+                        show_detail_dialog(item['row'])
+                    
+                    # 区切り線（最後以外）
+                    if i < len(alert_items) - 1:
+                        st.markdown('<hr style="margin: 5px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -689,7 +718,7 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
+            custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "携帯電話":
                 c1, c2 = st.columns(2)
@@ -704,10 +733,10 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
+            custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
