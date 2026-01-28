@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整) ---
+# --- CSS (UI調整: コンパクト化) ---
 st.markdown("""
     <style>
         /* === 1. メインエリアの上部余白 === */
@@ -51,26 +51,53 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* === 4. 細かいデザイン調整 === */
-        .stButton button {
-            height: 2.0rem;
-            padding-top: 0;
-            padding-bottom: 0;
-            margin-top: 0px;
-            font-size: 0.9rem;
-        }
+        /* === 4. 行間を狭くする設定 (全体) === */
+        /* 列の余白を削除 */
         div[data-testid="column"] {
-            padding-bottom: 0px;
+            padding: 0px !important;
         }
+        
+        /* 要素間の縦ギャップを極小に */
+        div[data-testid="stVerticalBlock"] {
+            gap: 0.2rem !important;
+        }
+        
+        /* テキストの余白削除 */
         p {
-            margin-bottom: 0.1rem;
+            margin-bottom: 0rem !important;
             font-size: 0.95rem;
+            line-height: 1.8rem; /* ボタンの高さに合わせる */
         }
+        
+        /* ボタンをコンパクトに */
+        .stButton button {
+            height: 1.8rem !important;
+            min-height: 1.8rem !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0px !important;
+            font-size: 0.9rem;
+            line-height: 1.0;
+        }
+        
+        /* 区切り線を細く、余白なしに */
         hr {
             margin: 0.2rem 0 !important;
         }
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            padding: 0.5rem;
+        
+        /* アラートエリア内の調整 */
+        div[data-testid="stAlert"] {
+            padding: 0.5rem 0.8rem !important;
+        }
+        div[data-testid="stAlert"] p {
+            font-weight: 500;
+        }
+        
+        /* フォーム内の調整 */
+        div[data-testid="stForm"] {
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -150,12 +177,12 @@ def get_all_data():
     
     return df
 
-# --- 日付パース関数（強化版） ---
+# --- 【強力版】日付パース関数 ---
 def parse_date(date_val):
     if not date_val:
         return None
     try:
-        # Pandasの機能を使ってあらゆる形式の日付を読み取る
+        # Pandasを使ってあらゆる形式(2025/1/1, 2025-01-01等)を一括変換
         ts = pd.to_datetime(date_val, errors='coerce')
         if pd.isna(ts):
             return None
@@ -179,7 +206,6 @@ def clear_search():
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
     
-    # 日付表示用ヘルパー
     def get_date_val(key):
         return parse_date(row_data.get(key))
 
@@ -408,23 +434,20 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (Native Streamlit Components: 元の仕様に戻す) ---
+        # --- アラートの表示 (薄い赤背景) ---
         if alert_items:
-            with st.container(border=True):
-                st.markdown("##### ⚠️ 期日アラート")
+            with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
                 for i, item in enumerate(alert_items):
                     c1, c2 = st.columns([5, 1])
                     
-                    # 警告テキスト (赤字)
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f":red[{alert_str}]")
+                    c1.markdown(f"{alert_str}")
                     
-                    # 詳細ボタン
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
                     if i < len(alert_items) - 1:
-                        st.markdown('<hr style="margin: 5px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
+                        st.markdown('<hr style="margin: 2px 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -738,7 +761,7 @@ try:
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
