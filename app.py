@@ -405,22 +405,17 @@ try:
 
         # --- アラートの表示 (Native Streamlit Components) ---
         if alert_items:
-            # コンテナで枠を作る
             with st.container(border=True):
                 st.markdown("##### ⚠️ 期日アラート")
                 for i, item in enumerate(alert_items):
-                    # 警告文とボタンを横並びにする
                     c1, c2 = st.columns([5, 1])
                     
-                    # 警告テキスト作成
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
                     c1.markdown(f":red[{alert_str}]")
                     
-                    # 詳細ボタン (キーを一意にする)
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
-                    # 区切り線（最後以外）
                     if i < len(alert_items) - 1:
                         st.markdown('<hr style="margin: 5px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
 
@@ -718,7 +713,7 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "携帯電話":
                 c1, c2 = st.columns(2)
@@ -733,10 +728,10 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+                custom_values['備考'] = st.text_area("備考")
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
