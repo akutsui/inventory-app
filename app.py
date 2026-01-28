@@ -7,13 +7,16 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (標準的な設定のみ) ---
+# --- CSS (UI調整: 行間圧縮前の標準的な設定に戻す) ---
 st.markdown("""
     <style>
+        /* === メインエリアの上部余白 === */
         .block-container {
             padding-top: 4rem !important;
             padding-bottom: 5rem;
         }
+
+        /* === タイトル(h1)の固定 === */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky !important;
             top: 2.875rem !important;
@@ -24,11 +27,14 @@ st.markdown("""
             border-bottom: 2px solid #f0f2f6;
             margin-bottom: 0 !important;
         }
+        
         h1 {
             margin: 0 !important;
             padding: 0 !important;
             font-size: 1.8rem !important;
         }
+
+        /* === タブバーの固定 === */
         div[data-baseweb="tab-list"],
         div[role="tablist"],
         div[data-testid="stTabs"] > div:first-child {
@@ -40,15 +46,29 @@ st.markdown("""
             padding-bottom: 0.5rem !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
         div[data-testid="stTabs"] button {
             background-color: white !important;
         }
+
+        /* === ボタンの微調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
             padding-bottom: 0;
             margin-top: 0px;
             font-size: 0.9rem;
+        }
+        
+        /* === テキストの微調整 === */
+        p {
+            margin-bottom: 0.1rem;
+            font-size: 0.95rem;
+        }
+        
+        /* === コンテナ枠線の調整 === */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            padding: 0.5rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -111,7 +131,8 @@ def get_all_data():
     for cat_name, sheet_name in CATEGORY_MAP.items():
         try:
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
-            records = worksheet.get_all_records()
+            # 全データを文字列として取得（勝手な日付変換を防ぐ）
+            records = worksheet.get_all_records(value_render_option='FORMATTED_VALUE') 
             for record in records:
                 record['カテゴリ'] = cat_name
             all_data.extend(records)
@@ -128,23 +149,29 @@ def get_all_data():
     
     return df
 
-# --- 【復元】シンプルで確実な日付パース関数 ---
-def parse_date(date_str):
-    if not date_str: return None
-    date_str = str(date_str).strip()
+# --- 【修正】日付パース関数（シンプルかつ強力に） ---
+def parse_date(date_val):
+    if not date_val:
+        return None
     
-    # 一般的な形式をトライ
+    date_str = str(date_val).strip()
+    if not date_str:
+        return None
+
+    # 対応したい日付フォーマットのリスト
     formats = [
         '%Y-%m-%d',       # 2025-01-01
         '%Y/%m/%d',       # 2025/01/01
         '%Y-%m-%d %H:%M:%S',
         '%Y/%m/%d %H:%M:%S'
     ]
+    
     for fmt in formats:
         try:
             return datetime.strptime(date_str, fmt)
         except ValueError:
             continue
+            
     return None
 
 # --- 検索実行用コールバック関数 ---
@@ -403,7 +430,6 @@ try:
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
-                    # 最後の要素以外に区切り線を入れる
                     if i < len(alert_items) - 1:
                         st.markdown('<hr style="margin: 0.5rem 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
 
