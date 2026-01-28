@@ -7,10 +7,51 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (行間を詰める設定のみ残す) ---
+# --- CSS (最強の固定設定) ---
 st.markdown("""
     <style>
-        /* ボタンなどの余白を詰める */
+        /* === 1. メインエリアの上部余白 === */
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 5rem;
+        }
+
+        /* === 2. タイトル(h1)の固定 === */
+        div[data-testid="stVerticalBlock"] > div:has(h1) {
+            position: sticky !important;
+            top: 2.875rem !important;
+            background-color: white !important;
+            z-index: 1000 !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+            border-bottom: 2px solid #f0f2f6;
+            margin-bottom: 0 !important;
+        }
+        
+        h1 {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 1.8rem !important;
+        }
+
+        /* === 3. タブバーの固定 === */
+        div[data-baseweb="tab-list"],
+        div[role="tablist"],
+        div[data-testid="stTabs"] > div:first-child {
+            position: sticky !important;
+            top: 6.5rem !important;
+            background-color: white !important;
+            z-index: 999 !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        div[data-testid="stTabs"] button {
+            background-color: white !important;
+        }
+
+        /* === 4. 一覧リストのスタイル調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -28,7 +69,6 @@ st.markdown("""
         hr {
             margin: 0.2rem 0 !important;
         }
-        /* スクロール枠内の余白調整 */
         div[data-testid="stVerticalBlockBorderWrapper"] {
             padding: 0.5rem;
         }
@@ -47,7 +87,6 @@ CATEGORY_MAP = {
 # --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
     "PC": [
-        # 【削除】製品名
         "購入日", "OS", "プロダクトID(シリアルNo)", 
         "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", 
         "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム",
@@ -99,7 +138,18 @@ def get_all_data():
             pass
         except Exception:
             pass
-    return pd.DataFrame(all_data)
+    
+    # DataFrame化
+    df = pd.DataFrame(all_data)
+    
+    # 【追加】並べ替え処理: 「廃棄」を一番下にする
+    if not df.empty:
+        # ソート用の列を作る（廃棄=1, その他=0）
+        df['sort_order'] = df['ステータス'].apply(lambda x: 1 if x == '廃棄' else 0)
+        # sort_orderで昇順(0->1)にし、同じランク内ではID順にする
+        df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
+    
+    return df
 
 def parse_date(date_str):
     if not date_str: return None
@@ -137,7 +187,6 @@ def show_detail_dialog(row_data):
             with c1:
                 d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                # 【削除】製品名
                 custom_values['OS'] = st.text_input("OS", value=row_data.get('OS'))
                 custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=row_data.get('プロダクトID(シリアルNo)'))
                 custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振", value=row_data.get('officeのアカウント割振'))
@@ -259,15 +308,34 @@ try:
     with main_tab1:
         st.header("在庫データの検索")
         
-        col_search, col_spacer = st.columns([3, 1])
+        # --- フィルタと検索のUI ---
+        col_filter, col_search = st.columns([1, 2])
+        
+        # 【追加】ステータスフィルター
+        with col_filter:
+            status_options = ["利用可能", "貸出中", "故障/修理中", "廃棄"]
+            selected_statuses = st.multiselect("ステータス絞り込み", status_options, default=status_options)
+
+        # 検索窓
         with col_search:
             search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...")
 
-        if search_query and not df.empty:
-            filtered_df = df[df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
-            if 'last_search' not in st.session_state or st.session_state.last_search != search_query:
-                st.session_state.page_number = 0
-                st.session_state.last_search = search_query
+        # --- フィルタリング実行 ---
+        if not df.empty:
+            # 1. ステータスで絞り込み
+            if selected_statuses:
+                filtered_df = df[df['ステータス'].isin(selected_statuses)]
+            else:
+                filtered_df = pd.DataFrame() # 何も選択されていない場合は空にする
+            
+            # 2. フリーワード検索
+            if search_query:
+                filtered_df = filtered_df[filtered_df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
+                # 検索が変わったらページをリセット
+                if 'last_search' not in st.session_state or st.session_state.last_search != search_query:
+                    st.session_state.page_number = 0
+                    st.session_state.last_search = search_query
+            
             st.success(f"検索結果: {len(filtered_df)} 件")
         else:
             filtered_df = df
@@ -275,7 +343,6 @@ try:
                  st.session_state.page_number = 0
                  st.session_state.last_search = ""
 
-        # ここで薄い区切り線
         st.markdown('<hr style="margin: 5px 0; border: 0; border-top: 1px solid #eee;">', unsafe_allow_html=True)
 
         categories = ["すべて"] + list(CATEGORY_MAP.keys())
@@ -315,7 +382,7 @@ try:
                         # 件数表示
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # --- 【重要】見出し行（固定表示） ---
+                        # 見出し行
                         cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                         cols[0].write("**編集**")
                         cols[1].write("**ID**")
@@ -325,7 +392,7 @@ try:
                         cols[5].write(f"**{header_g}**")
                         cols[6].write(f"**{header_h}**")
                         
-                        # --- 【重要】ここからスクロール領域（フレーム） ---
+                        # スクロール領域
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
                                 c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -356,7 +423,7 @@ try:
                                 
                                 st.markdown('<hr>', unsafe_allow_html=True)
 
-                        # --- ページネーション（スクロール枠の下） ---
+                        # ページネーション
                         st.write("")
                         col_prev, col_page_info, col_next = st.columns([1, 2, 1])
                         
@@ -406,7 +473,6 @@ try:
                 with c1:
                     d_buy = st.date_input("購入日", value=None)
                     custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                    # 【削除】製品名
                     custom_values['OS'] = st.text_input("OS")
                     custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)")
                     custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振")
