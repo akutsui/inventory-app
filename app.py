@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (固定設定 & フィルターUI調整) ---
+# --- CSS (UI調整) ---
 st.markdown("""
     <style>
         /* === 1. メインエリアの上部余白 === */
@@ -71,11 +71,6 @@ st.markdown("""
         }
         div[data-testid="stVerticalBlockBorderWrapper"] {
             padding: 0.5rem;
-        }
-        
-        /* マルチセレクトの文字サイズ調整 */
-        .stMultiSelect div[data-baseweb="select"] {
-            min-height: 38px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -310,85 +305,27 @@ try:
     with main_tab1:
         st.header("在庫データの検索")
         
-        # 1. 検索ワード（全体）
-        search_query = st.text_input("🔍 フリーワード検索", placeholder="品名、ID、利用者名、備考など全体から検索...")
-
-        # 2. 詳細フィルター（Excel風）
-        with st.expander("🔽 詳細フィルター (各項目の絞り込み)", expanded=True):
-            f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns(5)
-            
-            # データの準備（現在表示対象の全データから選択肢を作る）
-            # カテゴリタブ切り替え前なので、df全体から抽出するが、
-            # 実際はタブの中で絞り込んだ方がUI的には自然だが、
-            # 「すべてのデータ」に対するフィルタとしてここに配置する
-            
-            # IDリスト
-            all_ids = sorted(list(set(df['ID'].astype(str)))) if not df.empty else []
-            sel_ids = f_col1.multiselect("ID", all_ids)
-            
-            # 品名リスト
-            all_names = sorted(list(set(df['品名'].astype(str)))) if not df.empty else []
-            sel_names = f_col2.multiselect("品名", all_names)
-            
-            # 利用者リスト
-            all_users = sorted(list(set(df['利用者'].astype(str)))) if not df.empty else []
-            sel_users = f_col3.multiselect("利用者", all_users)
-            
-            # ステータスリスト
-            status_opts = ["利用可能", "貸出中", "故障/修理中", "廃棄"]
-            sel_status = f_col4.multiselect("ステータス", status_opts)
-
-            # G列/H列はカテゴリによって意味が違うので、ここでは「表示上の値」として扱う
-            # そのため、少し複雑だが「現在データフレームにある値」をすべて出す
-            # (ただしカテゴリ混在時はあまり意味がないかもしれないが、絞り込みとしては機能する)
-            
-            # データフレームに仮想的にG列/H列の値を埋め込む（フィルタ用）
-            def get_g_val(row):
-                cols = COLUMNS_DEF.get(row['カテゴリ'], [])
-                return str(row.get(cols[0], '')) if len(cols) > 0 else ""
-            
-            def get_h_val(row):
-                cols = COLUMNS_DEF.get(row['カテゴリ'], [])
-                return str(row.get(cols[1], '')) if len(cols) > 1 else ""
-
-            if not df.empty:
-                df['_disp_G'] = df.apply(get_g_val, axis=1)
-                df['_disp_H'] = df.apply(get_h_val, axis=1)
-                
-                all_g = sorted(list(set(df['_disp_G'])))
-                all_h = sorted(list(set(df['_disp_H'])))
-                
-                # 詳細1/2は内容が変わるのでラベルを汎用的に
-                sel_g = f_col5.multiselect("詳細1 (G列)", all_g, placeholder="購入日/登録番号など")
-                # スペースの都合上、詳細2は省略するか、行を分ける。今回は5列に収めるため詳細1までとするか...
-                # 要望にあるので6列にする
-            else:
-                sel_g = []
-                # sel_h = []
+        # シンプルな検索窓だけにする
+        search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...", key="main_search")
 
         # --- フィルタリング実行 ---
         filtered_df = df.copy() if not df.empty else pd.DataFrame()
 
         if not filtered_df.empty:
-            # 1. 各カラムの絞り込み
-            if sel_ids:
-                filtered_df = filtered_df[filtered_df['ID'].astype(str).isin(sel_ids)]
-            if sel_names:
-                filtered_df = filtered_df[filtered_df['品名'].astype(str).isin(sel_names)]
-            if sel_users:
-                filtered_df = filtered_df[filtered_df['利用者'].astype(str).isin(sel_users)]
-            if sel_status:
-                filtered_df = filtered_df[filtered_df['ステータス'].isin(sel_status)]
-            if sel_g:
-                filtered_df = filtered_df[filtered_df['_disp_G'].isin(sel_g)]
-            
-            # 2. フリーワード検索
+            # フリーワード検索
             if search_query:
                 filtered_df = filtered_df[filtered_df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
-                
+                # ページネーションのリセット処理
+                if 'last_search' not in st.session_state or st.session_state.last_search != search_query:
+                    st.session_state.page_number = 0
+                    st.session_state.last_search = search_query
+            
             st.success(f"検索結果: {len(filtered_df)} 件")
         else:
-            st.info("データがありません")
+            filtered_df = df
+            if 'last_search' in st.session_state and st.session_state.last_search != "":
+                 st.session_state.page_number = 0
+                 st.session_state.last_search = ""
 
         # 区切り線
         st.markdown('<hr style="margin: 5px 0; border: 0; border-top: 1px solid #eee;">', unsafe_allow_html=True)
@@ -414,13 +351,9 @@ try:
                     if display_df.empty:
                         st.warning("このカテゴリには該当するデータがありません")
                     else:
-                        # ページネーション設定
                         ITEMS_PER_PAGE = 50
                         total_items = len(display_df)
                         max_page = max(0, (total_items - 1) // ITEMS_PER_PAGE)
-                        
-                        # 検索条件が変わったときのためにページ番号をリセットする簡易ロジック
-                        # (厳密なステート管理は複雑になるため、範囲外なら0にする)
                         if st.session_state.page_number > max_page:
                             st.session_state.page_number = 0
                         
@@ -430,10 +363,9 @@ try:
                         
                         df_to_show = display_df.iloc[start_idx:end_idx]
                         
-                        # 件数表示
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # --- 見出し行（固定） ---
+                        # 見出し行（固定）
                         cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                         cols[0].write("**編集**")
                         cols[1].write("**ID**")
@@ -443,7 +375,7 @@ try:
                         cols[5].write(f"**{header_g}**")
                         cols[6].write(f"**{header_h}**")
                         
-                        # --- スクロール領域 ---
+                        # スクロール領域
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
                                 c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -465,16 +397,15 @@ try:
                                 else:
                                     c[4].write(status)
 
-                                # G/H列の表示（キャッシュ済みの値を使う）
-                                val_g = row.get('_disp_G', '')
-                                val_h = row.get('_disp_H', '')
+                                curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
+                                val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
+                                val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
                                 
                                 c[5].write(f"{val_g}")
                                 c[6].write(f"{val_h}")
                                 
                                 st.markdown('<hr>', unsafe_allow_html=True)
 
-                        # --- ページネーション ---
                         st.write("")
                         col_prev, col_page_info, col_next = st.columns([1, 2, 1])
                         
