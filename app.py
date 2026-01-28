@@ -7,16 +7,13 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整: 安全で標準的な設定) ---
+# --- CSS (標準的な設定のみ) ---
 st.markdown("""
     <style>
-        /* メインエリアの上部余白 */
         .block-container {
             padding-top: 4rem !important;
             padding-bottom: 5rem;
         }
-
-        /* タイトルの固定 */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky !important;
             top: 2.875rem !important;
@@ -27,14 +24,11 @@ st.markdown("""
             border-bottom: 2px solid #f0f2f6;
             margin-bottom: 0 !important;
         }
-        
         h1 {
             margin: 0 !important;
             padding: 0 !important;
             font-size: 1.8rem !important;
         }
-
-        /* タブバーの固定 */
         div[data-baseweb="tab-list"],
         div[role="tablist"],
         div[data-testid="stTabs"] > div:first-child {
@@ -46,36 +40,15 @@ st.markdown("""
             padding-bottom: 0.5rem !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
         div[data-testid="stTabs"] button {
             background-color: white !important;
         }
-
-        /* ボタンのサイズ調整 */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
             padding-bottom: 0;
             margin-top: 0px;
             font-size: 0.9rem;
-        }
-        div[data-testid="column"] {
-            padding-bottom: 0px;
-        }
-        p {
-            margin-bottom: 0.1rem;
-            font-size: 0.95rem;
-        }
-        hr {
-            margin: 0.2rem 0 !important;
-        }
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            padding: 0.5rem;
-        }
-        
-        /* アラート内の文字サイズ調整 */
-        div[data-testid="stAlert"] p {
-            font-size: 0.95rem;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -155,30 +128,23 @@ def get_all_data():
     
     return df
 
-# --- 【修正】日付パース関数（確実な方式に変更） ---
-def parse_date(date_val):
-    if not date_val:
-        return None
+# --- 【復元】シンプルで確実な日付パース関数 ---
+def parse_date(date_str):
+    if not date_str: return None
+    date_str = str(date_str).strip()
     
-    # 文字列にして前後の空白を削除
-    date_str = str(date_val).strip()
-    if not date_str:
-        return None
-
-    # 対応するフォーマット（ハイフン区切り と スラッシュ区切り）
+    # 一般的な形式をトライ
     formats = [
         '%Y-%m-%d',       # 2025-01-01
         '%Y/%m/%d',       # 2025/01/01
         '%Y-%m-%d %H:%M:%S',
         '%Y/%m/%d %H:%M:%S'
     ]
-    
     for fmt in formats:
         try:
             return datetime.strptime(date_str, fmt)
         except ValueError:
             continue
-            
     return None
 
 # --- 検索実行用コールバック関数 ---
@@ -371,7 +337,7 @@ try:
         
         if not df.empty:
             for index, row in df.iterrows():
-                # ステータス「廃棄」の判定 (空白除去)
+                # ステータス「廃棄」の判定
                 status = str(row.get('ステータス', '')).strip()
                 if status == '廃棄':
                     continue
@@ -382,7 +348,7 @@ try:
                 msg_list = []
                 
                 if cat == "訪問車":
-                    reg_num = row.get('登録番号', '')
+                    reg_num = str(row.get('登録番号', ''))
                     display_text = f"{name} {reg_num}".strip()
                     
                     check_cols = ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]
@@ -392,9 +358,9 @@ try:
                         if dt:
                             diff = (dt.date() - today).days
                             if diff < 0:
-                                msg_list.append(f"{col} 超過 ({val})")
+                                msg_list.append(f"{col} 超過 ({dt.strftime('%Y-%m-%d')})")
                             elif diff <= 45:
-                                msg_list.append(f"{col} あと{diff}日 ({val})")
+                                msg_list.append(f"{col} あと{diff}日 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -404,7 +370,7 @@ try:
                         })
                 
                 elif cat == "iPad":
-                    label = row.get('ラベル', '')
+                    label = str(row.get('ラベル', ''))
                     display_text = f"{label} {name}".strip()
                     
                     val = row.get("購入日")
@@ -416,7 +382,7 @@ try:
                             target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
                         
                         if today >= target_date:
-                            msg_list.append(f"購入から5年経過 ({val})")
+                            msg_list.append(f"購入から5年経過 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -425,21 +391,19 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (標準的な表示に戻す: st.errorコンテナ) ---
+        # --- アラートの表示 ---
         if alert_items:
             with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
                 for i, item in enumerate(alert_items):
                     c1, c2 = st.columns([5, 1])
                     
-                    # 警告テキスト
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
                     c1.markdown(f"{alert_str}")
                     
-                    # 詳細ボタン
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
-                    # 区切り線
+                    # 最後の要素以外に区切り線を入れる
                     if i < len(alert_items) - 1:
                         st.markdown('<hr style="margin: 0.5rem 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
 
