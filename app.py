@@ -163,12 +163,26 @@ def get_all_data():
     
     return df
 
+# --- 【修正】日付パース関数（強化版） ---
 def parse_date(date_str):
     if not date_str: return None
-    try:
-        return datetime.strptime(date_str, '%Y-%m-%d')
-    except:
-        return None
+    # 数字とスラッシュ/ハイフン以外が含まれている場合のクリーニングも考慮
+    date_str = str(date_str).strip()
+    
+    # 試行する日付フォーマットのリスト
+    formats = [
+        '%Y-%m-%d',       # 2025-01-01
+        '%Y/%m/%d',       # 2025/01/01
+        '%Y-%m-%d %H:%M:%S',
+        '%Y/%m/%d %H:%M:%S'
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+    return None
 
 # --- 検索実行用コールバック関数 ---
 def submit_search():
@@ -286,6 +300,7 @@ def show_detail_dialog(row_data):
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         st.markdown("---")
+        
         if st.form_submit_button("✅ この内容で更新する"):
             try:
                 target_sheet_name = CATEGORY_MAP[cat]
@@ -357,7 +372,9 @@ try:
         
         if not df.empty:
             for index, row in df.iterrows():
-                if row.get('ステータス') == '廃棄':
+                # 【修正】ステータス「廃棄」の判定を厳密に（スペース除去）
+                status = str(row.get('ステータス', '')).strip()
+                if status == '廃棄':
                     continue
 
                 cat = row.get('カテゴリ')
