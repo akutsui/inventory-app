@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整) ---
+# --- CSS (UI調整: 行間・余白・アラート) ---
 st.markdown("""
     <style>
         /* === 1. メインエリアの上部余白 === */
@@ -51,7 +51,7 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* === 4. 細かいデザイン調整 === */
+        /* === 4. 一般的なボタン・テキストの調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -73,9 +73,17 @@ st.markdown("""
             padding: 0.5rem;
         }
         
-        /* アラートエリアのスタイル調整 */
-        div[data-testid="stAlert"] {
-            padding: 0.5rem;
+        /* === 5. アラートエリア専用の行間詰め設定 === */
+        div[data-testid="stAlert"] p {
+            font-size: 0.95rem;
+            line-height: 2.0rem; /* ボタンの高さに合わせる */
+            margin-bottom: 0px;
+        }
+        div[data-testid="stAlert"] hr {
+            margin: 2px 0 !important; /* 区切り線の余白を極小に */
+        }
+        div[data-testid="stAlert"] button {
+            margin-top: 2px !important; /* ボタン位置の微調整 */
         }
     </style>
 """, unsafe_allow_html=True)
@@ -356,7 +364,6 @@ try:
                 cat = row.get('カテゴリ')
                 name = row.get('品名', '名称不明')
                 
-                # アラート条件チェック
                 msg_list = []
                 
                 if cat == "訪問車":
@@ -370,9 +377,9 @@ try:
                         if dt:
                             diff = (dt.date() - today).days
                             if diff < 0:
-                                msg_list.append(f"{col} を過ぎています ({val})")
+                                msg_list.append(f"{col} 超過 ({val})")
                             elif diff <= 45:
-                                msg_list.append(f"{col} まであと {diff}日 ({val})")
+                                msg_list.append(f"{col} あと{diff}日 ({val})")
                     
                     if msg_list:
                         alert_items.append({
@@ -394,7 +401,7 @@ try:
                             target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
                         
                         if today >= target_date:
-                            msg_list.append(f"購入から5年が経過しました ({val})")
+                            msg_list.append(f"購入から5年経過 ({val})")
                     
                     if msg_list:
                         alert_items.append({
@@ -403,21 +410,24 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (Native Streamlit Components) ---
+        # --- アラートの表示 (背景色: 薄い朱色として st.error を使用) ---
         if alert_items:
-            with st.container(border=True):
-                st.markdown("##### ⚠️ 期日アラート")
+            # st.errorコンテナを使うことで薄い赤色の背景を実現
+            with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
                 for i, item in enumerate(alert_items):
                     c1, c2 = st.columns([5, 1])
                     
+                    # メッセージの作成
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f":red[{alert_str}]")
+                    c1.markdown(f"{alert_str}") # 色はコンテナで付くので通常の文字でOK
                     
+                    # 詳細ボタン
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
+                    # 区切り線 (点線、余白狭め)
                     if i < len(alert_items) - 1:
-                        st.markdown('<hr style="margin: 5px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
+                        st.markdown('<hr style="margin: 2px 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -713,7 +723,7 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
+            custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "携帯電話":
                 c1, c2 = st.columns(2)
@@ -728,10 +738,10 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
+            custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
