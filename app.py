@@ -144,6 +144,7 @@ def get_all_data():
     
     df = pd.DataFrame(all_data)
     
+    # 並べ替え処理: 「廃棄」を一番下にする
     if not df.empty:
         df['sort_order'] = df['ステータス'].apply(lambda x: 1 if x == '廃棄' else 0)
         df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
@@ -388,9 +389,8 @@ try:
                     unsafe_allow_html=True
                 )
 
-        # --- 検索窓 (入力後、自動クリアする仕様) ---
+        # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
-        
         with col_search_input:
             st.text_input(
                 "フリーワード検索", 
@@ -400,9 +400,7 @@ try:
                 on_change=submit_search
             )
         
-        # --- 現在の検索ワード表示 ---
         current_query = st.session_state.active_search_query
-        
         if current_query:
             st.info(f"🔍 検索中のワード: **{current_query}**")
             with col_clear_btn:
@@ -412,16 +410,13 @@ try:
 
         # --- フィルタリング実行 ---
         filtered_df = df.copy() if not df.empty else pd.DataFrame()
-
         if not filtered_df.empty:
             if current_query:
                 filtered_df = filtered_df[filtered_df.astype(str).apply(lambda row: row.str.contains(current_query, case=False).any(), axis=1)]
-            
             st.success(f"検索結果: {len(filtered_df)} 件")
         else:
             filtered_df = df
 
-        # 区切り線
         st.markdown('<hr style="margin: 5px 0; border: 0; border-top: 1px solid #eee;">', unsafe_allow_html=True)
 
         categories = ["すべて"] + list(CATEGORY_MAP.keys())
@@ -459,11 +454,36 @@ try:
                         
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # --- カテゴリに応じて列構成を変える ---
-                        is_dept_category = category in ["訪問車", "iPad", "携帯電話"]
+                        # ==========================================
+                        # カテゴリごとの列構成定義（ここを修正）
+                        # ==========================================
+                        
+                        if category == "訪問車":
+                            # 訪問車: 登録番号を品名の次へ
+                            cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
+                            cols[0].write("**編集**")
+                            cols[1].write("**ID**")
+                            cols[2].write("**品名**")
+                            cols[3].write("**登録番号**") # ←ここに配置
+                            cols[4].write("**利用者**")
+                            cols[5].write("**使用部署**")
+                            cols[6].write("**ステータス**")
+                            cols[7].write("**洗車G**")
 
-                        if is_dept_category:
-                            cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.5, 1.2, 1.5, 1.5])
+                        elif category == "iPad":
+                            # iPad: ラベルをIDの次へ
+                            cols = st.columns([0.7, 1.2, 1.5, 1.8, 1.5, 1.5, 1.0, 1.5])
+                            cols[0].write("**編集**")
+                            cols[1].write("**ID**")
+                            cols[2].write("**ラベル**") # ←ここに配置
+                            cols[3].write("**品名**")
+                            cols[4].write("**利用者**")
+                            cols[5].write("**使用部署**")
+                            cols[6].write("**ステータス**")
+                            cols[7].write("**購入日**")
+
+                        elif category == "携帯電話":
+                            cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.0, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
@@ -472,7 +492,9 @@ try:
                             cols[5].write("**ステータス**")
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
+
                         else:
+                            # その他、PC、すべて
                             cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
@@ -482,46 +504,86 @@ try:
                             cols[5].write(f"**{header_g}**")
                             cols[6].write(f"**{header_h}**")
                         
+                        # --- リスト表示ループ ---
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
-                                if is_dept_category:
-                                    c = st.columns([0.7, 1.5, 2.0, 1.5, 1.5, 1.2, 1.5, 1.5])
+                                
+                                if category == "訪問車":
+                                    c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
+                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                        show_detail_dialog(row)
+                                    c[1].write(f"{row['ID']}")
+                                    c[2].write(f"**{row['品名']}**")
+                                    c[3].write(f"{row.get('登録番号', '')}") # 登録番号
+                                    c[4].write(f"{row['利用者']}")
+                                    c[5].write(f"{row.get('使用部署', '')}")
+                                    
+                                    status = row['ステータス']
+                                    if status == "利用可能": c[6].info(status, icon="✅")
+                                    elif status == "貸出中": c[6].warning(status, icon="🏃")
+                                    elif status == "故障/修理中": c[6].error(status, icon="⚠️")
+                                    else: c[6].write(status)
+                                    
+                                    c[7].write(f"{row.get('洗車グループ', '')}")
+
+                                elif category == "iPad":
+                                    c = st.columns([0.7, 1.2, 1.5, 1.8, 1.5, 1.5, 1.0, 1.5])
+                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                        show_detail_dialog(row)
+                                    c[1].write(f"{row['ID']}")
+                                    c[2].write(f"**{row.get('ラベル', '')}**") # ラベル
+                                    c[3].write(f"**{row['品名']}**")
+                                    c[4].write(f"{row['利用者']}")
+                                    c[5].write(f"{row.get('使用部署', '')}")
+                                    
+                                    status = row['ステータス']
+                                    if status == "利用可能": c[6].info(status, icon="✅")
+                                    elif status == "貸出中": c[6].warning(status, icon="🏃")
+                                    elif status == "故障/修理中": c[6].error(status, icon="⚠️")
+                                    else: c[6].write(status)
+                                    
+                                    c[7].write(f"{row.get('購入日', '')}")
+
+                                elif category == "携帯電話":
+                                    c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.0, 1.5, 1.5])
+                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                        show_detail_dialog(row)
+                                    c[1].write(f"{row['ID']}")
+                                    c[2].write(f"**{row['品名']}**")
+                                    c[3].write(f"{row['利用者']}")
+                                    c[4].write(f"{row.get('使用部署', '')}")
+                                    
+                                    status = row['ステータス']
+                                    if status == "利用可能": c[5].info(status, icon="✅")
+                                    elif status == "貸出中": c[5].warning(status, icon="🏃")
+                                    elif status == "故障/修理中": c[5].error(status, icon="⚠️")
+                                    else: c[5].write(status)
+
+                                    curr_cols_def = COLUMNS_DEF.get(category, [])
+                                    val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
+                                    val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
+                                    c[6].write(f"{val_g}")
+                                    c[7].write(f"{val_h}")
+
                                 else:
                                     c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
-                                
-                                if c[0].button("詳細", key=f"btn_{category}_{index}"):
-                                    show_detail_dialog(row)
-                                
-                                c[1].write(f"{row['ID']}")
-                                c[2].write(f"**{row['品名']}**")
-                                c[3].write(f"{row['利用者']}")
-                                
-                                if is_dept_category:
-                                    c[4].write(f"{row.get('使用部署', '')}")
-                                    status_col_idx = 5
-                                    g_col_idx = 6
-                                    h_col_idx = 7
-                                else:
-                                    status_col_idx = 4
-                                    g_col_idx = 5
-                                    h_col_idx = 6
+                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                        show_detail_dialog(row)
+                                    c[1].write(f"{row['ID']}")
+                                    c[2].write(f"**{row['品名']}**")
+                                    c[3].write(f"{row['利用者']}")
+                                    
+                                    status = row['ステータス']
+                                    if status == "利用可能": c[4].info(status, icon="✅")
+                                    elif status == "貸出中": c[4].warning(status, icon="🏃")
+                                    elif status == "故障/修理中": c[4].error(status, icon="⚠️")
+                                    else: c[4].write(status)
 
-                                status = row['ステータス']
-                                if status == "利用可能":
-                                    c[status_col_idx].info(status, icon="✅")
-                                elif status == "貸出中":
-                                    c[status_col_idx].warning(status, icon="🏃")
-                                elif status == "故障/修理中":
-                                    c[status_col_idx].error(status, icon="⚠️")
-                                else:
-                                    c[status_col_idx].write(status)
-
-                                curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
-                                val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
-                                val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
-                                
-                                c[g_col_idx].write(f"{val_g}")
-                                c[h_col_idx].write(f"{val_h}")
+                                    curr_cols_def = COLUMNS_DEF.get(category, [])
+                                    val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
+                                    val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
+                                    c[5].write(f"{val_g}")
+                                    c[6].write(f"{val_h}")
                                 
                                 st.markdown('<hr>', unsafe_allow_html=True)
 
