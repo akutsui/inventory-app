@@ -93,18 +93,20 @@ COLUMNS_DEF = {
         "チームビューワID", "チームビューワPW", "備考"
     ],
     "訪問車": [
-        "登録番号", "使用部署", "洗車グループ", "駐車場", 
+        "登録番号", "洗車グループ", "駐車場", 
         "タイヤサイズ", "スタッドレス有無", "タイヤ保管場所", 
         "リース開始日", "リース満了日", "車検満了日", 
-        "駐禁除外指定満了日", "通行禁止許可満了日", "備考"
+        "駐禁除外指定満了日", "通行禁止許可満了日", "使用部署", "備考"
     ],
     "iPad": [
-        "購入日", "ラベル", "AppleID", "型番", "シリアルNo", 
-        "モデル", "ストレージ", "製造番号IMEI", "端末番号", 
+        # 型番・モデルは削除済み
+        "購入日", "ラベル", "AppleID", "シリアルNo", 
+        "ストレージ", "製造番号IMEI", "端末番号", 
         "使用部署", "キャリア", "備考"
     ],
     "携帯電話": [
-        "購入日", "電話番号", "SIM", "メーカー", 
+        # 【復活】メーカー
+        "購入日", "電話番号", "SIM", "メーカー",
         "製造番号", "使用部署", "保管場所", "キャリア", "備考"
     ],
     "その他": [
@@ -246,11 +248,9 @@ def show_detail_dialog(row_data):
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル'))
                 custom_values['AppleID'] = st.text_input("AppleID", value=row_data.get('AppleID'))
-                custom_values['型番'] = st.text_input("型番", value=row_data.get('型番'))
                 custom_values['シリアルNo'] = st.text_input("シリアルNo", value=row_data.get('シリアルNo'))
-                custom_values['モデル'] = st.text_input("モデル", value=row_data.get('モデル'))
-            with c2:
                 custom_values['ストレージ'] = st.text_input("ストレージ", value=row_data.get('ストレージ'))
+            with c2:
                 custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI", value=row_data.get('製造番号IMEI'))
                 custom_values['端末番号'] = st.text_input("端末番号", value=row_data.get('端末番号'))
                 custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
@@ -264,6 +264,7 @@ def show_detail_dialog(row_data):
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号'))
                 custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM'))
+                # 【復活】メーカー
                 custom_values['メーカー'] = st.text_input("メーカー", value=row_data.get('メーカー'))
             with c2:
                 custom_values['製造番号'] = st.text_input("製造番号", value=row_data.get('製造番号'))
@@ -304,7 +305,6 @@ def show_detail_dialog(row_data):
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
 
-# --- 【追加】サイドバー（更新ボタン & マニュアル） ---
 with st.sidebar:
     if st.button("🔄 データを最新にする"):
         get_all_data.clear()
@@ -463,18 +463,35 @@ try:
                         
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
-                        cols[0].write("**編集**")
-                        cols[1].write("**ID**")
-                        cols[2].write("**品名**")
-                        cols[3].write("**利用者**")
-                        cols[4].write("**ステータス**")
-                        cols[5].write(f"**{header_g}**")
-                        cols[6].write(f"**{header_h}**")
+                        # --- カテゴリに応じて列構成を変える ---
+                        is_dept_category = category in ["訪問車", "iPad", "携帯電話"]
+
+                        if is_dept_category:
+                            cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.5, 1.2, 1.5, 1.5])
+                            cols[0].write("**編集**")
+                            cols[1].write("**ID**")
+                            cols[2].write("**品名**")
+                            cols[3].write("**利用者**")
+                            cols[4].write("**使用部署**")
+                            cols[5].write("**ステータス**")
+                            cols[6].write(f"**{header_g}**")
+                            cols[7].write(f"**{header_h}**")
+                        else:
+                            cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
+                            cols[0].write("**編集**")
+                            cols[1].write("**ID**")
+                            cols[2].write("**品名**")
+                            cols[3].write("**利用者**")
+                            cols[4].write("**ステータス**")
+                            cols[5].write(f"**{header_g}**")
+                            cols[6].write(f"**{header_h}**")
                         
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
-                                c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
+                                if is_dept_category:
+                                    c = st.columns([0.7, 1.5, 2.0, 1.5, 1.5, 1.2, 1.5, 1.5])
+                                else:
+                                    c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                                 
                                 if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                     show_detail_dialog(row)
@@ -483,22 +500,33 @@ try:
                                 c[2].write(f"**{row['品名']}**")
                                 c[3].write(f"{row['利用者']}")
                                 
+                                # ステータス表示の列位置調整
+                                if is_dept_category:
+                                    c[4].write(f"{row.get('使用部署', '')}")
+                                    status_col_idx = 5
+                                    g_col_idx = 6
+                                    h_col_idx = 7
+                                else:
+                                    status_col_idx = 4
+                                    g_col_idx = 5
+                                    h_col_idx = 6
+
                                 status = row['ステータス']
                                 if status == "利用可能":
-                                    c[4].info(status, icon="✅")
+                                    c[status_col_idx].info(status, icon="✅")
                                 elif status == "貸出中":
-                                    c[4].warning(status, icon="🏃")
+                                    c[status_col_idx].warning(status, icon="🏃")
                                 elif status == "故障/修理中":
-                                    c[4].error(status, icon="⚠️")
+                                    c[status_col_idx].error(status, icon="⚠️")
                                 else:
-                                    c[4].write(status)
+                                    c[status_col_idx].write(status)
 
                                 curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
                                 val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
                                 val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
                                 
-                                c[5].write(f"{val_g}")
-                                c[6].write(f"{val_h}")
+                                c[g_col_idx].write(f"{val_g}")
+                                c[h_col_idx].write(f"{val_h}")
                                 
                                 st.markdown('<hr>', unsafe_allow_html=True)
 
@@ -600,11 +628,9 @@ try:
                     custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                     custom_values['ラベル'] = st.text_input("ラベル")
                     custom_values['AppleID'] = st.text_input("AppleID")
-                    custom_values['型番'] = st.text_input("型番")
                     custom_values['シリアルNo'] = st.text_input("シリアルNo")
-                    custom_values['モデル'] = st.text_input("モデル")
-                with c2:
                     custom_values['ストレージ'] = st.text_input("ストレージ")
+                with c2:
                     custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI")
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
@@ -618,6 +644,7 @@ try:
                     custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                     custom_values['電話番号'] = st.text_input("電話番号")
                     custom_values['SIM'] = st.text_input("SIM")
+                    # 【復活】メーカー
                     custom_values['メーカー'] = st.text_input("メーカー")
                 with c2:
                     custom_values['製造番号'] = st.text_input("製造番号")
@@ -653,4 +680,3 @@ try:
 
 except Exception as e:
     st.error(f"エラー: {e}")
-
