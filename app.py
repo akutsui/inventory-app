@@ -275,7 +275,8 @@ def show_detail_dialog(row_data):
                 for col_name in COLUMNS_DEF.get(cat, []):
                     row_to_save.append(custom_values.get(col_name, ''))
                 
-                cell = worksheet.find(row_data['ID'])
+                # 【重要】IDを文字列にキャストして検索（エラー回避）
+                cell = worksheet.find(str(row_data['ID']))
                 if cell:
                     r = cell.row
                     worksheet.update(f"A{r}", [row_to_save])
@@ -311,7 +312,7 @@ try:
             today = datetime.now().date()
             
             for index, row in df.iterrows():
-                # 【修正】ステータスが「廃棄」の場合はアラートを表示しない
+                # ステータスが「廃棄」の場合はアラートを表示しない
                 if row.get('ステータス') == '廃棄':
                     continue
 
