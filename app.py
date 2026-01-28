@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整: 行間・余白・アラート) ---
+# --- CSS (UI調整) ---
 st.markdown("""
     <style>
         /* === 1. メインエリアの上部余白 === */
@@ -51,7 +51,7 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* === 4. 一般的なボタン・テキストの調整 === */
+        /* === 4. 細かいデザイン調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -71,19 +71,6 @@ st.markdown("""
         }
         div[data-testid="stVerticalBlockBorderWrapper"] {
             padding: 0.5rem;
-        }
-        
-        /* === 5. アラートエリア専用の行間詰め設定 === */
-        div[data-testid="stAlert"] p {
-            font-size: 0.95rem;
-            line-height: 2.0rem;
-            margin-bottom: 0px;
-        }
-        div[data-testid="stAlert"] hr {
-            margin: 2px 0 !important;
-        }
-        div[data-testid="stAlert"] button {
-            margin-top: 2px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -163,12 +150,12 @@ def get_all_data():
     
     return df
 
-# --- 【修正】日付パース関数（Pandas使用で最強の柔軟性） ---
+# --- 日付パース関数（強化版） ---
 def parse_date(date_val):
     if not date_val:
         return None
     try:
-        # Pandasの強力な日付変換機能を使う（2025/1/1, 2025-01-01等すべて対応）
+        # Pandasの機能を使ってあらゆる形式の日付を読み取る
         ts = pd.to_datetime(date_val, errors='coerce')
         if pd.isna(ts):
             return None
@@ -192,7 +179,7 @@ def clear_search():
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
     
-    # 日付表示用のヘルパー
+    # 日付表示用ヘルパー
     def get_date_val(key):
         return parse_date(row_data.get(key))
 
@@ -367,7 +354,7 @@ try:
         
         if not df.empty:
             for index, row in df.iterrows():
-                # ステータス「廃棄」の判定（スペース除去）
+                # ステータス「廃棄」の判定
                 status = str(row.get('ステータス', '')).strip()
                 if status == '廃棄':
                     continue
@@ -421,20 +408,23 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (背景色: 薄い朱色として st.error を使用) ---
+        # --- アラートの表示 (Native Streamlit Components: 元の仕様に戻す) ---
         if alert_items:
-            with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
+            with st.container(border=True):
+                st.markdown("##### ⚠️ 期日アラート")
                 for i, item in enumerate(alert_items):
                     c1, c2 = st.columns([5, 1])
                     
+                    # 警告テキスト (赤字)
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f"{alert_str}")
+                    c1.markdown(f":red[{alert_str}]")
                     
+                    # 詳細ボタン
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
                     if i < len(alert_items) - 1:
-                        st.markdown('<hr style="margin: 2px 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
+                        st.markdown('<hr style="margin: 5px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
