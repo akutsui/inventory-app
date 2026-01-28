@@ -7,22 +7,22 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整) ---
+# --- CSS (UI調整: 固定ヘッダーと余白) ---
 st.markdown("""
     <style>
-        /* === 1. メインエリアの上部余白 === */
+        /* === 1. アプリ全体の余白調整（タイトルが隠れないように広げる） === */
         .block-container {
-            padding-top: 1rem;
+            padding-top: 4rem !important; /* 余白を増やして重なりを防止 */
             padding-bottom: 5rem;
         }
 
-        /* === 2. タイトル(h1)の固定 === */
+        /* === 2. アプリタイトル(h1)の固定 === */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky !important;
             top: 2.875rem !important;
             background-color: white !important;
             z-index: 1000 !important;
-            padding-top: 0.5rem !important;
+            padding-top: 1rem !important;
             padding-bottom: 0.5rem !important;
             border-bottom: 2px solid #f0f2f6;
             margin-bottom: 0 !important;
@@ -39,7 +39,7 @@ st.markdown("""
         div[role="tablist"],
         div[data-testid="stTabs"] > div:first-child {
             position: sticky !important;
-            top: 6.5rem !important;
+            top: 6.8rem !important; /* タイトルの下に来るように位置調整 */
             background-color: white !important;
             z-index: 999 !important;
             padding-top: 0.5rem !important;
@@ -51,7 +51,7 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* === 4. 一覧リストのスタイル調整 === */
+        /* === 4. 細かいデザイン調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -303,19 +303,18 @@ try:
     # タブ1：一覧・検索
     # ==========================================
     with main_tab1:
-        st.header("在庫データの検索")
+        # ヘッダーのサイズを小さく (h2 -> h4)
+        st.markdown("#### 在庫データの検索")
         
-        # シンプルな検索窓だけにする
-        search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...", key="main_search")
+        # 検索窓 (全幅)
+        search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...", key="main_search", label_visibility="collapsed")
 
         # --- フィルタリング実行 ---
         filtered_df = df.copy() if not df.empty else pd.DataFrame()
 
         if not filtered_df.empty:
-            # フリーワード検索
             if search_query:
                 filtered_df = filtered_df[filtered_df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
-                # ページネーションのリセット処理
                 if 'last_search' not in st.session_state or st.session_state.last_search != search_query:
                     st.session_state.page_number = 0
                     st.session_state.last_search = search_query
