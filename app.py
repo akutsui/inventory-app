@@ -76,14 +76,14 @@ st.markdown("""
         /* === 5. アラートエリア専用の行間詰め設定 === */
         div[data-testid="stAlert"] p {
             font-size: 0.95rem;
-            line-height: 2.0rem; /* ボタンの高さに合わせる */
+            line-height: 2.0rem;
             margin-bottom: 0px;
         }
         div[data-testid="stAlert"] hr {
-            margin: 2px 0 !important; /* 区切り線の余白を極小に */
+            margin: 2px 0 !important;
         }
         div[data-testid="stAlert"] button {
-            margin-top: 2px !important; /* ボタン位置の微調整 */
+            margin-top: 2px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -286,7 +286,6 @@ def show_detail_dialog(row_data):
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         st.markdown("---")
-        
         if st.form_submit_button("✅ この内容で更新する"):
             try:
                 target_sheet_name = CATEGORY_MAP[cat]
@@ -412,20 +411,16 @@ try:
 
         # --- アラートの表示 (背景色: 薄い朱色として st.error を使用) ---
         if alert_items:
-            # st.errorコンテナを使うことで薄い赤色の背景を実現
             with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
                 for i, item in enumerate(alert_items):
                     c1, c2 = st.columns([5, 1])
                     
-                    # メッセージの作成
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f"{alert_str}") # 色はコンテナで付くので通常の文字でOK
+                    c1.markdown(f"{alert_str}")
                     
-                    # 詳細ボタン
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
-                    # 区切り線 (点線、余白狭め)
                     if i < len(alert_items) - 1:
                         st.markdown('<hr style="margin: 2px 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
 
@@ -723,7 +718,7 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "携帯電話":
                 c1, c2 = st.columns(2)
@@ -738,10 +733,10 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+                custom_values['備考'] = st.text_area("備考")
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
