@@ -350,11 +350,10 @@ try:
 
                 cat = row.get('カテゴリ')
                 name = row.get('品名', '名称不明')
-                # IDはアラート表示には使わない
+                uid = row.get('ID', '')
                 
                 if cat == "訪問車":
                     reg_num = row.get('登録番号', '')
-                    # 【変更】表示名: 品名 + 登録番号
                     display_text = f"{name} {reg_num}".strip()
                     
                     check_cols = ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]
@@ -370,7 +369,6 @@ try:
                 
                 elif cat == "iPad":
                     label = row.get('ラベル', '')
-                    # 【変更】表示名: ラベル + 品名
                     display_text = f"{label} {name}".strip()
                     
                     val = row.get("購入日")
@@ -462,7 +460,6 @@ try:
                         
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # --- 一覧の列構成 ---
                         if category == "訪問車":
                             cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
                             cols[0].write("**編集**")
@@ -692,7 +689,7 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "携帯電話":
                 c1, c2 = st.columns(2)
@@ -707,7 +704,7 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
                 custom_values['備考'] = st.text_area("備考")
