@@ -123,7 +123,6 @@ if 'form_data' not in st.session_state:
     st.session_state['form_data'] = {}
 if 'page_number' not in st.session_state:
     st.session_state['page_number'] = 0
-# 【追加】検索状態を管理する変数
 if 'active_search_query' not in st.session_state:
     st.session_state['active_search_query'] = ""
 
@@ -159,14 +158,13 @@ def parse_date(date_str):
     except:
         return None
 
-# --- 【追加】検索実行用コールバック関数 ---
+# --- 検索実行用コールバック関数 ---
 def submit_search():
-    # 入力された値を検索用ステートに移し、入力欄のステートは空にする
     st.session_state.active_search_query = st.session_state.input_search_key
     st.session_state.input_search_key = "" # 入力欄クリア
-    st.session_state.page_number = 0 # ページを先頭に戻す
+    st.session_state.page_number = 0
 
-# --- 【追加】検索解除用コールバック関数 ---
+# --- 検索解除用コールバック関数 ---
 def clear_search():
     st.session_state.active_search_query = ""
     st.session_state.page_number = 0
@@ -327,7 +325,6 @@ try:
             today = datetime.now().date()
             
             for index, row in df.iterrows():
-                # 廃棄はスキップ
                 if row.get('ステータス') == '廃棄':
                     continue
 
@@ -376,10 +373,10 @@ try:
         col_search_input, col_clear_btn = st.columns([4, 1])
         
         with col_search_input:
-            # 入力があったらsubmit_searchを呼んでクリアする
             st.text_input(
                 "フリーワード検索", 
-                placeholder="バーコード読み取り / キーワード入力 (Enterで検索＆クリア)", 
+                # 【変更】プレースホルダーからバーコードの文言を削除
+                placeholder="キーワード入力 (Enterで検索＆クリア)", 
                 key="input_search_key",
                 label_visibility="collapsed",
                 on_change=submit_search
@@ -390,7 +387,6 @@ try:
         
         if current_query:
             st.info(f"🔍 検索中のワード: **{current_query}**")
-            # 検索解除ボタン
             with col_clear_btn:
                 if st.button("検索解除", key="clear_search_btn"):
                     clear_search()
