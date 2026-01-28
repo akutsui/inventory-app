@@ -12,7 +12,7 @@ st.markdown("""
     <style>
         /* === 1. メインエリアの上部余白 === */
         .block-container {
-            padding-top: 1rem;
+            padding-top: 4rem !important;
             padding-bottom: 5rem;
         }
 
@@ -22,7 +22,7 @@ st.markdown("""
             top: 2.875rem !important;
             background-color: white !important;
             z-index: 1000 !important;
-            padding-top: 0.5rem !important;
+            padding-top: 1rem !important;
             padding-bottom: 0.5rem !important;
             border-bottom: 2px solid #f0f2f6;
             margin-bottom: 0 !important;
@@ -39,7 +39,7 @@ st.markdown("""
         div[role="tablist"],
         div[data-testid="stTabs"] > div:first-child {
             position: sticky !important;
-            top: 6.5rem !important;
+            top: 6.8rem !important;
             background-color: white !important;
             z-index: 999 !important;
             padding-top: 0.5rem !important;
@@ -51,7 +51,7 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* === 4. 一覧リストのスタイル調整 === */
+        /* === 4. 細かいデザイン調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -141,6 +141,7 @@ def get_all_data():
     
     df = pd.DataFrame(all_data)
     
+    # 並べ替え処理: 「廃棄」を一番下にする
     if not df.empty:
         df['sort_order'] = df['ステータス'].apply(lambda x: 1 if x == '廃棄' else 0)
         df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
@@ -310,8 +311,9 @@ try:
             today = datetime.now().date()
             
             for index, row in df.iterrows():
-                # 既に廃棄済みのものはアラート対象外にするならここでスキップ
-                # if row['ステータス'] == '廃棄': continue
+                # 【修正】ステータスが「廃棄」の場合はアラートを表示しない
+                if row.get('ステータス') == '廃棄':
+                    continue
 
                 cat = row.get('カテゴリ')
                 name = row.get('品名', '名称不明')
