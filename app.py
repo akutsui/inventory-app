@@ -350,9 +350,13 @@ try:
 
                 cat = row.get('カテゴリ')
                 name = row.get('品名', '名称不明')
-                uid = row.get('ID', '')
+                # IDはアラート表示には使わない
                 
                 if cat == "訪問車":
+                    reg_num = row.get('登録番号', '')
+                    # 【変更】表示名: 品名 + 登録番号
+                    display_text = f"{name} {reg_num}".strip()
+                    
                     check_cols = ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]
                     for col in check_cols:
                         val = row.get(col)
@@ -360,11 +364,15 @@ try:
                         if dt:
                             diff = (dt.date() - today).days
                             if diff < 0:
-                                alert_html += f"<li><b>訪問車【{name} ({uid})】</b>: {col} を <b style='text-decoration: underline;'>過ぎています！</b> ({val})</li>"
+                                alert_html += f"<li><b>訪問車【{display_text}】</b>: {col} を <b style='text-decoration: underline;'>過ぎています！</b> ({val})</li>"
                             elif diff <= 45:
-                                alert_html += f"<li><b>訪問車【{name} ({uid})】</b>: {col} まであと <b>{diff}日</b> です ({val})</li>"
+                                alert_html += f"<li><b>訪問車【{display_text}】</b>: {col} まであと <b>{diff}日</b> です ({val})</li>"
                 
                 elif cat == "iPad":
+                    label = row.get('ラベル', '')
+                    # 【変更】表示名: ラベル + 品名
+                    display_text = f"{label} {name}".strip()
+                    
                     val = row.get("購入日")
                     dt = parse_date(val)
                     if dt:
@@ -374,7 +382,7 @@ try:
                             target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
                         
                         if today >= target_date:
-                            alert_html += f"<li><b>iPad【{name} ({uid})】</b>: 購入から5年が経過しました ({val})</li>"
+                            alert_html += f"<li><b>iPad【{display_text}】</b>: 購入から5年が経過しました ({val})</li>"
 
             if alert_html:
                 st.markdown(
@@ -454,28 +462,23 @@ try:
                         
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # ==========================================
-                        # カテゴリごとの列構成定義（ここを修正）
-                        # ==========================================
-                        
+                        # --- 一覧の列構成 ---
                         if category == "訪問車":
-                            # 訪問車: 登録番号を品名の次へ
                             cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
-                            cols[3].write("**登録番号**") # ←ここに配置
+                            cols[3].write("**登録番号**")
                             cols[4].write("**利用者**")
                             cols[5].write("**使用部署**")
                             cols[6].write("**ステータス**")
                             cols[7].write("**洗車G**")
 
                         elif category == "iPad":
-                            # iPad: ラベルをIDの次へ
                             cols = st.columns([0.7, 1.2, 1.5, 1.8, 1.5, 1.5, 1.0, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
-                            cols[2].write("**ラベル**") # ←ここに配置
+                            cols[2].write("**ラベル**")
                             cols[3].write("**品名**")
                             cols[4].write("**利用者**")
                             cols[5].write("**使用部署**")
@@ -494,7 +497,6 @@ try:
                             cols[7].write(f"**{header_h}**")
 
                         else:
-                            # その他、PC、すべて
                             cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
@@ -504,17 +506,15 @@ try:
                             cols[5].write(f"**{header_g}**")
                             cols[6].write(f"**{header_h}**")
                         
-                        # --- リスト表示ループ ---
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
-                                
                                 if category == "訪問車":
                                     c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
                                     c[2].write(f"**{row['品名']}**")
-                                    c[3].write(f"{row.get('登録番号', '')}") # 登録番号
+                                    c[3].write(f"{row.get('登録番号', '')}")
                                     c[4].write(f"{row['利用者']}")
                                     c[5].write(f"{row.get('使用部署', '')}")
                                     
@@ -531,7 +531,7 @@ try:
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row.get('ラベル', '')}**") # ラベル
+                                    c[2].write(f"**{row.get('ラベル', '')}**")
                                     c[3].write(f"**{row['品名']}**")
                                     c[4].write(f"{row['利用者']}")
                                     c[5].write(f"{row.get('使用部署', '')}")
@@ -692,7 +692,7 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
+            custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "携帯電話":
                 c1, c2 = st.columns(2)
@@ -707,7 +707,7 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
+            custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
                 custom_values['備考'] = st.text_area("備考")
