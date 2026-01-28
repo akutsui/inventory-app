@@ -304,9 +304,32 @@ def show_detail_dialog(row_data):
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
 
-if st.sidebar.button("🔄 データを最新にする"):
-    get_all_data.clear()
-    st.rerun()
+# --- 【追加】サイドバー（更新ボタン & マニュアル） ---
+with st.sidebar:
+    if st.button("🔄 データを最新にする"):
+        get_all_data.clear()
+        st.rerun()
+    
+    st.markdown("---")
+    
+    with st.expander("❓ 操作マニュアル", expanded=False):
+        st.markdown("""
+        **1. 検索機能**
+        * 画面上部の枠に文字を入れて `Enter` を押すと検索できます。
+        * **バーコードリーダー対応:** 入力後、自動で文字が消えるので連続して読み取れます。
+        * 「検索解除」ボタンで全表示に戻ります。
+
+        **2. 期日アラート**
+        * 期限が **45日以内**（車）または **5年経過**（iPad）の場合、検索窓の下に赤字で警告が出ます。
+        * 「廃棄」済みのものは表示されません。
+
+        **3. 編集・更新**
+        * リスト左の「詳細」ボタンで編集画面が開きます。
+        * 内容を書き換えて「更新する」を押すと保存されます。
+
+        **4. 新規登録**
+        * 上部のタブを「📝 新規登録」に切り替えて入力してください。
+        """)
 
 try:
     df = get_all_data()
@@ -375,7 +398,6 @@ try:
         with col_search_input:
             st.text_input(
                 "フリーワード検索", 
-                # 【変更】プレースホルダーからバーコードの文言を削除
                 placeholder="キーワード入力 (Enterで検索＆クリア)", 
                 key="input_search_key",
                 label_visibility="collapsed",
@@ -631,3 +653,4 @@ try:
 
 except Exception as e:
     st.error(f"エラー: {e}")
+
