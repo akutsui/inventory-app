@@ -118,10 +118,14 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service
 client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
 
+# --- セッションステート初期化 ---
 if 'form_data' not in st.session_state:
     st.session_state['form_data'] = {}
 if 'page_number' not in st.session_state:
     st.session_state['page_number'] = 0
+# 【追加】検索状態を管理する変数
+if 'active_search_query' not in st.session_state:
+    st.session_state['active_search_query'] = ""
 
 # --- データ取得関数 ---
 @st.cache_data(ttl=600)
@@ -154,6 +158,18 @@ def parse_date(date_str):
         return datetime.strptime(date_str, '%Y-%m-%d')
     except:
         return None
+
+# --- 【追加】検索実行用コールバック関数 ---
+def submit_search():
+    # 入力された値を検索用ステートに移し、入力欄のステートは空にする
+    st.session_state.active_search_query = st.session_state.input_search_key
+    st.session_state.input_search_key = "" # 入力欄クリア
+    st.session_state.page_number = 0 # ページを先頭に戻す
+
+# --- 【追加】検索解除用コールバック関数 ---
+def clear_search():
+    st.session_state.active_search_query = ""
+    st.session_state.page_number = 0
 
 # --- ポップアップ詳細・編集画面 ---
 @st.dialog("📝 詳細情報の編集")
@@ -275,7 +291,6 @@ def show_detail_dialog(row_data):
                 for col_name in COLUMNS_DEF.get(cat, []):
                     row_to_save.append(custom_values.get(col_name, ''))
                 
-                # 【重要】IDを文字列にキャストして検索（エラー回避）
                 cell = worksheet.find(str(row_data['ID']))
                 if cell:
                     r = cell.row
@@ -312,7 +327,7 @@ try:
             today = datetime.now().date()
             
             for index, row in df.iterrows():
-                # ステータスが「廃棄」の場合はアラートを表示しない
+                # 廃棄はスキップ
                 if row.get('ステータス') == '廃棄':
                     continue
 
@@ -320,7 +335,6 @@ try:
                 name = row.get('品名', '名称不明')
                 uid = row.get('ID', '')
                 
-                # 1. 訪問車: 期限チェック (45日前)
                 if cat == "訪問車":
                     check_cols = ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]
                     for col in check_cols:
@@ -333,7 +347,6 @@ try:
                             elif diff <= 45:
                                 alert_html += f"<li><b>訪問車【{name} ({uid})】</b>: {col} まであと <b>{diff}日</b> です ({val})</li>"
                 
-                # 2. iPad: 購入から5年経過チェック
                 elif cat == "iPad":
                     val = row.get("購入日")
                     dt = parse_date(val)
@@ -359,25 +372,40 @@ try:
                     unsafe_allow_html=True
                 )
 
-        # 検索窓
-        search_query = st.text_input("フリーワード検索", placeholder="品名、ID、利用者名、備考など...", key="main_search", label_visibility="collapsed")
+        # --- 検索窓 (入力後、自動クリアする仕様) ---
+        col_search_input, col_clear_btn = st.columns([4, 1])
+        
+        with col_search_input:
+            # 入力があったらsubmit_searchを呼んでクリアする
+            st.text_input(
+                "フリーワード検索", 
+                placeholder="バーコード読み取り / キーワード入力 (Enterで検索＆クリア)", 
+                key="input_search_key",
+                label_visibility="collapsed",
+                on_change=submit_search
+            )
+        
+        # --- 現在の検索ワード表示 ---
+        current_query = st.session_state.active_search_query
+        
+        if current_query:
+            st.info(f"🔍 検索中のワード: **{current_query}**")
+            # 検索解除ボタン
+            with col_clear_btn:
+                if st.button("検索解除", key="clear_search_btn"):
+                    clear_search()
+                    st.rerun()
 
         # --- フィルタリング実行 ---
         filtered_df = df.copy() if not df.empty else pd.DataFrame()
 
         if not filtered_df.empty:
-            if search_query:
-                filtered_df = filtered_df[filtered_df.astype(str).apply(lambda row: row.str.contains(search_query, case=False).any(), axis=1)]
-                if 'last_search' not in st.session_state or st.session_state.last_search != search_query:
-                    st.session_state.page_number = 0
-                    st.session_state.last_search = search_query
+            if current_query:
+                filtered_df = filtered_df[filtered_df.astype(str).apply(lambda row: row.str.contains(current_query, case=False).any(), axis=1)]
             
             st.success(f"検索結果: {len(filtered_df)} 件")
         else:
             filtered_df = df
-            if 'last_search' in st.session_state and st.session_state.last_search != "":
-                 st.session_state.page_number = 0
-                 st.session_state.last_search = ""
 
         # 区切り線
         st.markdown('<hr style="margin: 5px 0; border: 0; border-top: 1px solid #eee;">', unsafe_allow_html=True)
@@ -417,7 +445,6 @@ try:
                         
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # 見出し行（固定）
                         cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                         cols[0].write("**編集**")
                         cols[1].write("**ID**")
@@ -427,7 +454,6 @@ try:
                         cols[5].write(f"**{header_g}**")
                         cols[6].write(f"**{header_h}**")
                         
-                        # スクロール領域
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
                                 c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
