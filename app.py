@@ -163,26 +163,18 @@ def get_all_data():
     
     return df
 
-# --- 【修正】日付パース関数（強化版） ---
-def parse_date(date_str):
-    if not date_str: return None
-    # 数字とスラッシュ/ハイフン以外が含まれている場合のクリーニングも考慮
-    date_str = str(date_str).strip()
-    
-    # 試行する日付フォーマットのリスト
-    formats = [
-        '%Y-%m-%d',       # 2025-01-01
-        '%Y/%m/%d',       # 2025/01/01
-        '%Y-%m-%d %H:%M:%S',
-        '%Y/%m/%d %H:%M:%S'
-    ]
-    
-    for fmt in formats:
-        try:
-            return datetime.strptime(date_str, fmt)
-        except ValueError:
-            continue
-    return None
+# --- 【修正】日付パース関数（Pandas使用で最強の柔軟性） ---
+def parse_date(date_val):
+    if not date_val:
+        return None
+    try:
+        # Pandasの強力な日付変換機能を使う（2025/1/1, 2025-01-01等すべて対応）
+        ts = pd.to_datetime(date_val, errors='coerce')
+        if pd.isna(ts):
+            return None
+        return ts.to_pydatetime()
+    except:
+        return None
 
 # --- 検索実行用コールバック関数 ---
 def submit_search():
@@ -200,6 +192,10 @@ def clear_search():
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
     
+    # 日付表示用のヘルパー
+    def get_date_val(key):
+        return parse_date(row_data.get(key))
+
     with st.form("edit_dialog_form"):
         st.write(f"**ID:** {row_data['ID']}")
         st.write(f"**カテゴリ:** {row_data['カテゴリ']}")
@@ -222,7 +218,7 @@ def show_detail_dialog(row_data):
         if cat == "PC":
             c1, c2 = st.columns(2)
             with c1:
-                d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
+                d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['OS'] = st.text_input("OS", value=row_data.get('OS'))
                 custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=row_data.get('プロダクトID(シリアルNo)'))
@@ -237,7 +233,7 @@ def show_detail_dialog(row_data):
             c3, c4, c5 = st.columns(3)
             with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo", value=row_data.get('ウィルスバスターシリアルNo'))
             with c4: 
-                d_vb = st.date_input("VB期限", value=parse_date(row_data.get('ウィルスバスター期限')))
+                d_vb = st.date_input("VB期限", value=get_date_val('ウィルスバスター期限'))
                 custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
             with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム", value=row_data.get('ウィルスバスター識別ネーム'))
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
@@ -253,22 +249,22 @@ def show_detail_dialog(row_data):
                 custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所", value=row_data.get('タイヤ保管場所'))
                 custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無", value=row_data.get('スタッドレス有無'))
             with c2:
-                d_lease_s = st.date_input("リース開始日", value=parse_date(row_data.get('リース開始日')))
+                d_lease_s = st.date_input("リース開始日", value=get_date_val('リース開始日'))
                 custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
-                d_lease_e = st.date_input("リース満了日", value=parse_date(row_data.get('リース満了日')))
+                d_lease_e = st.date_input("リース満了日", value=get_date_val('リース満了日'))
                 custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
-                d_syaken = st.date_input("車検満了日", value=parse_date(row_data.get('車検満了日')))
+                d_syaken = st.date_input("車検満了日", value=get_date_val('車検満了日'))
                 custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
-                d_park = st.date_input("駐禁除外指定満了日", value=parse_date(row_data.get('駐禁除外指定満了日')))
+                d_park = st.date_input("駐禁除外指定満了日", value=get_date_val('駐禁除外指定満了日'))
                 custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
-                d_road = st.date_input("通行禁止許可満了日", value=parse_date(row_data.get('通行禁止許可満了日')))
+                d_road = st.date_input("通行禁止許可満了日", value=get_date_val('通行禁止許可満了日'))
                 custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         elif cat == "iPad":
             c1, c2 = st.columns(2)
             with c1:
-                d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
+                d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル'))
                 custom_values['AppleID'] = st.text_input("AppleID", value=row_data.get('AppleID'))
@@ -284,7 +280,7 @@ def show_detail_dialog(row_data):
         elif cat == "携帯電話":
             c1, c2 = st.columns(2)
             with c1:
-                d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
+                d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号'))
                 custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM'))
@@ -300,7 +296,6 @@ def show_detail_dialog(row_data):
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         st.markdown("---")
-        
         if st.form_submit_button("✅ この内容で更新する"):
             try:
                 target_sheet_name = CATEGORY_MAP[cat]
@@ -372,7 +367,7 @@ try:
         
         if not df.empty:
             for index, row in df.iterrows():
-                # 【修正】ステータス「廃棄」の判定を厳密に（スペース除去）
+                # ステータス「廃棄」の判定（スペース除去）
                 status = str(row.get('ステータス', '')).strip()
                 if status == '廃棄':
                     continue
