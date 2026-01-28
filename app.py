@@ -93,7 +93,6 @@ COLUMNS_DEF = {
         "チームビューワID", "チームビューワPW", "備考"
     ],
     "訪問車": [
-        # 入力フォーム順序として登録番号を先頭に、使用部署を後ろに配置
         "登録番号", "洗車グループ", "駐車場", 
         "タイヤサイズ", "スタッドレス有無", "タイヤ保管場所", 
         "リース開始日", "リース満了日", "車検満了日", 
@@ -145,7 +144,6 @@ def get_all_data():
     
     df = pd.DataFrame(all_data)
     
-    # 並べ替え処理: 「廃棄」を一番下にする
     if not df.empty:
         df['sort_order'] = df['ステータス'].apply(lambda x: 1 if x == '廃棄' else 0)
         df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
@@ -162,7 +160,7 @@ def parse_date(date_str):
 # --- 検索実行用コールバック関数 ---
 def submit_search():
     st.session_state.active_search_query = st.session_state.input_search_key
-    st.session_state.input_search_key = "" # 入力欄クリア
+    st.session_state.input_search_key = "" 
     st.session_state.page_number = 0
 
 # --- 検索解除用コールバック関数 ---
@@ -461,37 +459,11 @@ try:
                         
                         st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                        # ==========================================
-                        # カテゴリごとの列構成定義
-                        # ==========================================
-                        
-                        # --- 1. 訪問車: 登録番号を品名の横へ ---
-                        if category == "訪問車":
-                            cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
-                            cols[0].write("**編集**")
-                            cols[1].write("**ID**")
-                            cols[2].write("**品名**")
-                            cols[3].write("**登録番号**") # ← ここに追加
-                            cols[4].write("**利用者**")
-                            cols[5].write("**使用部署**")
-                            cols[6].write("**ステータス**")
-                            cols[7].write("**洗車G**") # 詳細1(G列)相当
+                        # --- カテゴリに応じて列構成を変える ---
+                        is_dept_category = category in ["訪問車", "iPad", "携帯電話"]
 
-                        # --- 2. iPad: ラベルをIDの横へ ---
-                        elif category == "iPad":
-                            cols = st.columns([0.7, 1.2, 1.5, 1.8, 1.5, 1.5, 1.0, 1.5])
-                            cols[0].write("**編集**")
-                            cols[1].write("**ID**")
-                            cols[2].write("**ラベル**") # ← ここに追加
-                            cols[3].write("**品名**")
-                            cols[4].write("**利用者**")
-                            cols[5].write("**使用部署**")
-                            cols[6].write("**ステータス**")
-                            cols[7].write("**購入日**") # 詳細1(G列)相当
-
-                        # --- 3. 携帯電話: 使用部署あり ---
-                        elif category == "携帯電話":
-                            cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.0, 1.5, 1.5])
+                        if is_dept_category:
+                            cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.5, 1.2, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
@@ -500,8 +472,6 @@ try:
                             cols[5].write("**ステータス**")
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
-
-                        # --- 4. その他・PCなど ---
                         else:
                             cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                             cols[0].write("**編集**")
@@ -512,90 +482,46 @@ try:
                             cols[5].write(f"**{header_g}**")
                             cols[6].write(f"**{header_h}**")
                         
-                        # --- リスト表示ループ ---
                         with st.container(height=500, border=True):
                             for index, row in df_to_show.iterrows():
-                                
-                                # --- 1. 訪問車 ---
-                                if category == "訪問車":
-                                    c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
-                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
-                                        show_detail_dialog(row)
-                                    c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
-                                    c[3].write(f"{row.get('登録番号', '')}") # 登録番号
-                                    c[4].write(f"{row['利用者']}")
-                                    c[5].write(f"{row.get('使用部署', '')}")
-                                    
-                                    status = row['ステータス']
-                                    if status == "利用可能": c[6].info(status, icon="✅")
-                                    elif status == "貸出中": c[6].warning(status, icon="🏃")
-                                    elif status == "故障/修理中": c[6].error(status, icon="⚠️")
-                                    else: c[6].write(status)
-                                    
-                                    c[7].write(f"{row.get('洗車グループ', '')}") # 詳細
-
-                                # --- 2. iPad ---
-                                elif category == "iPad":
-                                    c = st.columns([0.7, 1.2, 1.5, 1.8, 1.5, 1.5, 1.0, 1.5])
-                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
-                                        show_detail_dialog(row)
-                                    c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row.get('ラベル', '')}**") # ラベル
-                                    c[3].write(f"**{row['品名']}**")
-                                    c[4].write(f"{row['利用者']}")
-                                    c[5].write(f"{row.get('使用部署', '')}")
-                                    
-                                    status = row['ステータス']
-                                    if status == "利用可能": c[6].info(status, icon="✅")
-                                    elif status == "貸出中": c[6].warning(status, icon="🏃")
-                                    elif status == "故障/修理中": c[6].error(status, icon="⚠️")
-                                    else: c[6].write(status)
-                                    
-                                    c[7].write(f"{row.get('購入日', '')}") # 詳細
-
-                                # --- 3. 携帯電話 ---
-                                elif category == "携帯電話":
-                                    c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.0, 1.5, 1.5])
-                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
-                                        show_detail_dialog(row)
-                                    c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
-                                    c[3].write(f"{row['利用者']}")
-                                    c[4].write(f"{row.get('使用部署', '')}")
-                                    
-                                    status = row['ステータス']
-                                    if status == "利用可能": c[5].info(status, icon="✅")
-                                    elif status == "貸出中": c[5].warning(status, icon="🏃")
-                                    elif status == "故障/修理中": c[5].error(status, icon="⚠️")
-                                    else: c[5].write(status)
-
-                                    curr_cols_def = COLUMNS_DEF.get(category, [])
-                                    val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
-                                    val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
-                                    c[6].write(f"{val_g}")
-                                    c[7].write(f"{val_h}")
-
-                                # --- 4. その他・PCなど ---
+                                if is_dept_category:
+                                    c = st.columns([0.7, 1.5, 2.0, 1.5, 1.5, 1.2, 1.5, 1.5])
                                 else:
                                     c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
-                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
-                                        show_detail_dialog(row)
-                                    c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
-                                    c[3].write(f"{row['利用者']}")
-                                    
-                                    status = row['ステータス']
-                                    if status == "利用可能": c[4].info(status, icon="✅")
-                                    elif status == "貸出中": c[4].warning(status, icon="🏃")
-                                    elif status == "故障/修理中": c[4].error(status, icon="⚠️")
-                                    else: c[4].write(status)
+                                
+                                if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                    show_detail_dialog(row)
+                                
+                                c[1].write(f"{row['ID']}")
+                                c[2].write(f"**{row['品名']}**")
+                                c[3].write(f"{row['利用者']}")
+                                
+                                if is_dept_category:
+                                    c[4].write(f"{row.get('使用部署', '')}")
+                                    status_col_idx = 5
+                                    g_col_idx = 6
+                                    h_col_idx = 7
+                                else:
+                                    status_col_idx = 4
+                                    g_col_idx = 5
+                                    h_col_idx = 6
 
-                                    curr_cols_def = COLUMNS_DEF.get(category, [])
-                                    val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
-                                    val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
-                                    c[5].write(f"{val_g}")
-                                    c[6].write(f"{val_h}")
+                                status = row['ステータス']
+                                if status == "利用可能":
+                                    c[status_col_idx].info(status, icon="✅")
+                                elif status == "貸出中":
+                                    c[status_col_idx].warning(status, icon="🏃")
+                                elif status == "故障/修理中":
+                                    c[status_col_idx].error(status, icon="⚠️")
+                                else:
+                                    c[status_col_idx].write(status)
+
+                                curr_cols_def = COLUMNS_DEF.get(row['カテゴリ'], [])
+                                val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
+                                val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
+                                
+                                c[g_col_idx].write(f"{val_g}")
+                                c[h_col_idx].write(f"{val_h}")
                                 
                                 st.markdown('<hr>', unsafe_allow_html=True)
 
@@ -704,7 +630,7 @@ try:
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "携帯電話":
                 c1, c2 = st.columns(2)
@@ -719,7 +645,7 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
-            custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
                 custom_values['備考'] = st.text_area("備考")
