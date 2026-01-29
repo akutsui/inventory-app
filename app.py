@@ -92,6 +92,11 @@ st.markdown("""
         div.alert-box {
             padding: 0.5rem 1rem !important;
         }
+        
+        /* トグルスイッチの位置調整 */
+        div[data-testid="stToggle"] {
+            margin-top: 5px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -383,12 +388,7 @@ try:
     # タブ1：一覧・検索
     # ==========================================
     with main_tab1:
-        # ヘッダーとトグルスイッチを横並びにする
-        c_head, c_toggle = st.columns([2, 1])
-        c_head.markdown("#### 在庫データの検索")
-        
-        # フィルタースイッチ
-        show_ipad_only = c_toggle.toggle("⚠️ iPad 5年経過のみ表示")
+        st.markdown("#### 在庫データの検索")
         
         # --- アラートデータの収集 ---
         alert_items = []
@@ -453,27 +453,34 @@ try:
 
         # --- アラートの表示 ---
         if alert_items:
-            # フィルターリング処理
-            display_alerts = alert_items
-            if show_ipad_only:
-                # iPadかつ「5年経過」という文字を含むメッセージがあるものだけ抽出
-                display_alerts = [
-                    item for item in alert_items 
-                    if "iPad" in item['title'] and any("5年" in m for m in item['messages'])
-                ]
-
-            if display_alerts:
-                # 外枠
+            # トグルとヘッダーを横並びに配置
+            c_header, c_toggle = st.columns([3, 1])
+            
+            with c_header:
+                # 外枠をHTMLスタイルで作成
                 st.markdown("""
                     <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
                         <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # 中身
+            with c_toggle:
+                # フィルタースイッチ
+                show_ipad_only = st.toggle("iPad 5年経過のみ表示")
+
+            # フィルター処理
+            display_alerts = alert_items
+            if show_ipad_only:
+                display_alerts = [
+                    item for item in alert_items 
+                    if "iPad" in item['title'] and any("5年" in m for m in item['messages'])
+                ]
+
+            if display_alerts:
                 for i, item in enumerate(display_alerts):
                     c1, c2 = st.columns([5, 1])
                     
+                    # 太字記号なしでスタイル適用
                     alert_str = f"{item['title']} : " + ", ".join(item['messages'])
                     c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
                     
@@ -482,9 +489,8 @@ try:
                     
                     if i < len(display_alerts) - 1:
                         st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
-            
             elif show_ipad_only:
-                st.info("現在、購入から5年経過したiPadはありません。")
+                st.info("該当するiPadはありません。")
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
