@@ -110,6 +110,7 @@ CATEGORY_MAP = {
     "訪問車": "訪問車",
     "iPad": "iPad",
     "携帯電話": "携帯電話",
+    "Office365": "Office365",
     "ウイルスバスター": "ウイルスバスター",
     "その他": "その他"
 }
@@ -137,7 +138,10 @@ COLUMNS_DEF = {
         "購入日", "電話番号", "SIM", "メーカー",
         "製造番号", "使用部署", "保管場所", "キャリア", "備考"
     ],
-    "ウイルスバスター": [ # 変更
+    "Office365": [ # 変更
+        "アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"
+    ],
+    "ウイルスバスター": [
         "シリアルNo", "利用者1", "利用者2", "利用者3", "期限", "識別ネーム", "備考"
     ],
     "その他": [
@@ -322,6 +326,23 @@ def show_detail_dialog(row_data):
                 custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
                 custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所'))
                 custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア'))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+
+        elif cat == "Office365": # 変更
+            c1, c2 = st.columns(2)
+            with c1: custom_values['アカウントID'] = st.text_input("アカウントID", value=row_data.get('アカウントID'))
+            with c2: custom_values['パスワード'] = st.text_input("パスワード", value=row_data.get('パスワード'))
+            
+            st.caption("共有利用者")
+            c_u1, c_u2, c_u3 = st.columns(3)
+            with c_u1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1'))
+            with c_u2: custom_values['利用者2'] = st.text_input("利用者2", value=row_data.get('利用者2'))
+            with c_u3: custom_values['利用者3'] = st.text_input("利用者3", value=row_data.get('利用者3'))
+            
+            c_u4, c_u5 = st.columns(2)
+            with c_u4: custom_values['利用者4'] = st.text_input("利用者4", value=row_data.get('利用者4'))
+            with c_u5: custom_values['利用者5'] = st.text_input("利用者5", value=row_data.get('利用者5'))
+            
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         elif cat == "ウイルスバスター":
@@ -615,7 +636,17 @@ try:
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
                         
-                        elif category == "ウイルスバスター": # 追加
+                        elif category == "Office365": # 追加
+                            cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                            cols[0].write("**編集**")
+                            cols[1].write("**ID**")
+                            cols[2].write("**品名**")
+                            cols[3].write("**利用者**")
+                            cols[4].write("**ステータス**")
+                            cols[5].write(f"**{header_g}**") # アカウントID
+                            cols[6].write(f"**{header_h}**") # 利用者1
+
+                        elif category == "ウイルスバスター": # 変更
                             cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
@@ -694,7 +725,24 @@ try:
                                     c[6].write(f"{val_g}")
                                     c[7].write(f"{val_h}")
                                 
-                                elif category == "ウイルスバスター": # 追加
+                                elif category == "Office365": # 追加
+                                    c = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                        show_detail_dialog(row)
+                                    c[1].write(f"{row['ID']}")
+                                    c[2].write(f"**{row['品名']}**")
+                                    c[3].write(f"{row['利用者']}")
+                                    
+                                    status = row['ステータス']
+                                    if status == "利用可能": c[4].info(status, icon="✅")
+                                    elif status == "貸出中": c[4].warning(status, icon="🏃")
+                                    elif status == "故障/修理中": c[4].error(status, icon="⚠️")
+                                    else: c[4].write(status)
+                                    
+                                    c[5].write(f"{row.get('アカウントID', '')}")
+                                    c[6].write(f"{row.get('利用者1', '')}")
+
+                                elif category == "ウイルスバスター": # 変更
                                     c = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
@@ -856,7 +904,24 @@ try:
                     custom_values['キャリア'] = st.text_input("キャリア")
                 custom_values['備考'] = st.text_area("備考")
 
-            elif selected_category_key == "ウイルスバスター":
+            elif selected_category_key == "Office365": # 追加
+                c1, c2 = st.columns(2)
+                with c1: custom_values['アカウントID'] = st.text_input("アカウントID")
+                with c2: custom_values['パスワード'] = st.text_input("パスワード")
+                
+                st.caption("共有利用者")
+                c_u1, c_u2, c_u3 = st.columns(3)
+                with c_u1: custom_values['利用者1'] = st.text_input("利用者1")
+                with c_u2: custom_values['利用者2'] = st.text_input("利用者2")
+                with c_u3: custom_values['利用者3'] = st.text_input("利用者3")
+                
+                c_u4, c_u5 = st.columns(2)
+                with c_u4: custom_values['利用者4'] = st.text_input("利用者4")
+                with c_u5: custom_values['利用者5'] = st.text_input("利用者5")
+                
+                custom_values['備考'] = st.text_area("備考")
+
+            elif selected_category_key == "ウイルスバスター": # 変更
                 st.caption("シリアル情報")
                 custom_values['シリアルNo'] = st.text_input("シリアルNo")
                 
