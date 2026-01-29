@@ -420,19 +420,18 @@ try:
         if alert_items:
             # 外枠をHTMLで作る（これで中のループが阻害されない）
             st.markdown("""
-                <div style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
+                <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
                     <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
                 </div>
             """, unsafe_allow_html=True)
             
-            # 各アラート行の表示（ループ内で安全に描画）
             for i, item in enumerate(alert_items):
                 # レイアウト用の列定義
                 c1, c2 = st.columns([5, 1])
                 
-                # テキスト表示 (赤色強調)
-                alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                c1.markdown(f"<div style='color: #8B0000;'>{alert_str}</div>", unsafe_allow_html=True)
+                # テキスト表示 (赤色強調 + 太字スタイル) ※ ** は削除済み
+                alert_str = f"{item['title']} : " + ", ".join(item['messages'])
+                c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
                 
                 # ボタン表示
                 if c2.button("詳細", key=f"alert_btn_{i}"):
