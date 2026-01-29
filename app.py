@@ -110,6 +110,7 @@ CATEGORY_MAP = {
     "訪問車": "訪問車",
     "iPad": "iPad",
     "携帯電話": "携帯電話",
+    "ウイルスバスター": "ウイルスバスター",
     "その他": "その他"
 }
 
@@ -135,6 +136,9 @@ COLUMNS_DEF = {
     "携帯電話": [
         "購入日", "電話番号", "SIM", "メーカー",
         "製造番号", "使用部署", "保管場所", "キャリア", "備考"
+    ],
+    "ウイルスバスター": [ # 変更
+        "シリアルNo", "利用者1", "利用者2", "利用者3", "期限", "識別ネーム", "備考"
     ],
     "その他": [
         "備考"
@@ -184,19 +188,16 @@ def parse_date(date_val):
     if date_val is None or date_val == "":
         return None
     
-    # 1. 数値（Excelシリアル値）の場合の対応
     if isinstance(date_val, (int, float)):
         try:
             return datetime(1899, 12, 30) + timedelta(days=date_val)
         except:
             pass
 
-    # 文字列変換
     date_str = str(date_val).strip()
     if not date_str:
         return None
 
-    # 2. 表記ゆれの統一
     date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/').replace('日', '')
     
     try:
@@ -233,7 +234,7 @@ def show_detail_dialog(row_data):
         col1, col2 = st.columns(2)
         with col1:
             new_name = st.text_input("品名", value=row_data['品名'])
-            new_user = st.text_input("利用者", value=row_data['利用者'])
+            new_user = st.text_input("利用者(代表)", value=row_data['利用者'])
         with col2:
             status_options = ["利用可能", "貸出中", "故障/修理中", "廃棄"]
             curr_status = row_data['ステータス']
@@ -321,6 +322,26 @@ def show_detail_dialog(row_data):
                 custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
                 custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所'))
                 custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア'))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+
+        elif cat == "ウイルスバスター":
+            st.caption("シリアル情報")
+            custom_values['シリアルNo'] = st.text_input("シリアルNo", value=row_data.get('シリアルNo'))
+            
+            st.caption("利用者情報")
+            c1, c2, c3 = st.columns(3)
+            with c1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1'))
+            with c2: custom_values['利用者2'] = st.text_input("利用者2", value=row_data.get('利用者2'))
+            with c3: custom_values['利用者3'] = st.text_input("利用者3", value=row_data.get('利用者3'))
+            
+            st.caption("期限・管理")
+            c4, c5 = st.columns(2)
+            with c4:
+                d_exp = st.date_input("期限", value=get_date_val('期限'))
+                custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
+            with c5:
+                custom_values['識別ネーム'] = st.text_input("識別ネーム", value=row_data.get('識別ネーム'))
+            
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         elif cat == "その他":
@@ -458,7 +479,6 @@ try:
 
         # --- アラートの表示 ---
         if alert_items:
-            # 1行に[赤ヘッダー(2), 車トグル(1), iPadトグル(1)]を配置
             c_head, c_tog1, c_tog2 = st.columns([2, 1, 1])
             
             with c_head:
@@ -474,7 +494,6 @@ try:
             with c_tog2:
                 show_ipad = st.toggle("📱 iPad", value=True)
 
-            # トグルに基づいたフィルター処理
             display_alerts = []
             for item in alert_items:
                 if "訪問車" in item['title'] and show_car:
@@ -483,27 +502,19 @@ try:
                     display_alerts.append(item)
 
             if display_alerts:
-                # フィルター後のアラートを表示
                 for i, item in enumerate(display_alerts):
                     c1, c2 = st.columns([5, 1])
-                    
-                    # テキスト表示
                     alert_str = f"{item['title']} : " + ", ".join(item['messages'])
                     c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
-                    
-                    # ボタン表示
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
-                    
                     if i < len(display_alerts) - 1:
                         st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
-            
             elif (not show_car and not show_ipad):
                 st.info("すべての表示がOFFになっています。")
             else:
                 st.info("該当するアラートはありません。")
                 
-            # アラート枠の下に少し余白
             st.write("") 
 
         # --- 検索窓 ---
@@ -603,6 +614,16 @@ try:
                             cols[5].write("**ステータス**")
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
+                        
+                        elif category == "ウイルスバスター": # 追加
+                            cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                            cols[0].write("**編集**")
+                            cols[1].write("**ID**")
+                            cols[2].write("**品名**")
+                            cols[3].write("**利用者(代表)**")
+                            cols[4].write("**ステータス**")
+                            cols[5].write(f"**{header_g}**") # シリアルNo
+                            cols[6].write(f"**{header_h}**") # 利用者1
 
                         else:
                             cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -672,6 +693,23 @@ try:
                                     val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
                                     c[6].write(f"{val_g}")
                                     c[7].write(f"{val_h}")
+                                
+                                elif category == "ウイルスバスター": # 追加
+                                    c = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                                    if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                        show_detail_dialog(row)
+                                    c[1].write(f"{row['ID']}")
+                                    c[2].write(f"**{row['品名']}**")
+                                    c[3].write(f"{row['利用者']}")
+                                    
+                                    status = row['ステータス']
+                                    if status == "利用可能": c[4].info(status, icon="✅")
+                                    elif status == "貸出中": c[4].warning(status, icon="🏃")
+                                    elif status == "故障/修理中": c[4].error(status, icon="⚠️")
+                                    else: c[4].write(status)
+                                    
+                                    c[5].write(f"{row.get('シリアルNo', '')}")
+                                    c[6].write(f"{row.get('利用者1', '')}")
 
                                 else:
                                     c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -731,7 +769,7 @@ try:
                 input_id = st.text_input("ID (資産番号)")
                 input_name = st.text_input("品名 (管理上の名称)")
             with col_basic2:
-                input_user = st.text_input("利用者")
+                input_user = st.text_input("利用者(代表)")
                 input_status = st.selectbox("ステータス", ["利用可能", "貸出中", "故障/修理中", "廃棄"])
 
             st.markdown("---")
@@ -816,6 +854,25 @@ try:
                     custom_values['使用部署'] = st.text_input("使用部署")
                     custom_values['保管場所'] = st.text_input("保管場所")
                     custom_values['キャリア'] = st.text_input("キャリア")
+                custom_values['備考'] = st.text_area("備考")
+
+            elif selected_category_key == "ウイルスバスター":
+                st.caption("シリアル情報")
+                custom_values['シリアルNo'] = st.text_input("シリアルNo")
+                
+                st.caption("利用者情報")
+                c1, c2, c3 = st.columns(3)
+                with c1: custom_values['利用者1'] = st.text_input("利用者1")
+                with c2: custom_values['利用者2'] = st.text_input("利用者2")
+                with c3: custom_values['利用者3'] = st.text_input("利用者3")
+                
+                st.caption("期限・管理")
+                c4, c5 = st.columns(2)
+                with c4:
+                    d_exp = st.date_input("期限", value=None)
+                    custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
+                with c5:
+                    custom_values['識別ネーム'] = st.text_input("識別ネーム")
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
