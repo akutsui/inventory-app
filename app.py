@@ -7,16 +7,13 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整) ---
+# --- CSS (UI調整: 標準的で見やすい設定) ---
 st.markdown("""
     <style>
-        /* === 1. メインエリアの上部余白 === */
         .block-container {
             padding-top: 4rem !important;
             padding-bottom: 5rem;
         }
-
-        /* === 2. タイトル(h1)の固定 === */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky !important;
             top: 2.875rem !important;
@@ -27,14 +24,11 @@ st.markdown("""
             border-bottom: 2px solid #f0f2f6;
             margin-bottom: 0 !important;
         }
-        
         h1 {
             margin: 0 !important;
             padding: 0 !important;
             font-size: 1.8rem !important;
         }
-
-        /* === 3. タブバーの固定 === */
         div[data-baseweb="tab-list"],
         div[role="tablist"],
         div[data-testid="stTabs"] > div:first-child {
@@ -46,12 +40,9 @@ st.markdown("""
             padding-bottom: 0.5rem !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
         div[data-testid="stTabs"] button {
             background-color: white !important;
         }
-
-        /* === 4. 細かいデザイン調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -70,11 +61,6 @@ st.markdown("""
             margin: 0.2rem 0 !important;
         }
         div[data-testid="stVerticalBlockBorderWrapper"] {
-            padding: 0.5rem;
-        }
-        
-        /* アラートエリアのスタイル調整 */
-        div[data-testid="stAlert"] {
             padding: 0.5rem;
         }
     </style>
@@ -138,7 +124,8 @@ def get_all_data():
     for cat_name, sheet_name in CATEGORY_MAP.items():
         try:
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
-            records = worksheet.get_all_records()
+            # 【重要】日付が勝手に変換されないよう文字列として取得する設定を追加
+            records = worksheet.get_all_records(value_render_option='FORMATTED_VALUE')
             for record in records:
                 record['カテゴリ'] = cat_name
             all_data.extend(records)
@@ -155,12 +142,30 @@ def get_all_data():
     
     return df
 
-def parse_date(date_str):
-    if not date_str: return None
-    try:
-        return datetime.strptime(date_str, '%Y-%m-%d')
-    except:
+# --- 【修正版】日付パース関数（ハイフンもスラッシュもOK） ---
+def parse_date(date_val):
+    if not date_val:
         return None
+    
+    date_str = str(date_val).strip()
+    if not date_str:
+        return None
+
+    # ここが重要！複数のパターンを試して日付として読み取る
+    formats = [
+        '%Y-%m-%d',       # 2025-01-01
+        '%Y/%m/%d',       # 2025/01/01
+        '%Y-%m-%d %H:%M:%S',
+        '%Y/%m/%d %H:%M:%S'
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+            
+    return None
 
 # --- 検索実行用コールバック関数 ---
 def submit_search():
@@ -178,6 +183,9 @@ def clear_search():
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
     
+    def get_date_val(key):
+        return parse_date(row_data.get(key))
+
     with st.form("edit_dialog_form"):
         st.write(f"**ID:** {row_data['ID']}")
         st.write(f"**カテゴリ:** {row_data['カテゴリ']}")
@@ -200,7 +208,7 @@ def show_detail_dialog(row_data):
         if cat == "PC":
             c1, c2 = st.columns(2)
             with c1:
-                d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
+                d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['OS'] = st.text_input("OS", value=row_data.get('OS'))
                 custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=row_data.get('プロダクトID(シリアルNo)'))
@@ -215,7 +223,7 @@ def show_detail_dialog(row_data):
             c3, c4, c5 = st.columns(3)
             with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo", value=row_data.get('ウィルスバスターシリアルNo'))
             with c4: 
-                d_vb = st.date_input("VB期限", value=parse_date(row_data.get('ウィルスバスター期限')))
+                d_vb = st.date_input("VB期限", value=get_date_val('ウィルスバスター期限'))
                 custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
             with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム", value=row_data.get('ウィルスバスター識別ネーム'))
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
@@ -231,22 +239,22 @@ def show_detail_dialog(row_data):
                 custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所", value=row_data.get('タイヤ保管場所'))
                 custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無", value=row_data.get('スタッドレス有無'))
             with c2:
-                d_lease_s = st.date_input("リース開始日", value=parse_date(row_data.get('リース開始日')))
+                d_lease_s = st.date_input("リース開始日", value=get_date_val('リース開始日'))
                 custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
-                d_lease_e = st.date_input("リース満了日", value=parse_date(row_data.get('リース満了日')))
+                d_lease_e = st.date_input("リース満了日", value=get_date_val('リース満了日'))
                 custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
-                d_syaken = st.date_input("車検満了日", value=parse_date(row_data.get('車検満了日')))
+                d_syaken = st.date_input("車検満了日", value=get_date_val('車検満了日'))
                 custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
-                d_park = st.date_input("駐禁除外指定満了日", value=parse_date(row_data.get('駐禁除外指定満了日')))
+                d_park = st.date_input("駐禁除外指定満了日", value=get_date_val('駐禁除外指定満了日'))
                 custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
-                d_road = st.date_input("通行禁止許可満了日", value=parse_date(row_data.get('通行禁止許可満了日')))
+                d_road = st.date_input("通行禁止許可満了日", value=get_date_val('通行禁止許可満了日'))
                 custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         elif cat == "iPad":
             c1, c2 = st.columns(2)
             with c1:
-                d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
+                d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル'))
                 custom_values['AppleID'] = st.text_input("AppleID", value=row_data.get('AppleID'))
@@ -262,7 +270,7 @@ def show_detail_dialog(row_data):
         elif cat == "携帯電話":
             c1, c2 = st.columns(2)
             with c1:
-                d_buy = st.date_input("購入日", value=parse_date(row_data.get('購入日')))
+                d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号'))
                 custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM'))
@@ -278,7 +286,6 @@ def show_detail_dialog(row_data):
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         st.markdown("---")
-        
         if st.form_submit_button("✅ この内容で更新する"):
             try:
                 target_sheet_name = CATEGORY_MAP[cat]
@@ -350,17 +357,18 @@ try:
         
         if not df.empty:
             for index, row in df.iterrows():
-                if row.get('ステータス') == '廃棄':
+                # ステータス「廃棄」の判定
+                status = str(row.get('ステータス', '')).strip()
+                if status == '廃棄':
                     continue
 
                 cat = row.get('カテゴリ')
                 name = row.get('品名', '名称不明')
                 
-                # アラート条件チェック
                 msg_list = []
                 
                 if cat == "訪問車":
-                    reg_num = row.get('登録番号', '')
+                    reg_num = str(row.get('登録番号', ''))
                     display_text = f"{name} {reg_num}".strip()
                     
                     check_cols = ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]
@@ -370,9 +378,9 @@ try:
                         if dt:
                             diff = (dt.date() - today).days
                             if diff < 0:
-                                msg_list.append(f"{col} を過ぎています ({val})")
+                                msg_list.append(f"{col} 超過 ({dt.strftime('%Y-%m-%d')})")
                             elif diff <= 45:
-                                msg_list.append(f"{col} まであと {diff}日 ({val})")
+                                msg_list.append(f"{col} あと{diff}日 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -382,7 +390,7 @@ try:
                         })
                 
                 elif cat == "iPad":
-                    label = row.get('ラベル', '')
+                    label = str(row.get('ラベル', ''))
                     display_text = f"{label} {name}".strip()
                     
                     val = row.get("購入日")
@@ -394,7 +402,7 @@ try:
                             target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
                         
                         if today >= target_date:
-                            msg_list.append(f"購入から5年が経過しました ({val})")
+                            msg_list.append(f"購入から5年経過 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -403,21 +411,21 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (Native Streamlit Components) ---
+        # --- アラートの表示 (標準的な表示: st.error) ---
         if alert_items:
-            with st.container(border=True):
-                st.markdown("##### ⚠️ 期日アラート")
+            with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
                 for i, item in enumerate(alert_items):
                     c1, c2 = st.columns([5, 1])
                     
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f":red[{alert_str}]")
+                    c1.markdown(f"{alert_str}")
                     
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
+                    # 最後の要素以外に区切り線を入れる
                     if i < len(alert_items) - 1:
-                        st.markdown('<hr style="margin: 5px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
+                        st.markdown('<hr style="margin: 0.5rem 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
