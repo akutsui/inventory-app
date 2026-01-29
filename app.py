@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整: ご提示いただいたコードをベースに調整) ---
+# --- CSS (UI調整: 行間を狭くする設定を追加) ---
 st.markdown("""
     <style>
         /* メインエリアの上部余白 */
@@ -51,26 +51,38 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* ボタン調整 */
+        /* --- ここから行間短縮のための設定 --- */
+        
+        /* ボタンを少し小さく */
         .stButton button {
-            height: 2.0rem;
-            padding-top: 0;
-            padding-bottom: 0;
-            margin-top: 0px;
-            font-size: 0.9rem;
+            height: 1.8rem !important;
+            min-height: 1.8rem !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            margin-top: 0px !important;
+            font-size: 0.85rem !important;
         }
+        
+        /* テキストの余白を詰める */
+        p {
+            margin-bottom: 0px !important;
+            font-size: 0.95rem;
+            line-height: 1.8rem; /* ボタンの高さに合わせる */
+        }
+        
+        /* 区切り線(hr)の余白を極小に */
+        hr {
+            margin: 0.3rem 0 !important;
+        }
+        
+        /* 列(カラム)の隙間調整 */
         div[data-testid="column"] {
             padding-bottom: 0px;
         }
-        p {
-            margin-bottom: 0.1rem;
-            font-size: 0.95rem;
-        }
-        hr {
-            margin: 0.2rem 0 !important;
-        }
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            padding: 0.5rem;
+        
+        /* アラート外枠のパディング調整 */
+        div.alert-box {
+            padding: 0.5rem 1rem !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -150,11 +162,10 @@ def get_all_data():
     
     return df
 
-# --- 日付パース関数 (ご提示のコードと同一) ---
+# --- 日付パース関数 (変更なし) ---
 def parse_date(date_str):
     if not date_str: return None
     try:
-        # ご提示いただいた「動作するコード」と同じロジックを使用
         return datetime.strptime(str(date_str).strip(), '%Y-%m-%d')
     except:
         return None
@@ -350,7 +361,8 @@ try:
         if not df.empty:
             for index, row in df.iterrows():
                 # ステータス「廃棄」の判定
-                if row.get('ステータス') == '廃棄':
+                status = str(row.get('ステータス', '')).strip()
+                if status == '廃棄':
                     continue
 
                 cat = row.get('カテゴリ')
@@ -369,9 +381,9 @@ try:
                         if dt:
                             diff = (dt.date() - today).days
                             if diff < 0:
-                                msg_list.append(f"{col} 超過 ({val})")
+                                msg_list.append(f"{col} 超過 ({dt.strftime('%Y-%m-%d')})")
                             elif diff <= 45:
-                                msg_list.append(f"{col} あと{diff}日 ({val})")
+                                msg_list.append(f"{col} あと{diff}日 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -393,7 +405,7 @@ try:
                             target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
                         
                         if today >= target_date:
-                            msg_list.append(f"購入から5年経過 ({val})")
+                            msg_list.append(f"購入から5年経過 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -402,30 +414,35 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (安全策: コンテナで囲まず、スタイル付きで表示) ---
+        # --- アラートの表示 (安全な方法) ---
         if alert_items:
-            # 外枠をHTMLスタイルで作成（st.errorコンテナだとループ中の部品表示が不安定になるのを防ぐため）
+            # コンテナではなくHTMLで外枠を作ることでループ表示を安定させる
             st.markdown("""
-                <div style='background-color: #ffcccc; padding: 10px; border-radius: 5px; border: 1px solid #ff9999; margin-bottom: 20px;'>
-                    <h5 style='margin: 0; color: #cc0000;'>⚠️ 期日アラート (詳細はボタンをクリック)</h5>
+                <div class="alert-box" style="background-color: #ffcccc; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
+                    <h5 style="margin: 0; padding: 0.5rem 0.5rem 0 0.5rem; color: #8B0000;">⚠️ 期日アラート</h5>
                 </div>
             """, unsafe_allow_html=True)
             
-            # 各アラート項目を表示（背景はStreamlit標準のままで、安全にループさせる）
+            # 枠の下に各行を表示する（背景色は白になるが、最も崩れにくい）
+            # もし背景も赤くしたい場合はCSSで .stColumn を調整する必要があるが、崩れの原因になるため
+            # 今回は「ヘッダーを赤く」して「各行を狭く表示」する方法をとります。
+            
             for i, item in enumerate(alert_items):
-                c1, c2 = st.columns([5, 1])
-                
-                # 警告メッセージ
-                alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                c1.markdown(f":red[{alert_str}]")
-                
-                # 詳細ボタン
-                if c2.button("詳細", key=f"alert_btn_{i}"):
-                    show_detail_dialog(item['row'])
-                
-                # 区切り線
-                if i < len(alert_items) - 1:
-                    st.markdown('<hr style="margin: 0.5rem 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
+                # 視認性を高めるため、各行に薄い背景色をつけるコンテナを用意
+                with st.container():
+                    c1, c2 = st.columns([5, 1])
+                    
+                    # メッセージ作成
+                    alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
+                    c1.markdown(f"<div style='color: #8B0000; font-size: 0.95rem; padding-top: 2px;'>{alert_str}</div>", unsafe_allow_html=True)
+                    
+                    # ボタン
+                    if c2.button("詳細", key=f"alert_btn_{i}"):
+                        show_detail_dialog(item['row'])
+                    
+                    # 区切り線
+                    if i < len(alert_items) - 1:
+                        st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -739,7 +756,7 @@ try:
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
