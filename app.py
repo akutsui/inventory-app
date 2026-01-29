@@ -7,13 +7,16 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整) ---
+# --- CSS (UI調整: ご提示いただいたコードをベースに調整) ---
 st.markdown("""
     <style>
+        /* メインエリアの上部余白 */
         .block-container {
             padding-top: 4rem !important;
             padding-bottom: 5rem;
         }
+
+        /* タイトルの固定 */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky !important;
             top: 2.875rem !important;
@@ -24,11 +27,14 @@ st.markdown("""
             border-bottom: 2px solid #f0f2f6;
             margin-bottom: 0 !important;
         }
+        
         h1 {
             margin: 0 !important;
             padding: 0 !important;
             font-size: 1.8rem !important;
         }
+
+        /* タブバーの固定 */
         div[data-baseweb="tab-list"],
         div[role="tablist"],
         div[data-testid="stTabs"] > div:first-child {
@@ -40,9 +46,12 @@ st.markdown("""
             padding-bottom: 0.5rem !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
         div[data-testid="stTabs"] button {
             background-color: white !important;
         }
+
+        /* ボタン調整 */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -61,9 +70,6 @@ st.markdown("""
             margin: 0.2rem 0 !important;
         }
         div[data-testid="stVerticalBlockBorderWrapper"] {
-            padding: 0.5rem;
-        }
-        div[data-testid="stAlert"] {
             padding: 0.5rem;
         }
     </style>
@@ -127,7 +133,6 @@ def get_all_data():
     for cat_name, sheet_name in CATEGORY_MAP.items():
         try:
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
-            # 【重要】お客様のコードと同じく、デフォルトの設定で取得します
             records = worksheet.get_all_records()
             for record in records:
                 record['カテゴリ'] = cat_name
@@ -145,11 +150,12 @@ def get_all_data():
     
     return df
 
-# --- 【重要】お客様のコードと同じ日付変換処理に戻しました ---
+# --- 日付パース関数 (ご提示のコードと同一) ---
 def parse_date(date_str):
     if not date_str: return None
     try:
-        return datetime.strptime(date_str, '%Y-%m-%d')
+        # ご提示いただいた「動作するコード」と同じロジックを使用
+        return datetime.strptime(str(date_str).strip(), '%Y-%m-%d')
     except:
         return None
 
@@ -337,13 +343,13 @@ try:
     with main_tab1:
         st.markdown("#### 在庫データの検索")
         
-        # --- アラートデータの収集 (ボタン表示用) ---
+        # --- アラートデータの収集 ---
         alert_items = []
         today = datetime.now().date()
         
         if not df.empty:
             for index, row in df.iterrows():
-                # ステータス「廃棄」はスキップ
+                # ステータス「廃棄」の判定
                 if row.get('ステータス') == '廃棄':
                     continue
 
@@ -396,20 +402,30 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (詳細ボタン付き) ---
+        # --- アラートの表示 (安全策: コンテナで囲まず、スタイル付きで表示) ---
         if alert_items:
-            with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
-                for i, item in enumerate(alert_items):
-                    c1, c2 = st.columns([5, 1])
-                    
-                    alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f"{alert_str}")
-                    
-                    if c2.button("詳細", key=f"alert_btn_{i}"):
-                        show_detail_dialog(item['row'])
-                    
-                    if i < len(alert_items) - 1:
-                        st.markdown('<hr style="margin: 0.5rem 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
+            # 外枠をHTMLスタイルで作成（st.errorコンテナだとループ中の部品表示が不安定になるのを防ぐため）
+            st.markdown("""
+                <div style='background-color: #ffcccc; padding: 10px; border-radius: 5px; border: 1px solid #ff9999; margin-bottom: 20px;'>
+                    <h5 style='margin: 0; color: #cc0000;'>⚠️ 期日アラート (詳細はボタンをクリック)</h5>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # 各アラート項目を表示（背景はStreamlit標準のままで、安全にループさせる）
+            for i, item in enumerate(alert_items):
+                c1, c2 = st.columns([5, 1])
+                
+                # 警告メッセージ
+                alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
+                c1.markdown(f":red[{alert_str}]")
+                
+                # 詳細ボタン
+                if c2.button("詳細", key=f"alert_btn_{i}"):
+                    show_detail_dialog(item['row'])
+                
+                # 区切り線
+                if i < len(alert_items) - 1:
+                    st.markdown('<hr style="margin: 0.5rem 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -698,11 +714,9 @@ try:
                     custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                     custom_values['ラベル'] = st.text_input("ラベル")
                     custom_values['AppleID'] = st.text_input("AppleID")
-                    custom_values['型番'] = st.text_input("型番")
                     custom_values['シリアルNo'] = st.text_input("シリアルNo")
-                    custom_values['モデル'] = st.text_input("モデル")
-                with c2:
                     custom_values['ストレージ'] = st.text_input("ストレージ")
+                with c2:
                     custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI")
                     custom_values['端末番号'] = st.text_input("端末番号")
                     custom_values['使用部署'] = st.text_input("使用部署")
