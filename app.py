@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime, timedelta
-import time
+from datetime import datetime
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
@@ -93,9 +92,13 @@ st.markdown("""
             padding: 0.5rem 1rem !important;
         }
         
-        /* トグルスイッチの位置調整 */
+        /* トグルスイッチの微調整 */
         div[data-testid="stToggle"] {
-            margin-top: 5px;
+            margin-top: 0px;
+            padding-top: 5px;
+        }
+        div[data-testid="stToggle"] label {
+            font-size: 0.9rem !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -175,31 +178,11 @@ def get_all_data():
     
     return df
 
-# --- 【最強版】日付パース関数 ---
-def parse_date(date_val):
-    if date_val is None or date_val == "":
-        return None
-    
-    # 1. 数値（Excelシリアル値）の場合の対応
-    if isinstance(date_val, (int, float)):
-        try:
-            return datetime(1899, 12, 30) + timedelta(days=date_val)
-        except:
-            pass
-
-    # 文字列変換
-    date_str = str(date_val).strip()
-    if not date_str:
-        return None
-
-    # 2. 表記ゆれの統一
-    date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/').replace('日', '')
-    
+# --- 日付パース関数 ---
+def parse_date(date_str):
+    if not date_str: return None
     try:
-        ts = pd.to_datetime(date_str, errors='coerce')
-        if pd.isna(ts):
-            return None
-        return ts.to_pydatetime()
+        return datetime.strptime(str(date_str).strip(), '%Y-%m-%d')
     except:
         return None
 
@@ -366,7 +349,7 @@ with st.sidebar:
         **2. 期日アラート**
         * 期限が **45日以内**（車）または **5年経過**（iPad）の場合、検索窓の下に赤字で警告が出ます。
         * アラート右側の **「詳細」ボタン** を押すと、その場で編集・確認ができます。
-        * 「iPad 5年経過のみ表示」スイッチを入れると、該当するiPadのアラートだけを抽出して表示します。
+        * 赤枠内のトグルスイッチで「訪問車」と「iPad」の表示を切り替えられます。
 
         **3. 編集・更新**
         * リスト左の「詳細」ボタンで編集画面が開きます。
@@ -453,44 +436,53 @@ try:
 
         # --- アラートの表示 ---
         if alert_items:
-            # トグルとヘッダーを横並びに配置
-            c_header, c_toggle = st.columns([3, 1])
+            # 1行に[赤ヘッダー(2), 車トグル(1), iPadトグル(1)]を配置
+            c_head, c_tog1, c_tog2 = st.columns([2, 1, 1])
             
-            with c_header:
-                # 外枠をHTMLスタイルで作成
+            with c_head:
                 st.markdown("""
-                    <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
+                    <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b;">
                         <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
                     </div>
                 """, unsafe_allow_html=True)
+            
+            with c_tog1:
+                show_car = st.toggle("🚙 訪問車", value=True)
                 
-            with c_toggle:
-                # フィルタースイッチ
-                show_ipad_only = st.toggle("iPad 5年経過のみ表示")
+            with c_tog2:
+                show_ipad = st.toggle("📱 iPad", value=True)
 
-            # フィルター処理
-            display_alerts = alert_items
-            if show_ipad_only:
-                display_alerts = [
-                    item for item in alert_items 
-                    if "iPad" in item['title'] and any("5年" in m for m in item['messages'])
-                ]
+            # トグルに基づいたフィルター処理
+            display_alerts = []
+            for item in alert_items:
+                if "訪問車" in item['title'] and show_car:
+                    display_alerts.append(item)
+                elif "iPad" in item['title'] and show_ipad:
+                    display_alerts.append(item)
 
             if display_alerts:
+                # フィルター後のアラートを表示
                 for i, item in enumerate(display_alerts):
                     c1, c2 = st.columns([5, 1])
                     
-                    # 太字記号なしでスタイル適用
+                    # テキスト表示
                     alert_str = f"{item['title']} : " + ", ".join(item['messages'])
                     c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
                     
+                    # ボタン表示
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
                     if i < len(display_alerts) - 1:
                         st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
-            elif show_ipad_only:
-                st.info("該当するiPadはありません。")
+            
+            elif (not show_car and not show_ipad):
+                st.info("すべての表示がOFFになっています。")
+            else:
+                st.info("該当するアラートはありません。")
+                
+            # アラート枠の下に少し余白
+            st.write("") 
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
