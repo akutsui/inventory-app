@@ -7,16 +7,13 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整) ---
+# --- CSS (標準的な設定) ---
 st.markdown("""
     <style>
-        /* === 1. メインエリアの上部余白 === */
         .block-container {
             padding-top: 4rem !important;
             padding-bottom: 5rem;
         }
-
-        /* === 2. タイトル(h1)の固定 === */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky !important;
             top: 2.875rem !important;
@@ -27,14 +24,11 @@ st.markdown("""
             border-bottom: 2px solid #f0f2f6;
             margin-bottom: 0 !important;
         }
-        
         h1 {
             margin: 0 !important;
             padding: 0 !important;
             font-size: 1.8rem !important;
         }
-
-        /* === 3. タブバーの固定 === */
         div[data-baseweb="tab-list"],
         div[role="tablist"],
         div[data-testid="stTabs"] > div:first-child {
@@ -46,12 +40,9 @@ st.markdown("""
             padding-bottom: 0.5rem !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
         div[data-testid="stTabs"] button {
             background-color: white !important;
         }
-
-        /* === 4. 細かいデザイン調整 === */
         .stButton button {
             height: 2.0rem;
             padding-top: 0;
@@ -150,16 +141,12 @@ def get_all_data():
     
     return df
 
-# --- 日付パース関数（強化版） ---
-def parse_date(date_val):
-    if not date_val:
-        return None
+# --- 【復元】シンプルかつ実績のある日付パース関数 ---
+def parse_date(date_str):
+    if not date_str: return None
     try:
-        # Pandasの機能を使ってあらゆる形式の日付を読み取る
-        ts = pd.to_datetime(date_val, errors='coerce')
-        if pd.isna(ts):
-            return None
-        return ts.to_pydatetime()
+        # シンプルにハイフン区切りのみを処理
+        return datetime.strptime(str(date_str).strip(), '%Y-%m-%d')
     except:
         return None
 
@@ -179,7 +166,6 @@ def clear_search():
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
     
-    # 日付表示用ヘルパー
     def get_date_val(key):
         return parse_date(row_data.get(key))
 
@@ -365,7 +351,7 @@ try:
                 msg_list = []
                 
                 if cat == "訪問車":
-                    reg_num = row.get('登録番号', '')
+                    reg_num = str(row.get('登録番号', ''))
                     display_text = f"{name} {reg_num}".strip()
                     
                     check_cols = ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]
@@ -375,9 +361,9 @@ try:
                         if dt:
                             diff = (dt.date() - today).days
                             if diff < 0:
-                                msg_list.append(f"{col} 超過 ({val})")
+                                msg_list.append(f"{col} 超過 ({dt.strftime('%Y-%m-%d')})")
                             elif diff <= 45:
-                                msg_list.append(f"{col} あと{diff}日 ({val})")
+                                msg_list.append(f"{col} あと{diff}日 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -387,7 +373,7 @@ try:
                         })
                 
                 elif cat == "iPad":
-                    label = row.get('ラベル', '')
+                    label = str(row.get('ラベル', ''))
                     display_text = f"{label} {name}".strip()
                     
                     val = row.get("購入日")
@@ -399,7 +385,7 @@ try:
                             target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
                         
                         if today >= target_date:
-                            msg_list.append(f"購入から5年経過 ({val})")
+                            msg_list.append(f"購入から5年経過 ({dt.strftime('%Y-%m-%d')})")
                     
                     if msg_list:
                         alert_items.append({
@@ -408,23 +394,21 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (Native Streamlit Components: 元の仕様に戻す) ---
+        # --- アラートの表示 ---
         if alert_items:
-            with st.container(border=True):
-                st.markdown("##### ⚠️ 期日アラート")
+            with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
                 for i, item in enumerate(alert_items):
                     c1, c2 = st.columns([5, 1])
                     
-                    # 警告テキスト (赤字)
                     alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f":red[{alert_str}]")
+                    c1.markdown(f"{alert_str}")
                     
-                    # 詳細ボタン
                     if c2.button("詳細", key=f"alert_btn_{i}"):
                         show_detail_dialog(item['row'])
                     
+                    # 最後の要素以外に区切り線を入れる
                     if i < len(alert_items) - 1:
-                        st.markdown('<hr style="margin: 5px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
+                        st.markdown('<hr style="margin: 0.5rem 0; border-top: 1px dashed #ffcccc;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -738,7 +722,7 @@ try:
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
