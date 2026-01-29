@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整: 行間を狭くする設定を追加) ---
+# --- CSS (UI調整: 極限までコンパクト化) ---
 st.markdown("""
     <style>
         /* メインエリアの上部余白 */
@@ -51,38 +51,40 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* --- ここから行間短縮のための設定 --- */
+        /* === 以下、行間短縮のための強力な設定 === */
         
-        /* ボタンを少し小さく */
+        /* 1. ボタンをさらに小さく薄く */
         .stButton button {
-            height: 1.8rem !important;
-            min-height: 1.8rem !important;
+            height: 1.6rem !important;      /* 高さ短縮 */
+            min-height: 1.6rem !important;
             padding-top: 0 !important;
             padding-bottom: 0 !important;
-            margin-top: 0px !important;
-            font-size: 0.85rem !important;
+            margin-top: 2px !important;     /* テキストとの位置合わせ */
+            font-size: 0.8rem !important;   /* 文字サイズ微小化 */
         }
         
-        /* テキストの余白を詰める */
+        /* 2. テキストの行間・余白を削除 */
         p {
             margin-bottom: 0px !important;
-            font-size: 0.95rem;
-            line-height: 1.8rem; /* ボタンの高さに合わせる */
+            padding-bottom: 0px !important;
+            font-size: 0.9rem !important;
+            line-height: 1.7rem !important; /* ボタン高さに合わせる */
         }
         
-        /* 区切り線(hr)の余白を極小に */
+        /* 3. 区切り線(hr)の余白をほぼゼロに */
         hr {
-            margin: 0.3rem 0 !important;
+            margin: 2px 0 !important;
+            padding: 0 !important;
         }
         
-        /* 列(カラム)の隙間調整 */
+        /* 4. 列(カラム)内の余白削除 */
         div[data-testid="column"] {
-            padding-bottom: 0px;
+            padding: 0px !important;
         }
         
-        /* アラート外枠のパディング調整 */
-        div.alert-box {
-            padding: 0.5rem 1rem !important;
+        /* 5. 要素間の垂直ギャップを詰める */
+        div.stMarkdown {
+            margin-bottom: 0px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -162,7 +164,7 @@ def get_all_data():
     
     return df
 
-# --- 日付パース関数 (変更なし) ---
+# --- 日付パース関数 ---
 def parse_date(date_str):
     if not date_str: return None
     try:
@@ -414,35 +416,31 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (安全な方法) ---
+        # --- アラートの表示 (安全策: コンテナを使わずHTMLで枠を作る) ---
         if alert_items:
-            # コンテナではなくHTMLで外枠を作ることでループ表示を安定させる
+            # 外枠をHTMLで作る（これで中のループが阻害されない）
             st.markdown("""
-                <div class="alert-box" style="background-color: #ffcccc; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
-                    <h5 style="margin: 0; padding: 0.5rem 0.5rem 0 0.5rem; color: #8B0000;">⚠️ 期日アラート</h5>
+                <div style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
+                    <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
                 </div>
             """, unsafe_allow_html=True)
             
-            # 枠の下に各行を表示する（背景色は白になるが、最も崩れにくい）
-            # もし背景も赤くしたい場合はCSSで .stColumn を調整する必要があるが、崩れの原因になるため
-            # 今回は「ヘッダーを赤く」して「各行を狭く表示」する方法をとります。
-            
+            # 各アラート行の表示（ループ内で安全に描画）
             for i, item in enumerate(alert_items):
-                # 視認性を高めるため、各行に薄い背景色をつけるコンテナを用意
-                with st.container():
-                    c1, c2 = st.columns([5, 1])
-                    
-                    # メッセージ作成
-                    alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
-                    c1.markdown(f"<div style='color: #8B0000; font-size: 0.95rem; padding-top: 2px;'>{alert_str}</div>", unsafe_allow_html=True)
-                    
-                    # ボタン
-                    if c2.button("詳細", key=f"alert_btn_{i}"):
-                        show_detail_dialog(item['row'])
-                    
-                    # 区切り線
-                    if i < len(alert_items) - 1:
-                        st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
+                # レイアウト用の列定義
+                c1, c2 = st.columns([5, 1])
+                
+                # テキスト表示 (赤色強調)
+                alert_str = f"**{item['title']}** : " + ", ".join(item['messages'])
+                c1.markdown(f"<div style='color: #8B0000;'>{alert_str}</div>", unsafe_allow_html=True)
+                
+                # ボタン表示
+                if c2.button("詳細", key=f"alert_btn_{i}"):
+                    show_detail_dialog(item['row'])
+                
+                # 区切り線 (最後の要素以外)
+                if i < len(alert_items) - 1:
+                    st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -756,7 +754,7 @@ try:
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+                custom_values['備考'] = st.text_area("備考")
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
