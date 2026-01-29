@@ -7,7 +7,7 @@ from datetime import datetime
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整: 標準的で見やすい設定) ---
+# --- CSS (標準的な設定) ---
 st.markdown("""
     <style>
         .block-container {
@@ -124,8 +124,7 @@ def get_all_data():
     for cat_name, sheet_name in CATEGORY_MAP.items():
         try:
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
-            # 【重要】日付が勝手に変換されないよう文字列として取得する設定を追加
-            records = worksheet.get_all_records(value_render_option='FORMATTED_VALUE')
+            records = worksheet.get_all_records()
             for record in records:
                 record['カテゴリ'] = cat_name
             all_data.extend(records)
@@ -142,30 +141,14 @@ def get_all_data():
     
     return df
 
-# --- 【修正版】日付パース関数（ハイフンもスラッシュもOK） ---
-def parse_date(date_val):
-    if not date_val:
+# --- 【復元】シンプルかつ実績のある日付パース関数 ---
+def parse_date(date_str):
+    if not date_str: return None
+    try:
+        # シンプルにハイフン区切りのみを処理
+        return datetime.strptime(str(date_str).strip(), '%Y-%m-%d')
+    except:
         return None
-    
-    date_str = str(date_val).strip()
-    if not date_str:
-        return None
-
-    # ここが重要！複数のパターンを試して日付として読み取る
-    formats = [
-        '%Y-%m-%d',       # 2025-01-01
-        '%Y/%m/%d',       # 2025/01/01
-        '%Y-%m-%d %H:%M:%S',
-        '%Y/%m/%d %H:%M:%S'
-    ]
-    
-    for fmt in formats:
-        try:
-            return datetime.strptime(date_str, fmt)
-        except ValueError:
-            continue
-            
-    return None
 
 # --- 検索実行用コールバック関数 ---
 def submit_search():
@@ -411,7 +394,7 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (標準的な表示: st.error) ---
+        # --- アラートの表示 ---
         if alert_items:
             with st.error("⚠️ 期日アラート (詳細はボタンをクリック)"):
                 for i, item in enumerate(alert_items):
@@ -739,7 +722,7 @@ try:
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考")
+                custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
             st.markdown("---")
             if st.form_submit_button("新規登録"):
