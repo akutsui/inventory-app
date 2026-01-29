@@ -3,6 +3,7 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+import time
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
@@ -51,40 +52,45 @@ st.markdown("""
             background-color: white !important;
         }
 
-        /* === 以下、行間短縮のための強力な設定 === */
+        /* === 行間短縮のための設定 === */
         
-        /* 1. ボタンをさらに小さく薄く */
+        /* ボタンを小さく薄く */
         .stButton button {
-            height: 1.6rem !important;      /* 高さ短縮 */
+            height: 1.6rem !important;
             min-height: 1.6rem !important;
             padding-top: 0 !important;
             padding-bottom: 0 !important;
-            margin-top: 2px !important;     /* テキストとの位置合わせ */
-            font-size: 0.8rem !important;   /* 文字サイズ微小化 */
+            margin-top: 2px !important;
+            font-size: 0.8rem !important;
         }
         
-        /* 2. テキストの行間・余白を削除 */
+        /* テキストの行間・余白を削除 */
         p {
             margin-bottom: 0px !important;
             padding-bottom: 0px !important;
             font-size: 0.9rem !important;
-            line-height: 1.7rem !important; /* ボタン高さに合わせる */
+            line-height: 1.7rem !important;
         }
         
-        /* 3. 区切り線(hr)の余白をほぼゼロに */
+        /* 区切り線(hr)の余白を極小に */
         hr {
             margin: 2px 0 !important;
             padding: 0 !important;
         }
         
-        /* 4. 列(カラム)内の余白削除 */
+        /* 列(カラム)内の余白削除 */
         div[data-testid="column"] {
             padding: 0px !important;
         }
         
-        /* 5. 要素間の垂直ギャップを詰める */
+        /* 要素間の垂直ギャップを詰める */
         div.stMarkdown {
             margin-bottom: 0px !important;
+        }
+        
+        /* アラート外枠のパディング調整 */
+        div.alert-box {
+            padding: 0.5rem 1rem !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -147,7 +153,7 @@ def get_all_data():
     for cat_name, sheet_name in CATEGORY_MAP.items():
         try:
             worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
-            records = worksheet.get_all_records()
+            records = worksheet.get_all_records(value_render_option='FORMATTED_VALUE')
             for record in records:
                 record['カテゴリ'] = cat_name
             all_data.extend(records)
@@ -343,12 +349,15 @@ with st.sidebar:
 
         **4. 新規登録**
         * 上部のタブを「📝 新規登録」に切り替えて入力してください。
+        
+        **5. CSV一括入出力**
+        * データをCSVでダウンロードしてExcel等で編集し、一括で更新・登録ができます。
         """)
 
 try:
     df = get_all_data()
 
-    main_tab1, main_tab2 = st.tabs(["🔍 一覧・検索", "📝 新規登録"])
+    main_tab1, main_tab2, main_tab3 = st.tabs(["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"])
 
     # ==========================================
     # タブ1：一覧・検索
@@ -362,7 +371,6 @@ try:
         
         if not df.empty:
             for index, row in df.iterrows():
-                # ステータス「廃棄」の判定
                 status = str(row.get('ステータス', '')).strip()
                 if status == '廃棄':
                     continue
@@ -418,7 +426,6 @@ try:
 
         # --- アラートの表示 (安全策: コンテナを使わずHTMLで枠を作る) ---
         if alert_items:
-            # 外枠をHTMLで作る（これで中のループが阻害されない）
             st.markdown("""
                 <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
                     <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
@@ -426,18 +433,15 @@ try:
             """, unsafe_allow_html=True)
             
             for i, item in enumerate(alert_items):
-                # レイアウト用の列定義
                 c1, c2 = st.columns([5, 1])
                 
-                # テキスト表示 (赤色強調 + 太字スタイル) ※ ** は削除済み
+                # 太字記号なしでスタイル適用
                 alert_str = f"{item['title']} : " + ", ".join(item['messages'])
                 c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
                 
-                # ボタン表示
                 if c2.button("詳細", key=f"alert_btn_{i}"):
                     show_detail_dialog(item['row'])
                 
-                # 区切り線 (最後の要素以外)
                 if i < len(alert_items) - 1:
                     st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
 
@@ -776,6 +780,107 @@ try:
                             st.rerun()
                     except Exception as e:
                         st.error(f"書き込みエラー: {e}")
+
+    # ==========================================
+    # タブ3：CSV一括入出力
+    # ==========================================
+    with main_tab3:
+        st.header("📂 CSVによる一括登録・編集")
+        st.caption("既存データの編集や、大量の新規データをまとめて登録するのに便利です。")
+
+        # --- エクスポート ---
+        st.subheader("1. データのエクスポート (ダウンロード)")
+        st.caption("現在登録されているデータをCSVファイルとしてダウンロードします。")
+        
+        export_cat = st.selectbox("カテゴリを選択", list(CATEGORY_MAP.keys()), key="export_cat")
+        if st.button("CSVをダウンロード作成"):
+            try:
+                target_sheet_name = CATEGORY_MAP[export_cat]
+                worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
+                # 全データを取得してDataFrame化
+                records = worksheet.get_all_records()
+                export_df = pd.DataFrame(records)
+                
+                # CSV変換
+                csv = export_df.to_csv(index=False).encode('utf-8_sig')
+                
+                st.download_button(
+                    label="📥 CSVをダウンロード",
+                    data=csv,
+                    file_name=f"{export_cat}_inventory_{datetime.now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv",
+                )
+            except Exception as e:
+                st.error(f"エクスポートエラー: {e}")
+
+        st.markdown("---")
+
+        # --- インポート ---
+        st.subheader("2. データのインポート (アップロード)")
+        st.caption("編集したCSVファイルをアップロードしてください。**IDが一致するものは「更新」、新しいIDは「新規登録」**されます。")
+        
+        import_cat = st.selectbox("カテゴリを選択 (インポート先)", list(CATEGORY_MAP.keys()), key="import_cat")
+        uploaded_file = st.file_uploader("CSVファイルをドラッグ＆ドロップ", type=["csv"])
+        
+        if uploaded_file is not None:
+            try:
+                # CSV読み込み
+                import_df = pd.read_csv(uploaded_file)
+                st.write("プレビュー:", import_df.head())
+                
+                if st.button("🚀 この内容で一括更新を実行"):
+                    target_sheet_name = CATEGORY_MAP[import_cat]
+                    worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
+                    
+                    # 現在の全データを取得してIDリストを作成 (行番号の特定用)
+                    current_records = worksheet.get_all_records()
+                    # IDをキー、行番号(2行目~)を値とする辞書を作成
+                    id_map = {str(record['ID']): i + 2 for i, record in enumerate(current_records)}
+                    
+                    # プログレスバー
+                    progress_bar = st.progress(0)
+                    total_rows = len(import_df)
+                    
+                    for i, row in import_df.iterrows():
+                        row_id = str(row['ID'])
+                        current_time = datetime.now().strftime('%Y-%m-%d')
+                        
+                        # 保存するデータの並び順を作成 (基本列 + カテゴリ固有列)
+                        # 基本列: ID, カテゴリ, 品名, 利用者, ステータス, 更新日
+                        row_data = [
+                            row_id,
+                            import_cat,
+                            row.get('品名', ''),
+                            row.get('利用者', ''),
+                            row.get('ステータス', '利用可能'),
+                            current_time
+                        ]
+                        
+                        # カテゴリ固有列
+                        for col_name in COLUMNS_DEF.get(import_cat, []):
+                            row_data.append(row.get(col_name, ''))
+                        
+                        # 更新 or 追加
+                        if row_id in id_map:
+                            # 既存IDならその行を更新
+                            row_num = id_map[row_id]
+                            # rangeを使って一括更新 (A列から最後まで)
+                            worksheet.update(f"A{row_num}", [row_data])
+                        else:
+                            # 新規IDなら末尾に追加
+                            worksheet.append_row(row_data)
+                        
+                        # 進捗更新
+                        progress_bar.progress((i + 1) / total_rows)
+                        time.sleep(0.1) # API制限考慮
+                    
+                    st.success("一括処理が完了しました！")
+                    get_all_data.clear() # キャッシュクリア
+                    time.sleep(1)
+                    st.rerun()
+                    
+            except Exception as e:
+                st.error(f"インポートエラー: {e}")
 
 except Exception as e:
     st.error(f"エラー: {e}")
