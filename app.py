@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
 # --- ページ設定 ---
@@ -170,11 +170,31 @@ def get_all_data():
     
     return df
 
-# --- 日付パース関数 ---
-def parse_date(date_str):
-    if not date_str: return None
+# --- 【最強版】日付パース関数 ---
+def parse_date(date_val):
+    if date_val is None or date_val == "":
+        return None
+    
+    # 1. 数値（Excelシリアル値）の場合の対応
+    if isinstance(date_val, (int, float)):
+        try:
+            return datetime(1899, 12, 30) + timedelta(days=date_val)
+        except:
+            pass
+
+    # 文字列変換
+    date_str = str(date_val).strip()
+    if not date_str:
+        return None
+
+    # 2. 表記ゆれの統一
+    date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/').replace('日', '')
+    
     try:
-        return datetime.strptime(str(date_str).strip(), '%Y-%m-%d')
+        ts = pd.to_datetime(date_str, errors='coerce')
+        if pd.isna(ts):
+            return None
+        return ts.to_pydatetime()
     except:
         return None
 
@@ -341,7 +361,7 @@ with st.sidebar:
         **2. 期日アラート**
         * 期限が **45日以内**（車）または **5年経過**（iPad）の場合、検索窓の下に赤字で警告が出ます。
         * アラート右側の **「詳細」ボタン** を押すと、その場で編集・確認ができます。
-        * 「廃棄」済みのものは表示されません。
+        * 「iPad 5年経過のみ表示」スイッチを入れると、該当するiPadのアラートだけを抽出して表示します。
 
         **3. 編集・更新**
         * リスト左の「詳細」ボタンで編集画面が開きます。
@@ -363,7 +383,12 @@ try:
     # タブ1：一覧・検索
     # ==========================================
     with main_tab1:
-        st.markdown("#### 在庫データの検索")
+        # ヘッダーとトグルスイッチを横並びにする
+        c_head, c_toggle = st.columns([2, 1])
+        c_head.markdown("#### 在庫データの検索")
+        
+        # フィルタースイッチ
+        show_ipad_only = c_toggle.toggle("⚠️ iPad 5年経過のみ表示")
         
         # --- アラートデータの収集 ---
         alert_items = []
@@ -380,6 +405,7 @@ try:
                 
                 msg_list = []
                 
+                # --- 訪問車アラート ---
                 if cat == "訪問車":
                     reg_num = str(row.get('登録番号', ''))
                     display_text = f"{name} {reg_num}".strip()
@@ -402,6 +428,7 @@ try:
                             "messages": msg_list
                         })
                 
+                # --- iPadアラート ---
                 elif cat == "iPad":
                     label = str(row.get('ラベル', ''))
                     display_text = f"{label} {name}".strip()
@@ -424,26 +451,40 @@ try:
                             "messages": msg_list
                         })
 
-        # --- アラートの表示 (安全策: コンテナを使わずHTMLで枠を作る) ---
+        # --- アラートの表示 ---
         if alert_items:
-            st.markdown("""
-                <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
-                    <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
-                </div>
-            """, unsafe_allow_html=True)
+            # フィルターリング処理
+            display_alerts = alert_items
+            if show_ipad_only:
+                # iPadかつ「5年経過」という文字を含むメッセージがあるものだけ抽出
+                display_alerts = [
+                    item for item in alert_items 
+                    if "iPad" in item['title'] and any("5年" in m for m in item['messages'])
+                ]
+
+            if display_alerts:
+                # 外枠
+                st.markdown("""
+                    <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b; margin-bottom: 1rem;">
+                        <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # 中身
+                for i, item in enumerate(display_alerts):
+                    c1, c2 = st.columns([5, 1])
+                    
+                    alert_str = f"{item['title']} : " + ", ".join(item['messages'])
+                    c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
+                    
+                    if c2.button("詳細", key=f"alert_btn_{i}"):
+                        show_detail_dialog(item['row'])
+                    
+                    if i < len(display_alerts) - 1:
+                        st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
             
-            for i, item in enumerate(alert_items):
-                c1, c2 = st.columns([5, 1])
-                
-                # 太字記号なしでスタイル適用
-                alert_str = f"{item['title']} : " + ", ".join(item['messages'])
-                c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
-                
-                if c2.button("詳細", key=f"alert_btn_{i}"):
-                    show_detail_dialog(item['row'])
-                
-                if i < len(alert_items) - 1:
-                    st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
+            elif show_ipad_only:
+                st.info("現在、購入から5年経過したiPadはありません。")
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -651,135 +692,6 @@ try:
                                 if st.button("次の50件 ➡️", key=f"next_{category}"):
                                     st.session_state.page_number += 1
                                     st.rerun()
-
-    # ==========================================
-    # タブ2：新規登録
-    # ==========================================
-    with main_tab2:
-        st.header("新規データの登録")
-        st.caption("※既存データの編集は、一覧タブの「詳細」ボタンから行ってください。")
-        
-        st.subheader("① カテゴリとIDを指定")
-        selected_category_key = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True, key="new_reg_cat")
-        target_sheet_name = CATEGORY_MAP[selected_category_key]
-
-        st.subheader("② 詳細情報の入力")
-        with st.form("new_entry_form"):
-            col_basic1, col_basic2 = st.columns(2)
-            with col_basic1:
-                input_id = st.text_input("ID (資産番号)")
-                input_name = st.text_input("品名 (管理上の名称)")
-            with col_basic2:
-                input_user = st.text_input("利用者")
-                input_status = st.selectbox("ステータス", ["利用可能", "貸出中", "故障/修理中", "廃棄"])
-
-            st.markdown("---")
-            st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
-            
-            custom_values = {}
-
-            if selected_category_key == "PC":
-                c1, c2 = st.columns(2)
-                with c1:
-                    d_buy = st.date_input("購入日", value=None)
-                    custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                    custom_values['OS'] = st.text_input("OS")
-                    custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)")
-                    custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振")
-                with c2:
-                    custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮")
-                    custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼")
-                    custom_values['ORCA益子'] = st.text_input("ORCA益子")
-                    custom_values['チームビューワID'] = st.text_input("チームビューワID")
-                    custom_values['チームビューワPW'] = st.text_input("チームビューワPW")
-                
-                st.caption("ウィルスバスター情報")
-                c3, c4, c5 = st.columns(3)
-                with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo")
-                with c4: 
-                    d_vb = st.date_input("VB期限", value=None)
-                    custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
-                with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム")
-                custom_values['備考'] = st.text_area("備考")
-
-            elif selected_category_key == "訪問車":
-                c1, c2 = st.columns(2)
-                with c1:
-                    custom_values['登録番号'] = st.text_input("登録番号")
-                    custom_values['使用部署'] = st.text_input("使用部署")
-                    custom_values['洗車グループ'] = st.text_input("洗車グループ")
-                    custom_values['駐車場'] = st.text_input("駐車場")
-                    custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ")
-                    custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所")
-                    custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無")
-                with c2:
-                    d_lease_s = st.date_input("リース開始日", value=None)
-                    custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
-                    d_lease_e = st.date_input("リース満了日", value=None)
-                    custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
-                    d_syaken = st.date_input("車検満了日", value=None)
-                    custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
-                    d_park = st.date_input("駐禁除外指定満了日", value=None)
-                    custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
-                    d_road = st.date_input("通行禁止許可満了日", value=None)
-                    custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
-                custom_values['備考'] = st.text_area("備考")
-
-            elif selected_category_key == "iPad":
-                c1, c2 = st.columns(2)
-                with c1:
-                    d_buy = st.date_input("購入日", value=None)
-                    custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                    custom_values['ラベル'] = st.text_input("ラベル")
-                    custom_values['AppleID'] = st.text_input("AppleID")
-                    custom_values['シリアルNo'] = st.text_input("シリアルNo")
-                    custom_values['ストレージ'] = st.text_input("ストレージ")
-                with c2:
-                    custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI")
-                    custom_values['端末番号'] = st.text_input("端末番号")
-                    custom_values['使用部署'] = st.text_input("使用部署")
-                    custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
-
-            elif selected_category_key == "携帯電話":
-                c1, c2 = st.columns(2)
-                with c1:
-                    d_buy = st.date_input("購入日", value=None)
-                    custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                    custom_values['電話番号'] = st.text_input("電話番号")
-                    custom_values['SIM'] = st.text_input("SIM")
-                    custom_values['メーカー'] = st.text_input("メーカー")
-                with c2:
-                    custom_values['製造番号'] = st.text_input("製造番号")
-                    custom_values['使用部署'] = st.text_input("使用部署")
-                    custom_values['保管場所'] = st.text_input("保管場所")
-                    custom_values['キャリア'] = st.text_input("キャリア")
-                custom_values['備考'] = st.text_area("備考")
-
-            elif selected_category_key == "その他":
-                custom_values['備考'] = st.text_area("備考")
-
-            st.markdown("---")
-            if st.form_submit_button("新規登録"):
-                if not input_id or not input_name:
-                    st.error("IDと品名は必須です！")
-                else:
-                    try:
-                        worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
-                        current_time = datetime.now().strftime('%Y-%m-%d')
-                        row_to_save = [input_id, selected_category_key, input_name, input_user, input_status, current_time]
-                        for col_name in COLUMNS_DEF.get(selected_category_key, []):
-                            row_to_save.append(custom_values.get(col_name, ''))
-                        
-                        if worksheet.find(input_id):
-                            st.error(f"エラー: ID '{input_id}' は既に登録されています。")
-                        else:
-                            worksheet.append_row(row_to_save)
-                            st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
-                            get_all_data.clear()
-                            st.rerun()
-                    except Exception as e:
-                        st.error(f"書き込みエラー: {e}")
 
     # ==========================================
     # タブ3：CSV一括入出力
