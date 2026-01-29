@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
@@ -92,7 +93,7 @@ st.markdown("""
             padding: 0.5rem 1rem !important;
         }
         
-        /* トグルスイッチの微調整 */
+        /* トグルスイッチの位置調整 */
         div[data-testid="stToggle"] {
             margin-top: 0px;
             padding-top: 5px;
@@ -115,7 +116,7 @@ CATEGORY_MAP = {
 # --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
     "PC": [
-        "購入日", "OS", "プロダクトID(シリアルNo)", 
+        "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", # ← ここにラベルを追加
         "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", 
         "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム",
         "チームビューワID", "チームビューワPW", "備考"
@@ -178,11 +179,31 @@ def get_all_data():
     
     return df
 
-# --- 日付パース関数 ---
-def parse_date(date_str):
-    if not date_str: return None
+# --- 【最強版】日付パース関数 ---
+def parse_date(date_val):
+    if date_val is None or date_val == "":
+        return None
+    
+    # 1. 数値（Excelシリアル値）の場合の対応
+    if isinstance(date_val, (int, float)):
+        try:
+            return datetime(1899, 12, 30) + timedelta(days=date_val)
+        except:
+            pass
+
+    # 文字列変換
+    date_str = str(date_val).strip()
+    if not date_str:
+        return None
+
+    # 2. 表記ゆれの統一
+    date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/').replace('日', '')
+    
     try:
-        return datetime.strptime(str(date_str).strip(), '%Y-%m-%d')
+        ts = pd.to_datetime(date_str, errors='coerce')
+        if pd.isna(ts):
+            return None
+        return ts.to_pydatetime()
     except:
         return None
 
@@ -231,6 +252,7 @@ def show_detail_dialog(row_data):
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['OS'] = st.text_input("OS", value=row_data.get('OS'))
                 custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=row_data.get('プロダクトID(シリアルNo)'))
+                custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル')) # 追加
                 custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振", value=row_data.get('officeのアカウント割振'))
             with c2:
                 custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮", value=row_data.get('ORCA宇都宮'))
