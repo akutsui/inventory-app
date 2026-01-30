@@ -138,11 +138,11 @@ COLUMNS_DEF = {
         "購入日", "電話番号", "SIM", "メーカー",
         "製造番号", "使用部署", "保管場所", "キャリア", "備考"
     ],
-    "Office365": [ # 変更
+    "Office365": [
         "アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"
     ],
-    "ウイルスバスター": [
-        "シリアルNo", "利用者1", "利用者2", "利用者3", "期限", "識別ネーム", "備考"
+    "ウイルスバスター": [ # 変更: シリアルNoと識別ネームを削除
+        "利用者1", "利用者2", "利用者3", "期限", "備考"
     ],
     "その他": [
         "備考"
@@ -328,7 +328,7 @@ def show_detail_dialog(row_data):
                 custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア'))
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
-        elif cat == "Office365": # 変更
+        elif cat == "Office365":
             c1, c2 = st.columns(2)
             with c1: custom_values['アカウントID'] = st.text_input("アカウントID", value=row_data.get('アカウントID'))
             with c2: custom_values['パスワード'] = st.text_input("パスワード", value=row_data.get('パスワード'))
@@ -345,23 +345,16 @@ def show_detail_dialog(row_data):
             
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
-        elif cat == "ウイルスバスター":
-            st.caption("シリアル情報")
-            custom_values['シリアルNo'] = st.text_input("シリアルNo", value=row_data.get('シリアルNo'))
-            
+        elif cat == "ウイルスバスター": # 変更
             st.caption("利用者情報")
             c1, c2, c3 = st.columns(3)
             with c1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1'))
             with c2: custom_values['利用者2'] = st.text_input("利用者2", value=row_data.get('利用者2'))
             with c3: custom_values['利用者3'] = st.text_input("利用者3", value=row_data.get('利用者3'))
             
-            st.caption("期限・管理")
-            c4, c5 = st.columns(2)
-            with c4:
-                d_exp = st.date_input("期限", value=get_date_val('期限'))
-                custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
-            with c5:
-                custom_values['識別ネーム'] = st.text_input("識別ネーム", value=row_data.get('識別ネーム'))
+            st.caption("期限")
+            d_exp = st.date_input("期限", value=get_date_val('期限'))
+            custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
             
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
@@ -636,7 +629,7 @@ try:
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
                         
-                        elif category == "Office365": # 追加
+                        elif category == "Office365": 
                             cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
@@ -653,7 +646,7 @@ try:
                             cols[2].write("**品名**")
                             cols[3].write("**利用者(代表)**")
                             cols[4].write("**ステータス**")
-                            cols[5].write(f"**{header_g}**") # シリアルNo
+                            cols[5].write(f"**{header_g}**") # 期限
                             cols[6].write(f"**{header_h}**") # 利用者1
 
                         else:
@@ -725,7 +718,7 @@ try:
                                     c[6].write(f"{val_g}")
                                     c[7].write(f"{val_h}")
                                 
-                                elif category == "Office365": # 追加
+                                elif category == "Office365":
                                     c = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
@@ -756,7 +749,7 @@ try:
                                     elif status == "故障/修理中": c[4].error(status, icon="⚠️")
                                     else: c[4].write(status)
                                     
-                                    c[5].write(f"{row.get('シリアルNo', '')}")
+                                    c[5].write(f"{row.get('期限', '')}")
                                     c[6].write(f"{row.get('利用者1', '')}")
 
                                 else:
@@ -922,22 +915,16 @@ try:
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "ウイルスバスター": # 変更
-                st.caption("シリアル情報")
-                custom_values['シリアルNo'] = st.text_input("シリアルNo")
-                
                 st.caption("利用者情報")
                 c1, c2, c3 = st.columns(3)
                 with c1: custom_values['利用者1'] = st.text_input("利用者1")
                 with c2: custom_values['利用者2'] = st.text_input("利用者2")
                 with c3: custom_values['利用者3'] = st.text_input("利用者3")
                 
-                st.caption("期限・管理")
-                c4, c5 = st.columns(2)
-                with c4:
-                    d_exp = st.date_input("期限", value=None)
-                    custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
-                with c5:
-                    custom_values['識別ネーム'] = st.text_input("識別ネーム")
+                st.caption("期限")
+                d_exp = st.date_input("期限", value=None)
+                custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
+                
                 custom_values['備考'] = st.text_area("備考")
 
             elif selected_category_key == "その他":
