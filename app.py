@@ -141,7 +141,7 @@ COLUMNS_DEF = {
     "Office365": [
         "アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"
     ],
-    "ウイルスバスター": [ # 変更: シリアルNoと識別ネームを削除
+    "ウイルスバスター": [
         "利用者1", "利用者2", "利用者3", "期限", "備考"
     ],
     "その他": [
@@ -345,7 +345,7 @@ def show_detail_dialog(row_data):
             
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
-        elif cat == "ウイルスバスター": # 変更
+        elif cat == "ウイルスバスター":
             st.caption("利用者情報")
             c1, c2, c3 = st.columns(3)
             with c1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1'))
@@ -629,15 +629,15 @@ try:
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
                         
-                        elif category == "Office365": 
+                        elif category == "Office365": # 追加
                             cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
                             cols[3].write("**利用者**")
                             cols[4].write("**ステータス**")
-                            cols[5].write(f"**{header_g}**") # アカウントID
-                            cols[6].write(f"**{header_h}**") # 利用者1
+                            cols[5].write("**アカウントID**") # 固定
+                            cols[6].write("**利用者1**") # 固定
 
                         elif category == "ウイルスバスター": # 変更
                             cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
@@ -646,8 +646,8 @@ try:
                             cols[2].write("**品名**")
                             cols[3].write("**利用者(代表)**")
                             cols[4].write("**ステータス**")
-                            cols[5].write(f"**{header_g}**") # 期限
-                            cols[6].write(f"**{header_h}**") # 利用者1
+                            cols[5].write("**期限**") # 固定
+                            cols[6].write("**利用者1**") # 固定
 
                         else:
                             cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -897,7 +897,7 @@ try:
                     custom_values['キャリア'] = st.text_input("キャリア")
                 custom_values['備考'] = st.text_area("備考")
 
-            elif selected_category_key == "Office365": # 追加
+            elif selected_category_key == "Office365":
                 c1, c2 = st.columns(2)
                 with c1: custom_values['アカウントID'] = st.text_input("アカウントID")
                 with c2: custom_values['パスワード'] = st.text_input("パスワード")
@@ -914,7 +914,7 @@ try:
                 
                 custom_values['備考'] = st.text_area("備考")
 
-            elif selected_category_key == "ウイルスバスター": # 変更
+            elif selected_category_key == "ウイルスバスター":
                 st.caption("利用者情報")
                 c1, c2, c3 = st.columns(3)
                 with c1: custom_values['利用者1'] = st.text_input("利用者1")
