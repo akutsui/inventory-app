@@ -629,15 +629,17 @@ try:
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
                         
-                        elif category == "Office365":
-                            cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                        elif category == "Office365": # 変更
+                            # Edit(0.7), ID(1.0), Name(1.5), U1(1.0), U2(1.0), U3(1.0), U4(1.0), U5(1.0)
+                            cols = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
-                            cols[3].write("**利用者**")
-                            cols[4].write("**ステータス**")
-                            cols[5].write("**アカウントID**")
-                            cols[6].write("**利用者1**")
+                            cols[3].write("**利用者1**")
+                            cols[4].write("**利用者2**")
+                            cols[5].write("**利用者3**")
+                            cols[6].write("**利用者4**")
+                            cols[7].write("**利用者5**")
 
                         elif category == "ウイルスバスター": # 変更
                             cols = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
@@ -719,22 +721,17 @@ try:
                                     c[6].write(f"{val_g}")
                                     c[7].write(f"{val_h}")
                                 
-                                elif category == "Office365":
-                                    c = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                                elif category == "Office365": # 変更
+                                    c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
                                     c[2].write(f"**{row['品名']}**")
-                                    c[3].write(f"{row['利用者']}")
-                                    
-                                    status = row['ステータス']
-                                    if status == "利用可能": c[4].info(status, icon="✅")
-                                    elif status == "貸出中": c[4].warning(status, icon="🏃")
-                                    elif status == "故障/修理中": c[4].error(status, icon="⚠️")
-                                    else: c[4].write(status)
-                                    
-                                    c[5].write(f"{row.get('アカウントID', '')}")
-                                    c[6].write(f"{row.get('利用者1', '')}")
+                                    c[3].write(f"{row.get('利用者1', '')}")
+                                    c[4].write(f"{row.get('利用者2', '')}")
+                                    c[5].write(f"{row.get('利用者3', '')}")
+                                    c[6].write(f"{row.get('利用者4', '')}")
+                                    c[7].write(f"{row.get('利用者5', '')}")
 
                                 elif category == "ウイルスバスター": # 変更
                                     c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
