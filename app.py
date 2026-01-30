@@ -629,25 +629,26 @@ try:
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
                         
-                        elif category == "Office365": # 追加
+                        elif category == "Office365":
                             cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
                             cols[3].write("**利用者**")
                             cols[4].write("**ステータス**")
-                            cols[5].write("**アカウントID**") # 固定
-                            cols[6].write("**利用者1**") # 固定
+                            cols[5].write("**アカウントID**")
+                            cols[6].write("**利用者1**")
 
                         elif category == "ウイルスバスター": # 変更
-                            cols = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                            cols = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
-                            cols[3].write("**利用者(代表)**")
-                            cols[4].write("**ステータス**")
-                            cols[5].write("**期限**") # 固定
-                            cols[6].write("**利用者1**") # 固定
+                            cols[3].write("**利用者1**")
+                            cols[4].write("**利用者2**")
+                            cols[5].write("**利用者3**")
+                            cols[6].write("**ステータス**")
+                            cols[7].write("**期限**")
 
                         else:
                             cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -736,21 +737,22 @@ try:
                                     c[6].write(f"{row.get('利用者1', '')}")
 
                                 elif category == "ウイルスバスター": # 変更
-                                    c = st.columns([0.7, 1.2, 2.0, 1.5, 1.5, 1.5, 1.5])
+                                    c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
                                     c[2].write(f"**{row['品名']}**")
-                                    c[3].write(f"{row['利用者']}")
+                                    c[3].write(f"{row.get('利用者1', '')}")
+                                    c[4].write(f"{row.get('利用者2', '')}")
+                                    c[5].write(f"{row.get('利用者3', '')}")
                                     
                                     status = row['ステータス']
-                                    if status == "利用可能": c[4].info(status, icon="✅")
-                                    elif status == "貸出中": c[4].warning(status, icon="🏃")
-                                    elif status == "故障/修理中": c[4].error(status, icon="⚠️")
-                                    else: c[4].write(status)
+                                    if status == "利用可能": c[6].info(status, icon="✅")
+                                    elif status == "貸出中": c[6].warning(status, icon="🏃")
+                                    elif status == "故障/修理中": c[6].error(status, icon="⚠️")
+                                    else: c[6].write(status)
                                     
-                                    c[5].write(f"{row.get('期限', '')}")
-                                    c[6].write(f"{row.get('利用者1', '')}")
+                                    c[7].write(f"{row.get('期限', '')}")
 
                                 else:
                                     c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
