@@ -92,6 +92,15 @@ st.markdown("""
         div.alert-box {
             padding: 0.5rem 1rem !important;
         }
+        
+        /* トグルスイッチの位置調整 */
+        div[data-testid="stToggle"] {
+            margin-top: 0px;
+            padding-top: 5px;
+        }
+        div[data-testid="stToggle"] label {
+            font-size: 0.9rem !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -581,8 +590,8 @@ try:
                                 cols[3].write("**利用者**")
                                 cols[4].write("**使用部署**")
                                 cols[5].write("**ステータス**")
-                                cols[6].write("**購入日**") # 固定
-                                cols[7].write("**電話番号**") # 固定
+                                cols[6].write("**購入日**")
+                                cols[7].write("**電話番号**")
                             
                             elif category == "Office365":
                                 cols = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
