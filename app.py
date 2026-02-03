@@ -115,6 +115,13 @@ CATEGORY_MAP = {
     "その他": "その他"
 }
 
+# --- 設定: 新規入職者管理用のシート名とタスク項目 ---
+SHEET_NEW_EMPLOYEE = "新規入職者"
+ONBOARDING_TASKS = [
+    "PC", "iPad", "携帯", "Office365", "ウイルスバスター",
+    "制服", "ロッカー", "カードキー", "机・椅子", "その他"
+]
+
 # --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
     "PC": [
@@ -163,7 +170,7 @@ if 'page_number' not in st.session_state:
 if 'active_search_query' not in st.session_state:
     st.session_state['active_search_query'] = ""
 
-# --- データ取得関数 ---
+# --- データ取得関数 (在庫用) ---
 @st.cache_data(ttl=600)
 def get_all_data():
     all_data = []
@@ -186,6 +193,19 @@ def get_all_data():
         df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
     
     return df
+
+# --- データ取得関数 (新規入職者用) ---
+def get_new_employee_data():
+    try:
+        worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+        records = worksheet.get_all_records()
+        return pd.DataFrame(records)
+    except gspread.WorksheetNotFound:
+        st.error(f"シート「{SHEET_NEW_EMPLOYEE}」が見つかりません。スプレッドシートに追加してください。")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"データ取得エラー: {e}")
+        return pd.DataFrame()
 
 # --- ヘルパー関数: テキストの自動リンク化を防ぐ ---
 def safe_text(text):
@@ -228,7 +248,7 @@ def clear_search():
     st.session_state.active_search_query = ""
     st.session_state.page_number = 0
 
-# --- ポップアップ詳細・編集画面 ---
+# --- ポップアップ詳細・編集画面 (在庫用) ---
 @st.dialog("📝 詳細情報の編集")
 def show_detail_dialog(row_data):
     st.caption("ここで内容を修正して「更新」ボタンを押すと保存されます。")
@@ -391,12 +411,74 @@ def show_detail_dialog(row_data):
             except Exception as e:
                 st.error(f"更新エラー: {e}")
 
+# --- ポップアップ詳細・タスク管理 (新規入職者用) ---
+@st.dialog("📝 入職準備タスク管理")
+def show_onboarding_task_dialog(row_data):
+    st.write(f"### {row_data['氏名']} 様 (ID: {row_data['ID']})")
+    st.write(f"入職日: {row_data['入職日']} / 部署: {row_data['部署']}")
+    st.markdown("---")
+    
+    with st.form("onboarding_task_form"):
+        st.subheader("準備チェックリスト")
+        
+        # チェックボックスの状態を保持する辞書
+        task_status = {}
+        
+        # 2列で表示
+        cols = st.columns(2)
+        for i, task_name in enumerate(ONBOARDING_TASKS):
+            # 現在の値が '済' なら True, それ以外は False
+            is_checked = (str(row_data.get(task_name, '')).strip() == '済')
+            with cols[i % 2]:
+                task_status[task_name] = st.checkbox(task_name, value=is_checked)
+        
+        st.markdown("---")
+        status_options = ["準備中", "完了", "保留"]
+        curr_status = row_data.get('ステータス', '準備中')
+        if curr_status not in status_options: curr_status = "準備中"
+        new_status = st.selectbox("全体のステータス", status_options, index=status_options.index(curr_status))
+        
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        
+        if st.form_submit_button("✅ タスク状況を更新する"):
+            try:
+                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+                
+                # 更新用データの構築
+                # ID, 氏名, 入職日, 部署, ステータス(更新), PC...その他(更新), 備考(更新)
+                row_to_save = [
+                    row_data['ID'],
+                    row_data['氏名'],
+                    row_data['入職日'],
+                    row_data['部署'],
+                    new_status
+                ]
+                
+                # タスク列の値を追加 ('済' or '未')
+                for task_name in ONBOARDING_TASKS:
+                    row_to_save.append("済" if task_status[task_name] else "未")
+                
+                row_to_save.append(new_note)
+                
+                # IDで行を検索して更新
+                cell = worksheet.find(str(row_data['ID']))
+                if cell:
+                    r = cell.row
+                    # A列から最後まで一括更新
+                    worksheet.update(f"A{r}", [row_to_save])
+                    st.toast("タスクを更新しました！", icon="✅")
+                    st.rerun()
+                else:
+                    st.error("エラー: IDが見つかりませんでした。")
+            except Exception as e:
+                st.error(f"更新エラー: {e}")
+
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
 
 with st.sidebar:
     # ページ切替ラジオボタン
-    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "📅 5年経過リスト (PC/iPad)"])
+    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "👤 新規入職者管理", "📅 5年経過リスト (PC/iPad)"])
     
     st.markdown("---")
     
@@ -409,20 +491,19 @@ with st.sidebar:
     with st.expander("❓ 操作マニュアル", expanded=False):
         st.markdown("""
         **1. メニュー切替**
-        * 左上のメニューで「在庫管理」と「5年経過リスト」を切り替えられます。
+        * 左上のメニューで各機能画面を切り替えられます。
 
-        **2. 検索機能 (在庫管理)**
+        **2. 新規入職者管理**
+        * 入職者のPCや制服などの準備状況をチェックリストで管理できます。
+        
+        **3. 検索機能 (在庫管理)**
         * 画面上部の枠に文字を入れて `Enter` を押すと検索できます。
-        * **バーコードリーダー対応:** 入力後、自動で文字が消えるので連続して読み取れます。
 
-        **3. 訪問車期日アラート (在庫管理)**
+        **4. 訪問車期日アラート**
         * 期限が **45日以内**（車）の場合、検索窓の下に赤字で警告が出ます。
 
-        **4. 5年経過リスト**
+        **5. 5年経過リスト**
         * 購入から5年以上経過したPCとiPadだけを一覧表示します。
-        
-        **5. CSV一括入出力**
-        * データをCSVでダウンロードしてExcel等で編集し、一括で更新・登録ができます。
         """)
 
 try:
@@ -478,7 +559,6 @@ try:
 
             # --- アラートの表示 ---
             if alert_items:
-                # ヘッダーのみ表示 (トグル削除済み)
                 st.markdown("""
                     <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b;">
                         <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 訪問車期日アラート</h5>
@@ -591,11 +671,11 @@ try:
                                 cols[3].write("**利用者**")
                                 cols[4].write("**使用部署**")
                                 cols[5].write("**ステータス**")
-                                cols[6].write(f"**{header_g}**")
-                                cols[7].write(f"**{header_h}**")
+                                cols[6].write("**購入日**")
+                                cols[7].write("**電話番号**")
                             
-                            elif category == "Office365": # 変更
-                                c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
+                            elif category == "Office365":
+                                cols = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
                                 cols[2].write("**品名**")
@@ -605,8 +685,8 @@ try:
                                 cols[6].write("**利用者4**")
                                 cols[7].write("**利用者5**")
 
-                            elif category == "ウイルスバスター": # 変更
-                                c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
+                            elif category == "ウイルスバスター":
+                                cols = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
                                 cols[2].write("**品名**")
@@ -1010,7 +1090,108 @@ try:
                     st.error(f"インポートエラー: {e}")
 
     # ==========================================
-    # ページ2：5年経過リスト
+    # ページ2：新規入職者管理
+    # ==========================================
+    elif page_selection == "👤 新規入職者管理":
+        new_emp_tab1, new_emp_tab2 = st.tabs(["📋 タスク管理・一覧", "➕ 新規登録"])
+        
+        # --- データ取得 ---
+        df_new_emp = get_new_employee_data()
+        
+        # === タブ1: 一覧 ===
+        with new_emp_tab1:
+            st.markdown("#### 新規入職者の準備状況")
+            
+            if df_new_emp.empty:
+                st.info("登録されているデータはありません。")
+            else:
+                # 完了率の計算
+                def calc_progress(row):
+                    total = len(ONBOARDING_TASKS)
+                    done = sum(1 for t in ONBOARDING_TASKS if str(row.get(t, '')).strip() == '済')
+                    return done / total if total > 0 else 0
+
+                # テーブルヘッダー
+                cols = st.columns([1, 1, 2, 2, 2, 1.5, 2])
+                cols[0].write("**編集**")
+                cols[1].write("**ID**")
+                cols[2].write("**氏名**")
+                cols[3].write("**入職日**")
+                cols[4].write("**部署**")
+                cols[5].write("**進捗**")
+                cols[6].write("**ステータス**")
+                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+                
+                # 入職日でソート
+                try:
+                    df_new_emp['sort_date'] = pd.to_datetime(df_new_emp['入職日'], errors='coerce')
+                    df_new_emp = df_new_emp.sort_values('sort_date', ascending=True)
+                except:
+                    pass
+
+                for index, row in df_new_emp.iterrows():
+                    c = st.columns([1, 1, 2, 2, 2, 1.5, 2])
+                    
+                    if c[0].button("詳細", key=f"ne_btn_{row['ID']}"):
+                        show_onboarding_task_dialog(row)
+                    
+                    c[1].write(str(row['ID']))
+                    c[2].write(f"**{row['氏名']}**")
+                    c[3].write(str(row['入職日']))
+                    c[4].write(str(row['部署']))
+                    
+                    progress = calc_progress(row)
+                    c[5].progress(progress)
+                    
+                    status = str(row['ステータス'])
+                    if status == "完了": c[6].success("完了", icon="✅")
+                    elif status == "準備中": c[6].warning("準備中", icon="🏃")
+                    else: c[6].write(status)
+                    
+                    st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
+
+        # === タブ2: 新規登録 ===
+        with new_emp_tab2:
+            st.subheader("新規入職予定の登録")
+            with st.form("add_new_emp_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    ne_id = st.text_input("ID (社員番号など)", placeholder="例: 9001")
+                    ne_name = st.text_input("氏名", placeholder="例: 山田 太郎")
+                with col2:
+                    ne_date = st.date_input("入職予定日")
+                    ne_dept = st.text_input("配属部署")
+                
+                ne_note = st.text_area("備考")
+                
+                if st.form_submit_button("登録する"):
+                    if not ne_id or not ne_name:
+                        st.error("IDと氏名は必須です。")
+                    else:
+                        try:
+                            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+                            
+                            # ID重複チェック
+                            cell = worksheet.find(ne_id)
+                            if cell:
+                                st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
+                            else:
+                                # 保存データ作成: ID, 氏名, 入職日, 部署, ステータス(準備中), タスク(未)..., 備考
+                                row_to_save = [
+                                    ne_id, ne_name, str(ne_date), ne_dept, "準備中"
+                                ]
+                                # タスク列はすべて「未」で初期化
+                                row_to_save.extend(["未"] * len(ONBOARDING_TASKS))
+                                row_to_save.append(ne_note)
+                                
+                                worksheet.append_row(row_to_save)
+                                st.toast("新規入職者を登録しました！", icon="✅")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"登録エラー: {e}")
+
+    # ==========================================
+    # ページ3：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
         st.title("📅 5年経過リスト (PC/iPad)")
