@@ -419,18 +419,18 @@ def show_onboarding_task_dialog(row_data):
     st.markdown("---")
     
     with st.form("onboarding_task_form"):
-        st.subheader("準備チェックリスト")
+        st.subheader("準備アイテム (フリーワード入力)")
         
-        # チェックボックスの状態を保持する辞書
+        # テキストボックスの状態を保持する辞書
         task_status = {}
         
         # 2列で表示
         cols = st.columns(2)
         for i, task_name in enumerate(ONBOARDING_TASKS):
-            # 現在の値が '済' なら True, それ以外は False
-            is_checked = (str(row_data.get(task_name, '')).strip() == '済')
             with cols[i % 2]:
-                task_status[task_name] = st.checkbox(task_name, value=is_checked)
+                # 既存の値を初期値として表示
+                current_val = str(row_data.get(task_name, ''))
+                task_status[task_name] = st.text_input(task_name, value=current_val)
         
         st.markdown("---")
         status_options = ["準備中", "完了", "保留"]
@@ -454,9 +454,9 @@ def show_onboarding_task_dialog(row_data):
                     new_status
                 ]
                 
-                # タスク列の値を追加 ('済' or '未')
+                # タスク列の値を追加 (入力されたテキスト)
                 for task_name in ONBOARDING_TASKS:
-                    row_to_save.append("済" if task_status[task_name] else "未")
+                    row_to_save.append(task_status[task_name])
                 
                 row_to_save.append(new_note)
                 
@@ -494,7 +494,7 @@ with st.sidebar:
         * 左上のメニューで各機能画面を切り替えられます。
 
         **2. 新規入職者管理**
-        * 入職者のPCや制服などの準備状況をチェックリストで管理できます。
+        * 入職者のPCや制服などの準備状況をフリーワードで管理できます。
         
         **3. 検索機能 (在庫管理)**
         * 画面上部の枠に文字を入れて `Enter` を押すと検索できます。
@@ -1105,21 +1105,14 @@ try:
             if df_new_emp.empty:
                 st.info("登録されているデータはありません。")
             else:
-                # 完了率の計算
-                def calc_progress(row):
-                    total = len(ONBOARDING_TASKS)
-                    done = sum(1 for t in ONBOARDING_TASKS if str(row.get(t, '')).strip() == '済')
-                    return done / total if total > 0 else 0
-
-                # テーブルヘッダー
-                cols = st.columns([1, 1, 2, 2, 2, 1.5, 2])
+                # テーブルヘッダー (進捗バー削除)
+                cols = st.columns([1, 1, 2, 2, 2, 2])
                 cols[0].write("**編集**")
                 cols[1].write("**ID**")
                 cols[2].write("**氏名**")
                 cols[3].write("**入職日**")
                 cols[4].write("**部署**")
-                cols[5].write("**進捗**")
-                cols[6].write("**ステータス**")
+                cols[5].write("**ステータス**")
                 st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
                 
                 # 入職日でソート
@@ -1130,7 +1123,7 @@ try:
                     pass
 
                 for index, row in df_new_emp.iterrows():
-                    c = st.columns([1, 1, 2, 2, 2, 1.5, 2])
+                    c = st.columns([1, 1, 2, 2, 2, 2])
                     
                     if c[0].button("詳細", key=f"ne_btn_{row['ID']}"):
                         show_onboarding_task_dialog(row)
@@ -1140,13 +1133,10 @@ try:
                     c[3].write(str(row['入職日']))
                     c[4].write(str(row['部署']))
                     
-                    progress = calc_progress(row)
-                    c[5].progress(progress)
-                    
                     status = str(row['ステータス'])
-                    if status == "完了": c[6].success("完了", icon="✅")
-                    elif status == "準備中": c[6].warning("準備中", icon="🏃")
-                    else: c[6].write(status)
+                    if status == "完了": c[5].success("完了", icon="✅")
+                    elif status == "準備中": c[5].warning("準備中", icon="🏃")
+                    else: c[5].write(status)
                     
                     st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
@@ -1176,12 +1166,12 @@ try:
                             if cell:
                                 st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
                             else:
-                                # 保存データ作成: ID, 氏名, 入職日, 部署, ステータス(準備中), タスク(未)..., 備考
+                                # 保存データ作成
                                 row_to_save = [
                                     ne_id, ne_name, str(ne_date), ne_dept, "準備中"
                                 ]
-                                # タスク列はすべて「未」で初期化
-                                row_to_save.extend(["未"] * len(ONBOARDING_TASKS))
+                                # タスク列はすべて空文字で初期化（フリーワード入力待ち）
+                                row_to_save.extend([""] * len(ONBOARDING_TASKS))
                                 row_to_save.append(ne_note)
                                 
                                 worksheet.append_row(row_to_save)
