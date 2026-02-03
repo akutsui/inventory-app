@@ -415,7 +415,7 @@ with st.sidebar:
         * 画面上部の枠に文字を入れて `Enter` を押すと検索できます。
         * **バーコードリーダー対応:** 入力後、自動で文字が消えるので連続して読み取れます。
 
-        **3. 期日アラート (在庫管理)**
+        **3. 訪問車期日アラート (在庫管理)**
         * 期限が **45日以内**（車）の場合、検索窓の下に赤字で警告が出ます。
 
         **4. 5年経過リスト**
@@ -478,9 +478,10 @@ try:
 
             # --- アラートの表示 ---
             if alert_items:
+                # ヘッダーのみ表示 (トグル削除済み)
                 st.markdown("""
                     <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b;">
-                        <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
+                        <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 訪問車期日アラート</h5>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -590,11 +591,11 @@ try:
                                 cols[3].write("**利用者**")
                                 cols[4].write("**使用部署**")
                                 cols[5].write("**ステータス**")
-                                cols[6].write("**購入日**")
-                                cols[7].write("**電話番号**")
+                                cols[6].write(f"**{header_g}**")
+                                cols[7].write(f"**{header_h}**")
                             
-                            elif category == "Office365":
-                                cols = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
+                            elif category == "Office365": # 変更
+                                c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
                                 cols[2].write("**品名**")
@@ -604,8 +605,8 @@ try:
                                 cols[6].write("**利用者4**")
                                 cols[7].write("**利用者5**")
 
-                            elif category == "ウイルスバスター":
-                                cols = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
+                            elif category == "ウイルスバスター": # 変更
+                                c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
                                 cols[2].write("**品名**")
