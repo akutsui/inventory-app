@@ -190,7 +190,6 @@ def get_all_data():
 # --- ヘルパー関数: テキストの自動リンク化を防ぐ ---
 def safe_text(text):
     if text is None: return ""
-    # @の直後にゼロ幅スペース(\u200B)を入れることで、メールアドレス等の自動リンク化を回避する
     return str(text).replace("@", "@\u200B")
 
 # --- 【最強版】日付パース関数 ---
@@ -410,9 +409,8 @@ with st.sidebar:
         * 「検索解除」ボタンで全表示に戻ります。
 
         **2. 期日アラート**
-        * 期限が **45日以内**（車）または **5年経過**（iPad）の場合、検索窓の下に赤字で警告が出ます。
+        * 期限が **45日以内**（車）の場合、検索窓の下に赤字で警告が出ます。
         * アラート右側の **「詳細」ボタン** を押すと、その場で編集・確認ができます。
-        * 赤枠内のトグルスイッチで「訪問車」と「iPad」の表示を切り替えられます。
 
         **3. 編集・更新**
         * リスト左の「詳細」ボタンで編集画面が開きます。
@@ -473,69 +471,26 @@ try:
                             "title": f"訪問車【{display_text}】",
                             "messages": msg_list
                         })
-                
-                # --- iPadアラート ---
-                elif cat == "iPad":
-                    label = str(row.get('ラベル', ''))
-                    display_text = f"{label} {name}".strip()
-                    
-                    val = row.get("購入日")
-                    dt = parse_date(val)
-                    if dt:
-                        try:
-                            target_date = dt.date().replace(year=dt.year + 5)
-                        except ValueError:
-                            target_date = dt.date().replace(year=dt.year + 5, month=2, day=28)
-                        
-                        if today >= target_date:
-                            msg_list.append(f"購入から5年経過 ({dt.strftime('%Y-%m-%d')})")
-                    
-                    if msg_list:
-                        alert_items.append({
-                            "row": row,
-                            "title": f"iPad【{display_text}】",
-                            "messages": msg_list
-                        })
 
         # --- アラートの表示 ---
         if alert_items:
-            c_head, c_tog1, c_tog2 = st.columns([2, 1, 1])
-            
-            with c_head:
-                st.markdown("""
-                    <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b;">
-                        <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
-                    </div>
-                """, unsafe_allow_html=True)
-            
-            with c_tog1:
-                show_car = st.toggle("🚙 訪問車", value=True)
-                
-            with c_tog2:
-                show_ipad = st.toggle("📱 iPad", value=True)
+            # ヘッダーのみ表示 (トグル削除済み)
+            st.markdown("""
+                <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b;">
+                    <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 期日アラート</h5>
+                </div>
+            """, unsafe_allow_html=True)
 
-            display_alerts = []
-            for item in alert_items:
-                if "訪問車" in item['title'] and show_car:
-                    display_alerts.append(item)
-                elif "iPad" in item['title'] and show_ipad:
-                    display_alerts.append(item)
-
-            if display_alerts:
-                for i, item in enumerate(display_alerts):
-                    c1, c2 = st.columns([5, 1])
-                    alert_str = f"{item['title']} : " + ", ".join(item['messages'])
-                    c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
-                    if c2.button("詳細", key=f"alert_btn_{i}"):
-                        show_detail_dialog(item['row'])
-                    if i < len(display_alerts) - 1:
-                        st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
-            elif (not show_car and not show_ipad):
-                st.info("すべての表示がOFFになっています。")
-            else:
-                st.info("該当するアラートはありません。")
-                
-            st.write("") 
+            for i, item in enumerate(alert_items):
+                c1, c2 = st.columns([5, 1])
+                alert_str = f"{item['title']} : " + ", ".join(item['messages'])
+                c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
+                if c2.button("詳細", key=f"alert_btn_{i}"):
+                    show_detail_dialog(item['row'])
+                if i < len(alert_items) - 1:
+                    st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
+            
+            st.write("")
 
         # --- 検索窓 ---
         col_search_input, col_clear_btn = st.columns([4, 1])
@@ -635,7 +590,7 @@ try:
                             cols[6].write(f"**{header_g}**")
                             cols[7].write(f"**{header_h}**")
                         
-                        elif category == "Office365": # 変更
+                        elif category == "Office365":
                             c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
@@ -647,7 +602,7 @@ try:
                             cols[7].write("**利用者5**")
 
                         elif category == "ウイルスバスター": # 変更
-                            cols = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
+                            c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
@@ -873,7 +828,7 @@ try:
             elif selected_category_key == "iPad":
                 c1, c2 = st.columns(2)
                 with c1:
-                    d_buy = date_input("購入日", value=None)
+                    d_buy = st.date_input("購入日", value=None)
                     custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                     custom_values['ラベル'] = st.text_input("ラベル")
                     custom_values['AppleID'] = st.text_input("AppleID")
