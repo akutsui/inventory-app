@@ -187,6 +187,12 @@ def get_all_data():
     
     return df
 
+# --- ヘルパー関数: テキストの自動リンク化を防ぐ ---
+def safe_text(text):
+    if text is None: return ""
+    # @の直後にゼロ幅スペース(\u200B)を入れることで、メールアドレス等の自動リンク化を回避する
+    return str(text).replace("@", "@\u200B")
+
 # --- 【最強版】日付パース関数 ---
 def parse_date(date_val):
     if date_val is None or date_val == "":
@@ -630,8 +636,7 @@ try:
                             cols[7].write(f"**{header_h}**")
                         
                         elif category == "Office365": # 変更
-                            # Edit(0.7), ID(1.0), Name(1.5), U1(1.0), U2(1.0), U3(1.0), U4(1.0), U5(1.0)
-                            cols = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
+                            c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                             cols[0].write("**編集**")
                             cols[1].write("**ID**")
                             cols[2].write("**品名**")
@@ -669,7 +674,7 @@ try:
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
+                                    c[2].write(f"**{safe_text(row['品名'])}**")
                                     c[3].write(f"{row.get('登録番号', '')}")
                                     c[4].write(f"{row['利用者']}")
                                     c[5].write(f"{row.get('使用部署', '')}")
@@ -688,7 +693,7 @@ try:
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
                                     c[2].write(f"**{row.get('ラベル', '')}**")
-                                    c[3].write(f"**{row['品名']}**")
+                                    c[3].write(f"**{safe_text(row['品名'])}**")
                                     c[4].write(f"{row['利用者']}")
                                     c[5].write(f"{row.get('使用部署', '')}")
                                     
@@ -705,7 +710,7 @@ try:
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
+                                    c[2].write(f"**{safe_text(row['品名'])}**")
                                     c[3].write(f"{row['利用者']}")
                                     c[4].write(f"{row.get('使用部署', '')}")
                                     
@@ -726,7 +731,7 @@ try:
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
+                                    c[2].write(f"**{safe_text(row['品名'])}**")
                                     c[3].write(f"{row.get('利用者1', '')}")
                                     c[4].write(f"{row.get('利用者2', '')}")
                                     c[5].write(f"{row.get('利用者3', '')}")
@@ -738,7 +743,7 @@ try:
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
+                                    c[2].write(f"**{safe_text(row['品名'])}**")
                                     c[3].write(f"{row.get('利用者1', '')}")
                                     c[4].write(f"{row.get('利用者2', '')}")
                                     c[5].write(f"{row.get('利用者3', '')}")
@@ -756,7 +761,7 @@ try:
                                     if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                         show_detail_dialog(row)
                                     c[1].write(f"{row['ID']}")
-                                    c[2].write(f"**{row['品名']}**")
+                                    c[2].write(f"**{safe_text(row['品名'])}**")
                                     c[3].write(f"{row['利用者']}")
                                     
                                     status = row['ステータス']
@@ -868,7 +873,7 @@ try:
             elif selected_category_key == "iPad":
                 c1, c2 = st.columns(2)
                 with c1:
-                    d_buy = st.date_input("購入日", value=None)
+                    d_buy = date_input("購入日", value=None)
                     custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                     custom_values['ラベル'] = st.text_input("ラベル")
                     custom_values['AppleID'] = st.text_input("AppleID")
