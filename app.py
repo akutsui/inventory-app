@@ -92,15 +92,6 @@ st.markdown("""
         div.alert-box {
             padding: 0.5rem 1rem !important;
         }
-        
-        /* トグルスイッチの位置調整 */
-        div[data-testid="stToggle"] {
-            margin-top: 0px;
-            padding-top: 5px;
-        }
-        div[data-testid="stToggle"] label {
-            font-size: 0.9rem !important;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -590,11 +581,11 @@ try:
                                 cols[3].write("**利用者**")
                                 cols[4].write("**使用部署**")
                                 cols[5].write("**ステータス**")
-                                cols[6].write(f"**{header_g}**")
-                                cols[7].write(f"**{header_h}**")
+                                cols[6].write("**購入日**") # 固定
+                                cols[7].write("**電話番号**") # 固定
                             
                             elif category == "Office365":
-                                c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
+                                cols = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
                                 cols[2].write("**品名**")
@@ -604,8 +595,8 @@ try:
                                 cols[6].write("**利用者4**")
                                 cols[7].write("**利用者5**")
 
-                            elif category == "ウイルスバスター": # 変更
-                                c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
+                            elif category == "ウイルスバスター":
+                                cols = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
                                 cols[2].write("**品名**")
@@ -678,13 +669,10 @@ try:
                                         elif status == "故障/修理中": c[5].error(status, icon="⚠️")
                                         else: c[5].write(status)
 
-                                        curr_cols_def = COLUMNS_DEF.get(category, [])
-                                        val_g = row.get(curr_cols_def[0], '') if len(curr_cols_def) > 0 else ""
-                                        val_h = row.get(curr_cols_def[1], '') if len(curr_cols_def) > 1 else ""
-                                        c[6].write(f"{val_g}")
-                                        c[7].write(f"{val_h}")
+                                        c[6].write(f"{row.get('購入日', '')}")
+                                        c[7].write(f"{row.get('電話番号', '')}")
                                     
-                                    elif category == "Office365": # 変更
+                                    elif category == "Office365":
                                         c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
@@ -696,7 +684,7 @@ try:
                                         c[6].write(f"{row.get('利用者4', '')}")
                                         c[7].write(f"{row.get('利用者5', '')}")
 
-                                    elif category == "ウイルスバスター": # 変更
+                                    elif category == "ウイルスバスター":
                                         c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
