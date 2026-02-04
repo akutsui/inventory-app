@@ -415,7 +415,7 @@ def show_detail_dialog(row_data):
 @st.dialog("📝 入職準備タスク管理")
 def show_onboarding_task_dialog(row_data):
     st.write(f"### {row_data['氏名']} 様 (ID: {row_data['ID']})")
-    st.write(f"入職日: {row_data['入職日']} / 部署: {row_data['部署']}")
+    st.write(f"入職日: {row_data['入職日']} / 職種: {row_data.get('職種', '')} / 部署: {row_data['部署']}")
     st.markdown("---")
     
     with st.form("onboarding_task_form"):
@@ -445,11 +445,12 @@ def show_onboarding_task_dialog(row_data):
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
                 
                 # 更新用データの構築
-                # ID, 氏名, 入職日, 部署, ステータス(更新), PC...その他(更新), 備考(更新)
+                # ID, 氏名, 入職日, 職種, 部署, ステータス(更新), PC...その他(更新), 備考(更新)
                 row_to_save = [
                     row_data['ID'],
                     row_data['氏名'],
                     row_data['入職日'],
+                    row_data.get('職種', ''),
                     row_data['部署'],
                     new_status
                 ]
@@ -495,6 +496,7 @@ with st.sidebar:
 
         **2. 新規入職者管理**
         * 入職者のPCや制服などの準備状況をフリーワードで管理できます。
+        * ステータスが「完了」の人は一覧の下に移動します。
         
         **3. 検索機能 (在庫管理)**
         * 画面上部の枠に文字を入れて `Enter` を押すと検索できます。
@@ -832,164 +834,6 @@ try:
                                         st.session_state.page_number += 1
                                         st.rerun()
 
-        # === タブ2：新規登録 ===
-        with main_tab2:
-            st.header("新規データの登録")
-            st.caption("※既存データの編集は、一覧タブの「詳細」ボタンから行ってください。")
-            
-            st.subheader("① カテゴリとIDを指定")
-            selected_category_key = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True, key="new_reg_cat")
-            target_sheet_name = CATEGORY_MAP[selected_category_key]
-
-            st.subheader("② 詳細情報の入力")
-            with st.form("new_entry_form"):
-                col_basic1, col_basic2 = st.columns(2)
-                with col_basic1:
-                    input_id = st.text_input("ID (資産番号)")
-                    input_name = st.text_input("品名 (管理上の名称)")
-                with col_basic2:
-                    input_user = st.text_input("利用者(代表)")
-                    input_status = st.selectbox("ステータス", ["利用可能", "貸出中", "故障/修理中", "廃棄"])
-
-                st.markdown("---")
-                st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
-                
-                custom_values = {}
-
-                if selected_category_key == "PC":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        d_buy = st.date_input("購入日", value=None)
-                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                        custom_values['OS'] = st.text_input("OS")
-                        custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)")
-                        custom_values['ラベル'] = st.text_input("ラベル")
-                        custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振")
-                    with c2:
-                        custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮")
-                        custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼")
-                        custom_values['ORCA益子'] = st.text_input("ORCA益子")
-                        custom_values['チームビューワID'] = st.text_input("チームビューワID")
-                        custom_values['チームビューワPW'] = st.text_input("チームビューワPW")
-                    
-                    st.caption("ウィルスバスター情報")
-                    c3, c4, c5 = st.columns(3)
-                    with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo")
-                    with c4: 
-                        d_vb = st.date_input("VB期限", value=None)
-                        custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
-                    with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム")
-                    custom_values['備考'] = st.text_area("備考")
-
-                elif selected_category_key == "訪問車":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        custom_values['登録番号'] = st.text_input("登録番号")
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        custom_values['洗車グループ'] = st.text_input("洗車グループ")
-                        custom_values['駐車場'] = st.text_input("駐車場")
-                        custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ")
-                        custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所")
-                        custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無")
-                    with c2:
-                        d_lease_s = st.date_input("リース開始日", value=None)
-                        custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
-                        d_lease_e = st.date_input("リース満了日", value=None)
-                        custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
-                        d_syaken = st.date_input("車検満了日", value=None)
-                        custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
-                        d_park = st.date_input("駐禁除外指定満了日", value=None)
-                        custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
-                        d_road = st.date_input("通行禁止許可満了日", value=None)
-                        custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
-                    custom_values['備考'] = st.text_area("備考")
-
-                elif selected_category_key == "iPad":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        d_buy = st.date_input("購入日", value=None)
-                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                        custom_values['ラベル'] = st.text_input("ラベル")
-                        custom_values['AppleID'] = st.text_input("AppleID")
-                        custom_values['シリアルNo'] = st.text_input("シリアルNo")
-                        custom_values['ストレージ'] = st.text_input("ストレージ")
-                    with c2:
-                        custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI")
-                        custom_values['端末番号'] = st.text_input("端末番号")
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        custom_values['キャリア'] = st.text_input("キャリア")
-                    custom_values['備考'] = st.text_area("備考")
-
-                elif selected_category_key == "携帯電話":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        d_buy = st.date_input("購入日", value=None)
-                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                        custom_values['電話番号'] = st.text_input("電話番号")
-                        custom_values['SIM'] = st.text_input("SIM")
-                        custom_values['メーカー'] = st.text_input("メーカー")
-                    with c2:
-                        custom_values['製造番号'] = st.text_input("製造番号")
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        custom_values['保管場所'] = st.text_input("保管場所")
-                        custom_values['キャリア'] = st.text_input("キャリア")
-                    custom_values['備考'] = st.text_area("備考")
-
-                elif selected_category_key == "Office365":
-                    c1, c2 = st.columns(2)
-                    with c1: custom_values['アカウントID'] = st.text_input("アカウントID")
-                    with c2: custom_values['パスワード'] = st.text_input("パスワード")
-                    
-                    st.caption("共有利用者")
-                    c_u1, c_u2, c_u3 = st.columns(3)
-                    with c_u1: custom_values['利用者1'] = st.text_input("利用者1")
-                    with c_u2: custom_values['利用者2'] = st.text_input("利用者2")
-                    with c_u3: custom_values['利用者3'] = st.text_input("利用者3")
-                    
-                    c_u4, c_u5 = st.columns(2)
-                    with c_u4: custom_values['利用者4'] = st.text_input("利用者4")
-                    with c_u5: custom_values['利用者5'] = st.text_input("利用者5")
-                    
-                    custom_values['備考'] = st.text_area("備考")
-
-                elif selected_category_key == "ウイルスバスター":
-                    st.caption("利用者情報")
-                    c1, c2, c3 = st.columns(3)
-                    with c1: custom_values['利用者1'] = st.text_input("利用者1")
-                    with c2: custom_values['利用者2'] = st.text_input("利用者2")
-                    with c3: custom_values['利用者3'] = st.text_input("利用者3")
-                    
-                    st.caption("期限")
-                    d_exp = st.date_input("期限", value=None)
-                    custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
-                    
-                    custom_values['備考'] = st.text_area("備考")
-
-                elif selected_category_key == "その他":
-                    custom_values['備考'] = st.text_area("備考")
-
-                st.markdown("---")
-                if st.form_submit_button("新規登録"):
-                    if not input_id or not input_name:
-                        st.error("IDと品名は必須です！")
-                    else:
-                        try:
-                            worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
-                            current_time = datetime.now().strftime('%Y-%m-%d')
-                            row_to_save = [input_id, selected_category_key, input_name, input_user, input_status, current_time]
-                            for col_name in COLUMNS_DEF.get(selected_category_key, []):
-                                row_to_save.append(custom_values.get(col_name, ''))
-                            
-                            if worksheet.find(input_id):
-                                st.error(f"エラー: ID '{input_id}' は既に登録されています。")
-                            else:
-                                worksheet.append_row(row_to_save)
-                                st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
-                                get_all_data.clear()
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"書き込みエラー: {e}")
-
         # === タブ3：CSV一括入出力 ===
         with main_tab3:
             st.header("📂 CSVによる一括登録・編集")
@@ -1105,25 +949,27 @@ try:
             if df_new_emp.empty:
                 st.info("登録されているデータはありません。")
             else:
-                # テーブルヘッダー (進捗バー削除)
-                cols = st.columns([1, 1, 2, 2, 2, 2])
+                # ソート用フラグ作成: 完了=1, その他=0
+                df_new_emp['is_completed'] = df_new_emp['ステータス'].apply(lambda x: 1 if str(x) == '完了' else 0)
+                # 日付ソート用
+                df_new_emp['sort_date'] = pd.to_datetime(df_new_emp['入職日'], errors='coerce')
+                
+                # 並び替え: 完了フラグ(昇順 0->1) -> 日付(昇順)
+                df_new_emp = df_new_emp.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
+
+                # テーブルヘッダー
+                cols = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
                 cols[0].write("**編集**")
                 cols[1].write("**ID**")
                 cols[2].write("**氏名**")
                 cols[3].write("**入職日**")
-                cols[4].write("**部署**")
-                cols[5].write("**ステータス**")
+                cols[4].write("**職種**")
+                cols[5].write("**部署**")
+                cols[6].write("**ステータス**")
                 st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
-                
-                # 入職日でソート
-                try:
-                    df_new_emp['sort_date'] = pd.to_datetime(df_new_emp['入職日'], errors='coerce')
-                    df_new_emp = df_new_emp.sort_values('sort_date', ascending=True)
-                except:
-                    pass
 
                 for index, row in df_new_emp.iterrows():
-                    c = st.columns([1, 1, 2, 2, 2, 2])
+                    c = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
                     
                     if c[0].button("詳細", key=f"ne_btn_{row['ID']}"):
                         show_onboarding_task_dialog(row)
@@ -1131,12 +977,13 @@ try:
                     c[1].write(str(row['ID']))
                     c[2].write(f"**{row['氏名']}**")
                     c[3].write(str(row['入職日']))
-                    c[4].write(str(row['部署']))
+                    c[4].write(str(row.get('職種', '')))
+                    c[5].write(str(row['部署']))
                     
                     status = str(row['ステータス'])
-                    if status == "完了": c[5].success("完了", icon="✅")
-                    elif status == "準備中": c[5].warning("準備中", icon="🏃")
-                    else: c[5].write(status)
+                    if status == "完了": c[6].success("完了", icon="✅")
+                    elif status == "準備中": c[6].warning("準備中", icon="🏃")
+                    else: c[6].write(status)
                     
                     st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
@@ -1150,6 +997,7 @@ try:
                     ne_name = st.text_input("氏名", placeholder="例: 山田 太郎")
                 with col2:
                     ne_date = st.date_input("入職予定日")
+                    ne_job = st.text_input("職種")
                     ne_dept = st.text_input("配属部署")
                 
                 ne_note = st.text_area("備考")
@@ -1168,9 +1016,9 @@ try:
                             else:
                                 # 保存データ作成
                                 row_to_save = [
-                                    ne_id, ne_name, str(ne_date), ne_dept, "準備中"
+                                    ne_id, ne_name, str(ne_date), ne_job, ne_dept, "準備中"
                                 ]
-                                # タスク列はすべて空文字で初期化（フリーワード入力待ち）
+                                # タスク列はすべて空文字で初期化
                                 row_to_save.extend([""] * len(ONBOARDING_TASKS))
                                 row_to_save.append(ne_note)
                                 
