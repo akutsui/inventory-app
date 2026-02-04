@@ -194,15 +194,15 @@ def get_all_data():
     
     return df
 
-# --- データ取得関数 (新規入職者用) ---
+# --- データ取得関数 (新規入職者用: エラーハンドリング強化) ---
 def get_new_employee_data():
     try:
         worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
         records = worksheet.get_all_records()
         return pd.DataFrame(records)
     except gspread.WorksheetNotFound:
-        st.error(f"シート「{SHEET_NEW_EMPLOYEE}」が見つかりません。スプレッドシートに追加してください。")
-        return pd.DataFrame()
+        # シートがない場合はエラーではなく空のDFを返す（画面で警告する）
+        return None
     except Exception as e:
         st.error(f"データ取得エラー: {e}")
         return pd.DataFrame()
@@ -842,6 +842,70 @@ try:
                                     if st.button("次の50件 ➡️", key=f"next_{category}"):
                                         st.session_state.page_number += 1
                                         st.rerun()
+
+    # ==========================================
+    # ページ2：新規入職者管理
+    # ==========================================
+    elif page_selection == "👤 新規入職者管理":
+        new_emp_tab1, new_emp_tab2 = st.tabs(["📋 タスク管理・一覧", "➕ 新規登録"])
+        
+        # --- データ取得 ---
+        df_new_emp = get_new_employee_data()
+        
+        # === タブ1: 一覧 ===
+        with new_emp_tab1:
+            st.markdown("#### 新規入職者の準備状況")
+            
+            if df_new_emp is None:
+                st.error(f"シート「{SHEET_NEW_EMPLOYEE}」が見つかりません。スプレッドシートに作成してください。")
+            elif df_new_emp.empty:
+                st.info("登録されているデータはありません。")
+            else:
+                # 必須カラムチェック
+                req_cols = ["ID", "氏名", "入職日", "職種", "部署", "ステータス"]
+                missing = [c for c in req_cols if c not in df_new_emp.columns]
+                
+                if missing:
+                    st.error(f"エラー: スプレッドシートに以下の列が見つかりません: {', '.join(missing)}")
+                    st.warning("シートの見出し行を確認してください。")
+                else:
+                    # ソート用フラグ作成: 完了=1, その他=0
+                    df_new_emp['is_completed'] = df_new_emp['ステータス'].apply(lambda x: 1 if str(x) == '完了' else 0)
+                    # 日付ソート用
+                    df_new_emp['sort_date'] = pd.to_datetime(df_new_emp['入職日'], errors='coerce')
+                    
+                    # 並び替え: 完了フラグ(昇順 0->1) -> 日付(昇順)
+                    df_new_emp = df_new_emp.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
+
+                    # テーブルヘッダー
+                    cols = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
+                    cols[0].write("**編集**")
+                    cols[1].write("**ID**")
+                    cols[2].write("**氏名**")
+                    cols[3].write("**入職日**")
+                    cols[4].write("**職種**")
+                    cols[5].write("**部署**")
+                    cols[6].write("**ステータス**")
+                    st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+
+                    for index, row in df_new_emp.iterrows():
+                        c = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
+                        
+                        if c[0].button("詳細", key=f"ne_btn_{row['ID']}"):
+                            show_onboarding_task_dialog(row)
+                        
+                        c[1].write(str(row['ID']))
+                        c[2].write(f"**{row['氏名']}**")
+                        c[3].write(str(row['入職日']))
+                        c[4].write(str(row.get('職種', '')))
+                        c[5].write(str(row['部署']))
+                        
+                        status = str(row['ステータス'])
+                        if status == "完了": c[6].success("完了", icon="✅")
+                        elif status == "準備中": c[6].warning("準備中", icon="🏃")
+                        else: c[6].write(status)
+                        
+                        st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
         # === タブ2: 新規登録 ===
         with new_emp_tab2:
