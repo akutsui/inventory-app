@@ -415,10 +415,19 @@ def show_detail_dialog(row_data):
 @st.dialog("📝 入職準備タスク管理")
 def show_onboarding_task_dialog(row_data):
     st.write(f"### {row_data['氏名']} 様 (ID: {row_data['ID']})")
-    st.write(f"入職日: {row_data['入職日']} / 職種: {row_data.get('職種', '')} / 部署: {row_data['部署']}")
-    st.markdown("---")
     
     with st.form("onboarding_task_form"):
+        # 基本情報の編集
+        c_basic1, c_basic2, c_basic3 = st.columns(3)
+        with c_basic1:
+            val_date = parse_date(row_data.get('入職日'))
+            new_date = st.date_input("入職日", value=val_date)
+        with c_basic2:
+            new_job = st.text_input("職種", value=row_data.get('職種', ''))
+        with c_basic3:
+            new_dept = st.text_input("部署", value=row_data.get('部署', ''))
+
+        st.markdown("---")
         st.subheader("準備アイテム (フリーワード入力)")
         
         # テキストボックスの状態を保持する辞書
@@ -440,22 +449,22 @@ def show_onboarding_task_dialog(row_data):
         
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         
-        if st.form_submit_button("✅ タスク状況を更新する"):
+        if st.form_submit_button("✅ 更新する"):
             try:
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
                 
                 # 更新用データの構築
-                # ID, 氏名, 入職日, 職種, 部署, ステータス(更新), PC...その他(更新), 備考(更新)
+                # ID, 氏名, 入職日, 職種, 部署, ステータス, PC...その他, 備考
                 row_to_save = [
                     row_data['ID'],
                     row_data['氏名'],
-                    row_data['入職日'],
-                    row_data.get('職種', ''),
-                    row_data['部署'],
+                    str(new_date),  # 更新された日付
+                    new_job,        # 更新された職種
+                    new_dept,       # 更新された部署
                     new_status
                 ]
                 
-                # タスク列の値を追加 (入力されたテキスト)
+                # タスク列の値を追加
                 for task_name in ONBOARDING_TASKS:
                     row_to_save.append(task_status[task_name])
                 
@@ -467,7 +476,7 @@ def show_onboarding_task_dialog(row_data):
                     r = cell.row
                     # A列から最後まで一括更新
                     worksheet.update(f"A{r}", [row_to_save])
-                    st.toast("タスクを更新しました！", icon="✅")
+                    st.toast("更新しました！", icon="✅")
                     st.rerun()
                 else:
                     st.error("エラー: IDが見つかりませんでした。")
@@ -833,159 +842,6 @@ try:
                                     if st.button("次の50件 ➡️", key=f"next_{category}"):
                                         st.session_state.page_number += 1
                                         st.rerun()
-
-        # === タブ3：CSV一括入出力 ===
-        with main_tab3:
-            st.header("📂 CSVによる一括登録・編集")
-            st.caption("既存データの編集や、大量の新規データをまとめて登録するのに便利です。")
-
-            # --- エクスポート ---
-            st.subheader("1. データのエクスポート (ダウンロード)")
-            st.caption("現在登録されているデータをCSVファイルとしてダウンロードします。")
-            
-            export_cat = st.selectbox("カテゴリを選択", list(CATEGORY_MAP.keys()), key="export_cat")
-            if st.button("CSVをダウンロード作成"):
-                try:
-                    target_sheet_name = CATEGORY_MAP[export_cat]
-                    worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
-                    # 全データを取得してDataFrame化
-                    records = worksheet.get_all_records()
-                    export_df = pd.DataFrame(records)
-                    
-                    # CSV変換
-                    csv = export_df.to_csv(index=False).encode('utf-8_sig')
-                    
-                    st.download_button(
-                        label="📥 CSVをダウンロード",
-                        data=csv,
-                        file_name=f"{export_cat}_inventory_{datetime.now().strftime('%Y%m%d')}.csv",
-                        mime="text/csv",
-                    )
-                except Exception as e:
-                    st.error(f"エクスポートエラー: {e}")
-
-            st.markdown("---")
-
-            # --- インポート ---
-            st.subheader("2. データのインポート (アップロード)")
-            st.caption("編集したCSVファイルをアップロードしてください。**IDが一致するものは「更新」、新しいIDは「新規登録」**されます。")
-            
-            import_cat = st.selectbox("カテゴリを選択 (インポート先)", list(CATEGORY_MAP.keys()), key="import_cat")
-            uploaded_file = st.file_uploader("CSVファイルをドラッグ＆ドロップ", type=["csv"])
-            
-            if uploaded_file is not None:
-                try:
-                    # CSV読み込み
-                    import_df = pd.read_csv(uploaded_file)
-                    st.write("プレビュー:", import_df.head())
-                    
-                    if st.button("🚀 この内容で一括更新を実行"):
-                        target_sheet_name = CATEGORY_MAP[import_cat]
-                        worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
-                        
-                        # 現在の全データを取得してIDリストを作成 (行番号の特定用)
-                        current_records = worksheet.get_all_records()
-                        # IDをキー、行番号(2行目~)を値とする辞書を作成
-                        id_map = {str(record['ID']): i + 2 for i, record in enumerate(current_records)}
-                        
-                        # プログレスバー
-                        progress_bar = st.progress(0)
-                        total_rows = len(import_df)
-                        
-                        for i, row in import_df.iterrows():
-                            row_id = str(row['ID'])
-                            current_time = datetime.now().strftime('%Y-%m-%d')
-                            
-                            # 保存するデータの並び順を作成 (基本列 + カテゴリ固有列)
-                            # 基本列: ID, カテゴリ, 品名, 利用者, ステータス, 更新日
-                            row_data = [
-                                row_id,
-                                import_cat,
-                                row.get('品名', ''),
-                                row.get('利用者', ''),
-                                row.get('ステータス', '利用可能'),
-                                current_time
-                            ]
-                            
-                            # カテゴリ固有列
-                            for col_name in COLUMNS_DEF.get(import_cat, []):
-                                row_data.append(row.get(col_name, ''))
-                            
-                            # 更新 or 追加
-                            if row_id in id_map:
-                                # 既存IDならその行を更新
-                                row_num = id_map[row_id]
-                                # rangeを使って一括更新 (A列から最後まで)
-                                worksheet.update(f"A{row_num}", [row_data])
-                            else:
-                                # 新規IDなら末尾に追加
-                                worksheet.append_row(row_data)
-                            
-                            # 進捗更新
-                            progress_bar.progress((i + 1) / total_rows)
-                            time.sleep(0.1) # API制限考慮
-                        
-                        st.success("一括処理が完了しました！")
-                        get_all_data.clear() # キャッシュクリア
-                        time.sleep(1)
-                        st.rerun()
-                        
-                except Exception as e:
-                    st.error(f"インポートエラー: {e}")
-
-    # ==========================================
-    # ページ2：新規入職者管理
-    # ==========================================
-    elif page_selection == "👤 新規入職者管理":
-        new_emp_tab1, new_emp_tab2 = st.tabs(["📋 タスク管理・一覧", "➕ 新規登録"])
-        
-        # --- データ取得 ---
-        df_new_emp = get_new_employee_data()
-        
-        # === タブ1: 一覧 ===
-        with new_emp_tab1:
-            st.markdown("#### 新規入職者の準備状況")
-            
-            if df_new_emp.empty:
-                st.info("登録されているデータはありません。")
-            else:
-                # ソート用フラグ作成: 完了=1, その他=0
-                df_new_emp['is_completed'] = df_new_emp['ステータス'].apply(lambda x: 1 if str(x) == '完了' else 0)
-                # 日付ソート用
-                df_new_emp['sort_date'] = pd.to_datetime(df_new_emp['入職日'], errors='coerce')
-                
-                # 並び替え: 完了フラグ(昇順 0->1) -> 日付(昇順)
-                df_new_emp = df_new_emp.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
-
-                # テーブルヘッダー
-                cols = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
-                cols[0].write("**編集**")
-                cols[1].write("**ID**")
-                cols[2].write("**氏名**")
-                cols[3].write("**入職日**")
-                cols[4].write("**職種**")
-                cols[5].write("**部署**")
-                cols[6].write("**ステータス**")
-                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
-
-                for index, row in df_new_emp.iterrows():
-                    c = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
-                    
-                    if c[0].button("詳細", key=f"ne_btn_{row['ID']}"):
-                        show_onboarding_task_dialog(row)
-                    
-                    c[1].write(str(row['ID']))
-                    c[2].write(f"**{row['氏名']}**")
-                    c[3].write(str(row['入職日']))
-                    c[4].write(str(row.get('職種', '')))
-                    c[5].write(str(row['部署']))
-                    
-                    status = str(row['ステータス'])
-                    if status == "完了": c[6].success("完了", icon="✅")
-                    elif status == "準備中": c[6].warning("準備中", icon="🏃")
-                    else: c[6].write(status)
-                    
-                    st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
         # === タブ2: 新規登録 ===
         with new_emp_tab2:
