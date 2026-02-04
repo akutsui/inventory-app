@@ -117,7 +117,6 @@ CATEGORY_MAP = {
 
 # --- 設定: 新規入職者管理用のシート名とタスク項目 ---
 SHEET_NEW_EMPLOYEE = "新規入職者"
-# 項目を変更
 ONBOARDING_TASKS = [
     "PC", "iPad", "携帯", "駐車場", 
     "LineworksID", "モバカルモバナーID", 
@@ -439,7 +438,7 @@ def show_onboarding_task_dialog(row_data):
         cols = st.columns(2)
         for i, task_name in enumerate(ONBOARDING_TASKS):
             with cols[i % 2]:
-                # 既存の値を初期値として表示
+                # 既存の値を初期値として表示. getで安全に取得
                 current_val = str(row_data.get(task_name, ''))
                 task_status[task_name] = st.text_input(task_name, value=current_val)
         
@@ -844,6 +843,327 @@ try:
                                     if st.button("次の50件 ➡️", key=f"next_{category}"):
                                         st.session_state.page_number += 1
                                         st.rerun()
+
+        # === タブ2：新規登録 (在庫用) ===
+        with main_tab2:
+            st.header("新規データの登録")
+            st.caption("※既存データの編集は、一覧タブの「詳細」ボタンから行ってください。")
+            
+            st.subheader("① カテゴリとIDを指定")
+            selected_category_key = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True, key="new_reg_cat")
+            target_sheet_name = CATEGORY_MAP[selected_category_key]
+
+            st.subheader("② 詳細情報の入力")
+            with st.form("new_entry_form"):
+                col_basic1, col_basic2 = st.columns(2)
+                with col_basic1:
+                    input_id = st.text_input("ID (資産番号)")
+                    input_name = st.text_input("品名 (管理上の名称)")
+                with col_basic2:
+                    input_user = st.text_input("利用者(代表)")
+                    input_status = st.selectbox("ステータス", ["利用可能", "貸出中", "故障/修理中", "廃棄"])
+
+                st.markdown("---")
+                st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
+                
+                custom_values = {}
+
+                if selected_category_key == "PC":
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        d_buy = st.date_input("購入日", value=None)
+                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                        custom_values['OS'] = st.text_input("OS")
+                        custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)")
+                        custom_values['ラベル'] = st.text_input("ラベル")
+                        custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振")
+                    with c2:
+                        custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮")
+                        custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼")
+                        custom_values['ORCA益子'] = st.text_input("ORCA益子")
+                        custom_values['チームビューワID'] = st.text_input("チームビューワID")
+                        custom_values['チームビューワPW'] = st.text_input("チームビューワPW")
+                    
+                    st.caption("ウィルスバスター情報")
+                    c3, c4, c5 = st.columns(3)
+                    with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo")
+                    with c4: 
+                        d_vb = st.date_input("VB期限", value=None)
+                        custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
+                    with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム")
+                    custom_values['備考'] = st.text_area("備考")
+
+                elif selected_category_key == "訪問車":
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        custom_values['登録番号'] = st.text_input("登録番号")
+                        custom_values['使用部署'] = st.text_input("使用部署")
+                        custom_values['洗車グループ'] = st.text_input("洗車グループ")
+                        custom_values['駐車場'] = st.text_input("駐車場")
+                        custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ")
+                        custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所")
+                        custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無")
+                    with c2:
+                        d_lease_s = st.date_input("リース開始日", value=None)
+                        custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
+                        d_lease_e = st.date_input("リース満了日", value=None)
+                        custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
+                        d_syaken = st.date_input("車検満了日", value=None)
+                        custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
+                        d_park = st.date_input("駐禁除外指定満了日", value=None)
+                        custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
+                        d_road = st.date_input("通行禁止許可満了日", value=None)
+                        custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
+                    custom_values['備考'] = st.text_area("備考")
+
+                elif selected_category_key == "iPad":
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        d_buy = st.date_input("購入日", value=None)
+                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                        custom_values['ラベル'] = st.text_input("ラベル")
+                        custom_values['AppleID'] = st.text_input("AppleID")
+                        custom_values['シリアルNo'] = st.text_input("シリアルNo")
+                        custom_values['ストレージ'] = st.text_input("ストレージ")
+                    with c2:
+                        custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI")
+                        custom_values['端末番号'] = st.text_input("端末番号")
+                        custom_values['使用部署'] = st.text_input("使用部署")
+                        custom_values['キャリア'] = st.text_input("キャリア")
+                    custom_values['備考'] = st.text_area("備考")
+
+                elif selected_category_key == "携帯電話":
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        d_buy = st.date_input("購入日", value=None)
+                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                        custom_values['電話番号'] = st.text_input("電話番号")
+                        custom_values['SIM'] = st.text_input("SIM")
+                        custom_values['メーカー'] = st.text_input("メーカー")
+                    with c2:
+                        custom_values['製造番号'] = st.text_input("製造番号")
+                        custom_values['使用部署'] = st.text_input("使用部署")
+                        custom_values['保管場所'] = st.text_input("保管場所")
+                        custom_values['キャリア'] = st.text_input("キャリア")
+                    custom_values['備考'] = st.text_area("備考")
+
+                elif selected_category_key == "Office365":
+                    c1, c2 = st.columns(2)
+                    with c1: custom_values['アカウントID'] = st.text_input("アカウントID")
+                    with c2: custom_values['パスワード'] = st.text_input("パスワード")
+                    
+                    st.caption("共有利用者")
+                    c_u1, c_u2, c_u3 = st.columns(3)
+                    with c_u1: custom_values['利用者1'] = st.text_input("利用者1")
+                    with c_u2: custom_values['利用者2'] = st.text_input("利用者2")
+                    with c_u3: custom_values['利用者3'] = st.text_input("利用者3")
+                    
+                    c_u4, c_u5 = st.columns(2)
+                    with c_u4: custom_values['利用者4'] = st.text_input("利用者4")
+                    with c_u5: custom_values['利用者5'] = st.text_input("利用者5")
+                    
+                    custom_values['備考'] = st.text_area("備考")
+
+                elif selected_category_key == "ウイルスバスター":
+                    st.caption("利用者情報")
+                    c1, c2, c3 = st.columns(3)
+                    with c1: custom_values['利用者1'] = st.text_input("利用者1")
+                    with c2: custom_values['利用者2'] = st.text_input("利用者2")
+                    with c3: custom_values['利用者3'] = st.text_input("利用者3")
+                    
+                    st.caption("期限")
+                    d_exp = st.date_input("期限", value=None)
+                    custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
+                    
+                    custom_values['備考'] = st.text_area("備考")
+
+                elif selected_category_key == "その他":
+                    custom_values['備考'] = st.text_area("備考")
+
+                st.markdown("---")
+                if st.form_submit_button("新規登録"):
+                    if not input_id or not input_name:
+                        st.error("IDと品名は必須です！")
+                    else:
+                        try:
+                            worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
+                            current_time = datetime.now().strftime('%Y-%m-%d')
+                            row_to_save = [input_id, selected_category_key, input_name, input_user, input_status, current_time]
+                            for col_name in COLUMNS_DEF.get(selected_category_key, []):
+                                row_to_save.append(custom_values.get(col_name, ''))
+                            
+                            if worksheet.find(input_id):
+                                st.error(f"エラー: ID '{input_id}' は既に登録されています。")
+                            else:
+                                worksheet.append_row(row_to_save)
+                                st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
+                                get_all_data.clear()
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"書き込みエラー: {e}")
+
+        # === タブ3：CSV一括入出力 ===
+        with main_tab3:
+            st.header("📂 CSVによる一括登録・編集")
+            st.caption("既存データの編集や、大量の新規データをまとめて登録するのに便利です。")
+
+            # --- エクスポート ---
+            st.subheader("1. データのエクスポート (ダウンロード)")
+            st.caption("現在登録されているデータをCSVファイルとしてダウンロードします。")
+            
+            export_cat = st.selectbox("カテゴリを選択", list(CATEGORY_MAP.keys()), key="export_cat")
+            if st.button("CSVをダウンロード作成"):
+                try:
+                    target_sheet_name = CATEGORY_MAP[export_cat]
+                    worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
+                    # 全データを取得してDataFrame化
+                    records = worksheet.get_all_records()
+                    export_df = pd.DataFrame(records)
+                    
+                    # CSV変換
+                    csv = export_df.to_csv(index=False).encode('utf-8_sig')
+                    
+                    st.download_button(
+                        label="📥 CSVをダウンロード",
+                        data=csv,
+                        file_name=f"{export_cat}_inventory_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv",
+                    )
+                except Exception as e:
+                    st.error(f"エクスポートエラー: {e}")
+
+            st.markdown("---")
+
+            # --- インポート ---
+            st.subheader("2. データのインポート (アップロード)")
+            st.caption("編集したCSVファイルをアップロードしてください。**IDが一致するものは「更新」、新しいIDは「新規登録」**されます。")
+            
+            import_cat = st.selectbox("カテゴリを選択 (インポート先)", list(CATEGORY_MAP.keys()), key="import_cat")
+            uploaded_file = st.file_uploader("CSVファイルをドラッグ＆ドロップ", type=["csv"])
+            
+            if uploaded_file is not None:
+                try:
+                    # CSV読み込み
+                    import_df = pd.read_csv(uploaded_file)
+                    st.write("プレビュー:", import_df.head())
+                    
+                    if st.button("🚀 この内容で一括更新を実行"):
+                        target_sheet_name = CATEGORY_MAP[import_cat]
+                        worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
+                        
+                        # 現在の全データを取得してIDリストを作成 (行番号の特定用)
+                        current_records = worksheet.get_all_records()
+                        # IDをキー、行番号(2行目~)を値とする辞書を作成
+                        id_map = {str(record['ID']): i + 2 for i, record in enumerate(current_records)}
+                        
+                        # プログレスバー
+                        progress_bar = st.progress(0)
+                        total_rows = len(import_df)
+                        
+                        for i, row in import_df.iterrows():
+                            row_id = str(row['ID'])
+                            current_time = datetime.now().strftime('%Y-%m-%d')
+                            
+                            # 保存するデータの並び順を作成 (基本列 + カテゴリ固有列)
+                            # 基本列: ID, カテゴリ, 品名, 利用者, ステータス, 更新日
+                            row_data = [
+                                row_id,
+                                import_cat,
+                                row.get('品名', ''),
+                                row.get('利用者', ''),
+                                row.get('ステータス', '利用可能'),
+                                current_time
+                            ]
+                            
+                            # カテゴリ固有列
+                            for col_name in COLUMNS_DEF.get(import_cat, []):
+                                row_data.append(row.get(col_name, ''))
+                            
+                            # 更新 or 追加
+                            if row_id in id_map:
+                                # 既存IDならその行を更新
+                                row_num = id_map[row_id]
+                                # rangeを使って一括更新 (A列から最後まで)
+                                worksheet.update(f"A{row_num}", [row_data])
+                            else:
+                                # 新規IDなら末尾に追加
+                                worksheet.append_row(row_data)
+                            
+                            # 進捗更新
+                            progress_bar.progress((i + 1) / total_rows)
+                            time.sleep(0.1) # API制限考慮
+                        
+                        st.success("一括処理が完了しました！")
+                        get_all_data.clear() # キャッシュクリア
+                        time.sleep(1)
+                        st.rerun()
+                        
+                except Exception as e:
+                    st.error(f"インポートエラー: {e}")
+
+    # ==========================================
+    # ページ2：新規入職者管理
+    # ==========================================
+    elif page_selection == "👤 新規入職者管理":
+        new_emp_tab1, new_emp_tab2 = st.tabs(["📋 タスク管理・一覧", "➕ 新規登録"])
+        
+        # --- データ取得 ---
+        df_new_emp = get_new_employee_data()
+        
+        # === タブ1: 一覧 ===
+        with new_emp_tab1:
+            st.markdown("#### 新規入職者の準備状況")
+            
+            if df_new_emp is None:
+                st.error(f"シート「{SHEET_NEW_EMPLOYEE}」が見つかりません。スプレッドシートに作成してください。")
+            elif df_new_emp.empty:
+                st.info("登録されているデータはありません。")
+            else:
+                # 必須カラムチェック
+                req_cols = ["ID", "氏名", "入職日", "職種", "部署", "ステータス"]
+                missing = [c for c in req_cols if c not in df_new_emp.columns]
+                
+                if missing:
+                    st.error(f"エラー: スプレッドシートに以下の列が見つかりません: {', '.join(missing)}")
+                    st.warning("シートの見出し行を確認してください。")
+                else:
+                    # ソート用フラグ作成: 完了=1, その他=0
+                    df_new_emp['is_completed'] = df_new_emp['ステータス'].apply(lambda x: 1 if str(x) == '完了' else 0)
+                    # 日付ソート用
+                    df_new_emp['sort_date'] = pd.to_datetime(df_new_emp['入職日'], errors='coerce')
+                    
+                    # 並び替え: 完了フラグ(昇順 0->1) -> 日付(昇順)
+                    df_new_emp = df_new_emp.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
+
+                    # テーブルヘッダー
+                    cols = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
+                    cols[0].write("**編集**")
+                    cols[1].write("**ID**")
+                    cols[2].write("**氏名**")
+                    cols[3].write("**入職日**")
+                    cols[4].write("**職種**")
+                    cols[5].write("**部署**")
+                    cols[6].write("**ステータス**")
+                    st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+
+                    for index, row in df_new_emp.iterrows():
+                        c = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
+                        
+                        if c[0].button("詳細", key=f"ne_btn_{row['ID']}"):
+                            show_onboarding_task_dialog(row)
+                        
+                        c[1].write(str(row['ID']))
+                        c[2].write(f"**{row['氏名']}**")
+                        c[3].write(str(row['入職日']))
+                        c[4].write(str(row.get('職種', '')))
+                        c[5].write(str(row['部署']))
+                        
+                        status = str(row['ステータス'])
+                        if status == "完了": c[6].success("完了", icon="✅")
+                        elif status == "準備中": c[6].warning("準備中", icon="🏃")
+                        else: c[6].write(status)
+                        
+                        st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
         # === タブ2: 新規登録 ===
         with new_emp_tab2:
