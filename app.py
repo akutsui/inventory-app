@@ -127,7 +127,7 @@ ONBOARDING_TASKS = [
 # --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
     "PC": [
-        "使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", # 使用部署を追加
+        "使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル",
         "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", 
         "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム",
         "チームビューワID", "チームビューワPW", "備考"
@@ -266,7 +266,8 @@ def show_detail_dialog(row_data):
             new_name = st.text_input("品名", value=row_data['品名'])
             new_user = st.text_input("利用者(代表)", value=row_data['利用者'])
         with col2:
-            status_options = ["利用可能", "貸出中", "故障/修理中", "廃棄"]
+            # ステータス選択肢の変更
+            status_options = ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"]
             curr_status = row_data['ステータス']
             idx_status = status_options.index(curr_status) if curr_status in status_options else 0
             new_status = st.selectbox("ステータス", status_options, index=idx_status)
@@ -279,7 +280,7 @@ def show_detail_dialog(row_data):
         if cat == "PC":
             c1, c2 = st.columns(2)
             with c1:
-                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署')) # Added
+                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
                 d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                 custom_values['OS'] = st.text_input("OS", value=row_data.get('OS'))
@@ -655,7 +656,7 @@ try:
                             
                             st.caption(f"全 {total_items} 件中、{start_idx + 1} 〜 {min(end_idx, total_items)} 件目を表示中")
 
-                            if category == "PC": # 変更
+                            if category == "PC":
                                 cols = st.columns([0.7, 1.0, 1.5, 2.0, 1.5, 1.5, 1.0])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
@@ -755,6 +756,7 @@ try:
                                         
                                         status = row['ステータス']
                                         if status == "利用可能": c[6].info(status, icon="✅")
+                                        elif status == "利用中": c[6].success(status, icon="👤")
                                         elif status == "貸出中": c[6].warning(status, icon="🏃")
                                         elif status == "故障/修理中": c[6].error(status, icon="⚠️")
                                         else: c[6].write(status)
@@ -773,6 +775,7 @@ try:
                                         
                                         status = row['ステータス']
                                         if status == "利用可能": c[6].info(status, icon="✅")
+                                        elif status == "利用中": c[6].success(status, icon="👤")
                                         elif status == "貸出中": c[6].warning(status, icon="🏃")
                                         elif status == "故障/修理中": c[6].error(status, icon="⚠️")
                                         else: c[6].write(status)
@@ -790,6 +793,7 @@ try:
                                         
                                         status = row['ステータス']
                                         if status == "利用可能": c[5].info(status, icon="✅")
+                                        elif status == "利用中": c[5].success(status, icon="👤")
                                         elif status == "貸出中": c[5].warning(status, icon="🏃")
                                         elif status == "故障/修理中": c[5].error(status, icon="⚠️")
                                         else: c[5].write(status)
@@ -821,6 +825,7 @@ try:
                                         
                                         status = row['ステータス']
                                         if status == "利用可能": c[6].info(status, icon="✅")
+                                        elif status == "利用中": c[6].success(status, icon="👤")
                                         elif status == "貸出中": c[6].warning(status, icon="🏃")
                                         elif status == "故障/修理中": c[6].error(status, icon="⚠️")
                                         else: c[6].write(status)
@@ -837,6 +842,7 @@ try:
                                         
                                         status = row['ステータス']
                                         if status == "利用可能": c[4].info(status, icon="✅")
+                                        elif status == "利用中": c[4].success(status, icon="👤")
                                         elif status == "貸出中": c[4].warning(status, icon="🏃")
                                         elif status == "故障/修理中": c[4].error(status, icon="⚠️")
                                         else: c[4].write(status)
@@ -884,7 +890,7 @@ try:
                     input_name = st.text_input("品名 (管理上の名称)")
                 with col_basic2:
                     input_user = st.text_input("利用者(代表)")
-                    input_status = st.selectbox("ステータス", ["利用可能", "貸出中", "故障/修理中", "廃棄"])
+                    input_status = st.selectbox("ステータス", ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"])
 
                 st.markdown("---")
                 st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
