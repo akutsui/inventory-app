@@ -112,7 +112,7 @@ CATEGORY_MAP = {
     "携帯電話": "携帯電話",
     "Office365": "Office365",
     "ウイルスバスター": "ウイルスバスター",
-    "その他機器": "その他機器" # 変更
+    "その他機器": "その他機器"
 }
 
 # --- 設定: 新規入職者管理用のシート名とタスク項目 ---
@@ -153,8 +153,8 @@ COLUMNS_DEF = {
     "ウイルスバスター": [
         "利用者1", "利用者2", "利用者3", "期限", "備考"
     ],
-    "その他機器": [ # 変更
-        "備考"
+    "その他機器": [
+        "使用部署", "使用場所", "使用開始日", "備考"
     ]
 }
 
@@ -386,8 +386,16 @@ def show_detail_dialog(row_data):
             
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
-        elif cat == "その他機器": # 変更
-            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+        elif cat == "その他機器":
+            c1, c2 = st.columns(2)
+            with c1:
+                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
+                custom_values['使用場所'] = st.text_input("使用場所", value=row_data.get('使用場所', ''))
+            with c2:
+                d_start = st.date_input("使用開始日", value=get_date_val('使用開始日'))
+                custom_values['使用開始日'] = d_start.strftime('%Y-%m-%d') if d_start else ''
+            
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
 
         st.markdown("---")
         if st.form_submit_button("✅ この内容で更新する"):
@@ -720,6 +728,17 @@ try:
                                 cols[6].write("**ステータス**")
                                 cols[7].write("**期限**")
 
+                            elif category == "その他機器": # 追加
+                                cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
+                                cols[0].write("**編集**")
+                                cols[1].write("**ID**")
+                                cols[2].write("**品名**")
+                                cols[3].write("**利用者**")
+                                cols[4].write("**使用部署**")
+                                cols[5].write("**使用場所**")
+                                cols[6].write("**ステータス**")
+                                cols[7].write("**使用開始日**")
+
                             else:
                                 cols = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                                 cols[0].write("**編集**")
@@ -830,6 +849,25 @@ try:
                                         else: c[6].write(status)
                                         
                                         c[7].write(f"{row.get('期限', '')}")
+
+                                    elif category == "その他機器": # 追加
+                                        c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
+                                        if c[0].button("詳細", key=f"btn_{category}_{index}"):
+                                            show_detail_dialog(row)
+                                        c[1].write(f"{row['ID']}")
+                                        c[2].write(f"**{safe_text(row['品名'])}**")
+                                        c[3].write(f"{row['利用者']}")
+                                        c[4].write(f"{row.get('使用部署', '')}")
+                                        c[5].write(f"{row.get('使用場所', '')}")
+                                        
+                                        status = row['ステータス']
+                                        if status == "利用可能": c[6].info(status, icon="✅")
+                                        elif status == "利用中": c[6].success(status, icon="👤")
+                                        elif status == "貸出中": c[6].warning(status, icon="🏃")
+                                        elif status == "故障/修理中": c[6].error(status, icon="⚠️")
+                                        else: c[6].write(status)
+
+                                        c[7].write(f"{row.get('使用開始日', '')}")
 
                                     else:
                                         c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
@@ -1008,6 +1046,14 @@ try:
                     custom_values['備考'] = st.text_area("備考")
 
                 elif selected_category_key == "その他機器":
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        custom_values['使用部署'] = st.text_input("使用部署")
+                        custom_values['使用場所'] = st.text_input("使用場所")
+                    with c2:
+                        d_start = st.date_input("使用開始日", value=None)
+                        custom_values['使用開始日'] = d_start.strftime('%Y-%m-%d') if d_start else ''
+                    
                     custom_values['備考'] = st.text_area("備考")
 
                 st.markdown("---")
@@ -1307,7 +1353,6 @@ try:
                     
                     status = item.get('ステータス')
                     if status == "利用可能": c6.info(status)
-                    elif status == "利用中": c6.success(status) # 追加
                     else: c6.write(status)
                     
                     st.markdown("<hr style='margin: 0.2rem 0'>", unsafe_allow_html=True)
