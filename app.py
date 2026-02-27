@@ -112,7 +112,7 @@ CATEGORY_MAP = {
     "携帯電話": "携帯電話",
     "Office365": "Office365",
     "ウイルスバスター": "ウイルスバスター",
-    "その他": "その他"
+    "その他機器": "その他機器" # 変更
 }
 
 # --- 設定: 新規入職者管理用のシート名とタスク項目 ---
@@ -153,7 +153,7 @@ COLUMNS_DEF = {
     "ウイルスバスター": [
         "利用者1", "利用者2", "利用者3", "期限", "備考"
     ],
-    "その他": [
+    "その他機器": [ # 変更
         "備考"
     ]
 }
@@ -266,7 +266,6 @@ def show_detail_dialog(row_data):
             new_name = st.text_input("品名", value=row_data['品名'])
             new_user = st.text_input("利用者(代表)", value=row_data['利用者'])
         with col2:
-            # ステータス選択肢の変更
             status_options = ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"]
             curr_status = row_data['ステータス']
             idx_status = status_options.index(curr_status) if curr_status in status_options else 0
@@ -387,7 +386,7 @@ def show_detail_dialog(row_data):
             
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
-        elif cat == "その他":
+        elif cat == "その他機器": # 変更
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
 
         st.markdown("---")
@@ -1008,7 +1007,7 @@ try:
                     
                     custom_values['備考'] = st.text_area("備考")
 
-                elif selected_category_key == "その他":
+                elif selected_category_key == "その他機器":
                     custom_values['備考'] = st.text_area("備考")
 
                 st.markdown("---")
@@ -1308,6 +1307,7 @@ try:
                     
                     status = item.get('ステータス')
                     if status == "利用可能": c6.info(status)
+                    elif status == "利用中": c6.success(status) # 追加
                     else: c6.write(status)
                     
                     st.markdown("<hr style='margin: 0.2rem 0'>", unsafe_allow_html=True)
