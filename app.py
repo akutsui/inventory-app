@@ -117,11 +117,12 @@ CATEGORY_MAP = {
 
 # --- 設定: 新規入職者管理用のシート名とタスク項目 ---
 SHEET_NEW_EMPLOYEE = "新規入職者"
+# 三文判・シャチハタを追加
 ONBOARDING_TASKS = [
     "PC", "iPad", "携帯", "駐車場", 
     "LineworksID", "モバカルモバナーID", 
     "MCS", "アルコールチェックID", "訪問車両", 
-    "備品", "机・椅子"
+    "備品", "机・椅子", "三文判", "シャチハタ"
 ]
 
 # --- 設定: 各シートの列定義 ---
@@ -279,38 +280,38 @@ def show_detail_dialog(row_data):
         if cat == "PC":
             c1, c2 = st.columns(2)
             with c1:
-                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
+                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
                 d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                custom_values['OS'] = st.text_input("OS", value=row_data.get('OS'))
-                custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=row_data.get('プロダクトID(シリアルNo)'))
-                custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル'))
+                custom_values['OS'] = st.text_input("OS", value=row_data.get('OS', ''))
+                custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)", value=row_data.get('プロダクトID(シリアルNo)', ''))
+                custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル', ''))
             with c2:
-                custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振", value=row_data.get('officeのアカウント割振'))
-                custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮", value=row_data.get('ORCA宇都宮'))
-                custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼", value=row_data.get('ORCA鹿沼'))
-                custom_values['ORCA益子'] = st.text_input("ORCA益子", value=row_data.get('ORCA益子'))
-                custom_values['チームビューワID'] = st.text_input("チームビューワID", value=row_data.get('チームビューワID'))
-                custom_values['チームビューワPW'] = st.text_input("チームビューワPW", value=row_data.get('チームビューワPW'))
+                custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振", value=row_data.get('officeのアカウント割振', ''))
+                custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮", value=row_data.get('ORCA宇都宮', ''))
+                custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼", value=row_data.get('ORCA鹿沼', ''))
+                custom_values['ORCA益子'] = st.text_input("ORCA益子", value=row_data.get('ORCA益子', ''))
+                custom_values['チームビューワID'] = st.text_input("チームビューワID", value=row_data.get('チームビューワID', ''))
+                custom_values['チームビューワPW'] = st.text_input("チームビューワPW", value=row_data.get('チームビューワPW', ''))
             st.caption("ウィルスバスター情報")
             c3, c4, c5 = st.columns(3)
-            with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo", value=row_data.get('ウィルスバスターシリアルNo'))
+            with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo", value=row_data.get('ウィルスバスターシリアルNo', ''))
             with c4: 
                 d_vb = st.date_input("VB期限", value=get_date_val('ウィルスバスター期限'))
                 custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
-            with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム", value=row_data.get('ウィルスバスター識別ネーム'))
-            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+            with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム", value=row_data.get('ウィルスバスター識別ネーム', ''))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
 
         elif cat == "訪問車":
             c1, c2 = st.columns(2)
             with c1:
-                custom_values['登録番号'] = st.text_input("登録番号", value=row_data.get('登録番号'))
-                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
-                custom_values['洗車グループ'] = st.text_input("洗車グループ", value=row_data.get('洗車グループ'))
-                custom_values['駐車場'] = st.text_input("駐車場", value=row_data.get('駐車場'))
-                custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ", value=row_data.get('タイヤサイズ'))
-                custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所", value=row_data.get('タイヤ保管場所'))
-                custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無", value=row_data.get('スタッドレス有無'))
+                custom_values['登録番号'] = st.text_input("登録番号", value=row_data.get('登録番号', ''))
+                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
+                custom_values['洗車グループ'] = st.text_input("洗車グループ", value=row_data.get('洗車グループ', ''))
+                custom_values['駐車場'] = st.text_input("駐車場", value=row_data.get('駐車場', ''))
+                custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ", value=row_data.get('タイヤサイズ', ''))
+                custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所", value=row_data.get('タイヤ保管場所', ''))
+                custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無", value=row_data.get('スタッドレス有無', ''))
             with c2:
                 d_lease_s = st.date_input("リース開始日", value=get_date_val('リース開始日'))
                 custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
@@ -322,69 +323,69 @@ def show_detail_dialog(row_data):
                 custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
                 d_road = st.date_input("通行禁止許可満了日", value=get_date_val('通行禁止許可満了日'))
                 custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
-            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
 
         elif cat == "iPad":
             c1, c2 = st.columns(2)
             with c1:
                 d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル'))
-                custom_values['AppleID'] = st.text_input("AppleID", value=row_data.get('AppleID'))
-                custom_values['AppleIDパスワード'] = st.text_input("AppleIDパスワード", value=row_data.get('AppleIDパスワード'))
-                custom_values['シリアルNo'] = st.text_input("シリアルNo", value=row_data.get('シリアルNo'))
-                custom_values['ストレージ'] = st.text_input("ストレージ", value=row_data.get('ストレージ'))
+                custom_values['ラベル'] = st.text_input("ラベル", value=row_data.get('ラベル', ''))
+                custom_values['AppleID'] = st.text_input("AppleID", value=row_data.get('AppleID', ''))
+                custom_values['AppleIDパスワード'] = st.text_input("AppleIDパスワード", value=row_data.get('AppleIDパスワード', ''))
+                custom_values['シリアルNo'] = st.text_input("シリアルNo", value=row_data.get('シリアルNo', ''))
+                custom_values['ストレージ'] = st.text_input("ストレージ", value=row_data.get('ストレージ', ''))
             with c2:
-                custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI", value=row_data.get('製造番号IMEI'))
-                custom_values['端末番号'] = st.text_input("端末番号", value=row_data.get('端末番号'))
-                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
-                custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア'))
-            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+                custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI", value=row_data.get('製造番号IMEI', ''))
+                custom_values['端末番号'] = st.text_input("端末番号", value=row_data.get('端末番号', ''))
+                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
+                custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア', ''))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
 
         elif cat == "携帯電話":
             c1, c2 = st.columns(2)
             with c1:
                 d_buy = st.date_input("購入日", value=get_date_val('購入日'))
                 custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号'))
-                custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM'))
-                custom_values['メーカー'] = st.text_input("メーカー", value=row_data.get('メーカー'))
+                custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号', ''))
+                custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM', ''))
+                custom_values['メーカー'] = st.text_input("メーカー", value=row_data.get('メーカー', ''))
             with c2:
-                custom_values['製造番号'] = st.text_input("製造番号", value=row_data.get('製造番号'))
-                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署'))
-                custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所'))
-                custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア'))
-            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+                custom_values['製造番号'] = st.text_input("製造番号", value=row_data.get('製造番号', ''))
+                custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
+                custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所', ''))
+                custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア', ''))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
 
         elif cat == "Office365":
             c1, c2 = st.columns(2)
-            with c1: custom_values['アカウントID'] = st.text_input("アカウントID", value=row_data.get('アカウントID'))
-            with c2: custom_values['パスワード'] = st.text_input("パスワード", value=row_data.get('パスワード'))
+            with c1: custom_values['アカウントID'] = st.text_input("アカウントID", value=row_data.get('アカウントID', ''))
+            with c2: custom_values['パスワード'] = st.text_input("パスワード", value=row_data.get('パスワード', ''))
             
             st.caption("共有利用者")
             c_u1, c_u2, c_u3 = st.columns(3)
-            with c_u1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1'))
-            with c_u2: custom_values['利用者2'] = st.text_input("利用者2", value=row_data.get('利用者2'))
-            with c_u3: custom_values['利用者3'] = st.text_input("利用者3", value=row_data.get('利用者3'))
+            with c_u1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1', ''))
+            with c_u2: custom_values['利用者2'] = st.text_input("利用者2", value=row_data.get('利用者2', ''))
+            with c_u3: custom_values['利用者3'] = st.text_input("利用者3", value=row_data.get('利用者3', ''))
             
             c_u4, c_u5 = st.columns(2)
-            with c_u4: custom_values['利用者4'] = st.text_input("利用者4", value=row_data.get('利用者4'))
-            with c_u5: custom_values['利用者5'] = st.text_input("利用者5", value=row_data.get('利用者5'))
+            with c_u4: custom_values['利用者4'] = st.text_input("利用者4", value=row_data.get('利用者4', ''))
+            with c_u5: custom_values['利用者5'] = st.text_input("利用者5", value=row_data.get('利用者5', ''))
             
-            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
 
         elif cat == "ウイルスバスター":
             st.caption("利用者情報")
             c1, c2, c3 = st.columns(3)
-            with c1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1'))
-            with c2: custom_values['利用者2'] = st.text_input("利用者2", value=row_data.get('利用者2'))
-            with c3: custom_values['利用者3'] = st.text_input("利用者3", value=row_data.get('利用者3'))
+            with c1: custom_values['利用者1'] = st.text_input("利用者1", value=row_data.get('利用者1', ''))
+            with c2: custom_values['利用者2'] = st.text_input("利用者2", value=row_data.get('利用者2', ''))
+            with c3: custom_values['利用者3'] = st.text_input("利用者3", value=row_data.get('利用者3', ''))
             
             st.caption("期限")
             d_exp = st.date_input("期限", value=get_date_val('期限'))
             custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
             
-            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考'))
+            custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
 
         elif cat == "その他機器":
             c1, c2 = st.columns(2)
@@ -425,10 +426,16 @@ def show_detail_dialog(row_data):
 # --- ポップアップ詳細・タスク管理 (新規入職者用) ---
 @st.dialog("📝 入職準備タスク管理")
 def show_onboarding_task_dialog(row_data):
-    st.write(f"### {row_data['氏名']} 様 (ID: {row_data['ID']})")
+    st.write(f"### ID: {row_data.get('ID', '')}")
     
     with st.form("onboarding_task_form"):
-        # 基本情報の編集
+        # 基本情報の編集 (氏名・フリガナも編集可能に)
+        c_name1, c_name2 = st.columns(2)
+        with c_name1:
+            new_name = st.text_input("氏名", value=row_data.get('氏名', ''))
+        with c_name2:
+            new_furigana = st.text_input("フリガナ", value=row_data.get('フリガナ', ''))
+            
         c_basic1, c_basic2, c_basic3 = st.columns(3)
         with c_basic1:
             val_date = parse_date(row_data.get('入職日'))
@@ -448,7 +455,7 @@ def show_onboarding_task_dialog(row_data):
         cols = st.columns(2)
         for i, task_name in enumerate(ONBOARDING_TASKS):
             with cols[i % 2]:
-                # 既存の値を初期値として表示. getで安全に取得
+                # 既存の値を初期値として表示
                 current_val = str(row_data.get(task_name, ''))
                 task_status[task_name] = st.text_input(task_name, value=current_val)
         
@@ -465,13 +472,14 @@ def show_onboarding_task_dialog(row_data):
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
                 
                 # 更新用データの構築
-                # ID, 氏名, 入職日, 職種, 部署, ステータス, PC...その他, 備考
+                # ID, 氏名, フリガナ, 入職日, 職種, 部署, ステータス, PC...その他, 備考
                 row_to_save = [
-                    row_data['ID'],
-                    row_data['氏名'],
-                    str(new_date),  # 更新された日付
-                    new_job,        # 更新された職種
-                    new_dept,       # 更新された部署
+                    row_data.get('ID', ''),
+                    new_name,
+                    new_furigana,
+                    str(new_date) if new_date else '',
+                    new_job,
+                    new_dept,
                     new_status
                 ]
                 
@@ -482,7 +490,7 @@ def show_onboarding_task_dialog(row_data):
                 row_to_save.append(new_note)
                 
                 # IDで行を検索して更新
-                cell = worksheet.find(str(row_data['ID']))
+                cell = worksheet.find(str(row_data.get('ID', '')))
                 if cell:
                     r = cell.row
                     # A列から最後まで一括更新
@@ -728,7 +736,7 @@ try:
                                 cols[6].write("**ステータス**")
                                 cols[7].write("**期限**")
 
-                            elif category == "その他機器": # 追加
+                            elif category == "その他機器":
                                 cols = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
                                 cols[0].write("**編集**")
                                 cols[1].write("**ID**")
@@ -755,24 +763,24 @@ try:
                                         c = st.columns([0.7, 1.0, 1.5, 2.0, 1.5, 1.5, 1.0])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
+                                        c[1].write(f"{row.get('ID', '')}")
                                         c[2].write(f"**{row.get('ラベル', '')}**")
-                                        c[3].write(f"**{safe_text(row['品名'])}**")
-                                        c[4].write(f"{row['利用者']}")
-                                        c[5].write(f"{row.get('使用部署', '')}") # 列があれば表示
+                                        c[3].write(f"**{safe_text(row.get('品名', ''))}**")
+                                        c[4].write(f"{row.get('利用者', '')}")
+                                        c[5].write(f"{row.get('使用部署', '')}") 
                                         c[6].write(f"{row.get('OS', '')}")
 
                                     elif category == "訪問車":
                                         c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
-                                        c[2].write(f"**{safe_text(row['品名'])}**")
+                                        c[1].write(f"{row.get('ID', '')}")
+                                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
                                         c[3].write(f"{row.get('登録番号', '')}")
-                                        c[4].write(f"{row['利用者']}")
+                                        c[4].write(f"{row.get('利用者', '')}")
                                         c[5].write(f"{row.get('使用部署', '')}")
                                         
-                                        status = row['ステータス']
+                                        status = row.get('ステータス', '')
                                         if status == "利用可能": c[6].info(status, icon="✅")
                                         elif status == "利用中": c[6].success(status, icon="👤")
                                         elif status == "貸出中": c[6].warning(status, icon="🏃")
@@ -785,13 +793,13 @@ try:
                                         c = st.columns([0.7, 1.2, 1.5, 1.8, 1.5, 1.5, 1.0, 1.5])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
+                                        c[1].write(f"{row.get('ID', '')}")
                                         c[2].write(f"**{row.get('ラベル', '')}**")
-                                        c[3].write(f"**{safe_text(row['品名'])}**")
-                                        c[4].write(f"{row['利用者']}")
+                                        c[3].write(f"**{safe_text(row.get('品名', ''))}**")
+                                        c[4].write(f"{row.get('利用者', '')}")
                                         c[5].write(f"{row.get('使用部署', '')}")
                                         
-                                        status = row['ステータス']
+                                        status = row.get('ステータス', '')
                                         if status == "利用可能": c[6].info(status, icon="✅")
                                         elif status == "利用中": c[6].success(status, icon="👤")
                                         elif status == "貸出中": c[6].warning(status, icon="🏃")
@@ -804,12 +812,12 @@ try:
                                         c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.0, 1.5, 1.5])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
-                                        c[2].write(f"**{safe_text(row['品名'])}**")
-                                        c[3].write(f"{row['利用者']}")
+                                        c[1].write(f"{row.get('ID', '')}")
+                                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
+                                        c[3].write(f"{row.get('利用者', '')}")
                                         c[4].write(f"{row.get('使用部署', '')}")
                                         
-                                        status = row['ステータス']
+                                        status = row.get('ステータス', '')
                                         if status == "利用可能": c[5].info(status, icon="✅")
                                         elif status == "利用中": c[5].success(status, icon="👤")
                                         elif status == "貸出中": c[5].warning(status, icon="🏃")
@@ -823,8 +831,8 @@ try:
                                         c = st.columns([0.7, 1.0, 1.5, 1.0, 1.0, 1.0, 1.0, 1.0])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
-                                        c[2].write(f"**{safe_text(row['品名'])}**")
+                                        c[1].write(f"{row.get('ID', '')}")
+                                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
                                         c[3].write(f"{row.get('利用者1', '')}")
                                         c[4].write(f"{row.get('利用者2', '')}")
                                         c[5].write(f"{row.get('利用者3', '')}")
@@ -835,13 +843,13 @@ try:
                                         c = st.columns([0.7, 1.2, 2.0, 1.2, 1.2, 1.2, 1.0, 1.5])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
-                                        c[2].write(f"**{safe_text(row['品名'])}**")
+                                        c[1].write(f"{row.get('ID', '')}")
+                                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
                                         c[3].write(f"{row.get('利用者1', '')}")
                                         c[4].write(f"{row.get('利用者2', '')}")
                                         c[5].write(f"{row.get('利用者3', '')}")
                                         
-                                        status = row['ステータス']
+                                        status = row.get('ステータス', '')
                                         if status == "利用可能": c[6].info(status, icon="✅")
                                         elif status == "利用中": c[6].success(status, icon="👤")
                                         elif status == "貸出中": c[6].warning(status, icon="🏃")
@@ -850,17 +858,17 @@ try:
                                         
                                         c[7].write(f"{row.get('期限', '')}")
 
-                                    elif category == "その他機器": # 追加
+                                    elif category == "その他機器":
                                         c = st.columns([0.7, 1.2, 1.8, 1.5, 1.5, 1.5, 1.0, 1.5])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
-                                        c[2].write(f"**{safe_text(row['品名'])}**")
-                                        c[3].write(f"{row['利用者']}")
+                                        c[1].write(f"{row.get('ID', '')}")
+                                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
+                                        c[3].write(f"{row.get('利用者', '')}")
                                         c[4].write(f"{row.get('使用部署', '')}")
                                         c[5].write(f"{row.get('使用場所', '')}")
                                         
-                                        status = row['ステータス']
+                                        status = row.get('ステータス', '')
                                         if status == "利用可能": c[6].info(status, icon="✅")
                                         elif status == "利用中": c[6].success(status, icon="👤")
                                         elif status == "貸出中": c[6].warning(status, icon="🏃")
@@ -873,11 +881,11 @@ try:
                                         c = st.columns([0.7, 1.5, 2.0, 1.5, 1.2, 1.5, 1.5])
                                         if c[0].button("詳細", key=f"btn_{category}_{index}"):
                                             show_detail_dialog(row)
-                                        c[1].write(f"{row['ID']}")
-                                        c[2].write(f"**{safe_text(row['品名'])}**")
-                                        c[3].write(f"{row['利用者']}")
+                                        c[1].write(f"{row.get('ID', '')}")
+                                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
+                                        c[3].write(f"{row.get('利用者', '')}")
                                         
-                                        status = row['ステータス']
+                                        status = row.get('ステータス', '')
                                         if status == "利用可能": c[4].info(status, icon="✅")
                                         elif status == "利用中": c[4].success(status, icon="👤")
                                         elif status == "貸出中": c[4].warning(status, icon="🏃")
@@ -1195,8 +1203,8 @@ try:
             elif df_new_emp.empty:
                 st.info("登録されているデータはありません。")
             else:
-                # 必須カラムチェック
-                req_cols = ["ID", "氏名", "入職日", "職種", "部署", "ステータス"]
+                # 必須カラムチェック (フリガナを追加)
+                req_cols = ["ID", "氏名", "フリガナ", "入職日", "職種", "部署", "ステータス"]
                 missing = [c for c in req_cols if c not in df_new_emp.columns]
                 
                 if missing:
@@ -1211,33 +1219,35 @@ try:
                     # 並び替え: 完了フラグ(昇順 0->1) -> 日付(昇順)
                     df_new_emp = df_new_emp.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
 
-                    # テーブルヘッダー
-                    cols = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
+                    # テーブルヘッダー (フリガナを追加して幅を調整)
+                    cols = st.columns([0.8, 0.8, 1.5, 1.5, 1.2, 1.2, 1.2, 1.2])
                     cols[0].write("**編集**")
                     cols[1].write("**ID**")
                     cols[2].write("**氏名**")
-                    cols[3].write("**入職日**")
-                    cols[4].write("**職種**")
-                    cols[5].write("**部署**")
-                    cols[6].write("**ステータス**")
+                    cols[3].write("**フリガナ**")
+                    cols[4].write("**入職日**")
+                    cols[5].write("**職種**")
+                    cols[6].write("**部署**")
+                    cols[7].write("**ステータス**")
                     st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
 
                     for index, row in df_new_emp.iterrows():
-                        c = st.columns([0.8, 0.8, 1.5, 1.5, 1.5, 1.5, 1.5])
+                        c = st.columns([0.8, 0.8, 1.5, 1.5, 1.2, 1.2, 1.2, 1.2])
                         
-                        if c[0].button("詳細", key=f"ne_btn_{row['ID']}"):
+                        if c[0].button("詳細", key=f"ne_btn_{index}"):
                             show_onboarding_task_dialog(row)
                         
-                        c[1].write(str(row['ID']))
-                        c[2].write(f"**{row['氏名']}**")
-                        c[3].write(str(row['入職日']))
-                        c[4].write(str(row.get('職種', '')))
-                        c[5].write(str(row['部署']))
+                        c[1].write(str(row.get('ID', '')))
+                        c[2].write(f"**{row.get('氏名', '')}**")
+                        c[3].write(str(row.get('フリガナ', '')))
+                        c[4].write(str(row.get('入職日', '')))
+                        c[5].write(str(row.get('職種', '')))
+                        c[6].write(str(row.get('部署', '')))
                         
-                        status = str(row['ステータス'])
-                        if status == "完了": c[6].success("完了", icon="✅")
-                        elif status == "準備中": c[6].warning("準備中", icon="🏃")
-                        else: c[6].write(status)
+                        status = str(row.get('ステータス', ''))
+                        if status == "完了": c[7].success("完了", icon="✅")
+                        elif status == "準備中": c[7].warning("準備中", icon="🏃")
+                        else: c[7].write(status)
                         
                         st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
@@ -1249,6 +1259,7 @@ try:
                 with col1:
                     ne_id = st.text_input("ID (社員番号など)", placeholder="例: 9001")
                     ne_name = st.text_input("氏名", placeholder="例: 山田 太郎")
+                    ne_furigana = st.text_input("フリガナ", placeholder="例: ヤマダ タロウ")
                 with col2:
                     ne_date = st.date_input("入職予定日")
                     ne_job = st.text_input("職種")
@@ -1268,9 +1279,9 @@ try:
                             if cell:
                                 st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
                             else:
-                                # 保存データ作成
+                                # 保存データ作成 (フリガナ追加)
                                 row_to_save = [
-                                    ne_id, ne_name, str(ne_date), ne_job, ne_dept, "準備中"
+                                    ne_id, ne_name, ne_furigana, str(ne_date), ne_job, ne_dept, "準備中"
                                 ]
                                 # タスク列はすべて空文字で初期化
                                 row_to_save.extend([""] * len(ONBOARDING_TASKS))
@@ -1339,20 +1350,21 @@ try:
                     c1, c2, c3, c4, c5, c6 = st.columns([1, 1, 2, 1.5, 1.5, 1])
                     
                     # 詳細ボタン
-                    if c1.button("詳細", key=f"old_btn_{item['ID']}"):
+                    if c1.button("詳細", key=f"old_btn_{item['index']}"):
                         # 元のDataFrameから該当行を取得してダイアログ表示
                         # (itemは辞書化されているので、元のSeries形式に戻すか、辞書対応のダイアログが必要)
                         # ここでは簡易的に、元のdfから再取得して渡す
                         original_row = df.loc[item['index']]
                         show_detail_dialog(original_row)
                     
-                    c2.write(item.get('ID'))
-                    c3.write(f"**{safe_text(item.get('品名'))}**")
-                    c4.write(item.get('利用者'))
-                    c5.write(f"{item.get('カテゴリ')} / {item.get('購入日')}")
+                    c2.write(item.get('ID', ''))
+                    c3.write(f"**{safe_text(item.get('品名', ''))}**")
+                    c4.write(item.get('利用者', ''))
+                    c5.write(f"{item.get('カテゴリ', '')} / {item.get('購入日', '')}")
                     
-                    status = item.get('ステータス')
+                    status = item.get('ステータス', '')
                     if status == "利用可能": c6.info(status)
+                    elif status == "利用中": c6.success(status)
                     else: c6.write(status)
                     
                     st.markdown("<hr style='margin: 0.2rem 0'>", unsafe_allow_html=True)
