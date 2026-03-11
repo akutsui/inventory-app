@@ -117,13 +117,15 @@ CATEGORY_MAP = {
 
 # --- 設定: 新規入職者管理用のシート名とタスク項目 ---
 SHEET_NEW_EMPLOYEE = "新規入職者"
-# 三文判・シャチハタを追加
 ONBOARDING_TASKS = [
     "PC", "iPad", "携帯", "駐車場", 
     "LineworksID", "モバカルモバナーID", 
     "MCS", "アルコールチェックID", "訪問車両", 
     "備品", "机・椅子", "三文判", "シャチハタ"
 ]
+
+# --- 設定: 電子証明書管理用のシート名 ---
+SHEET_CERTIFICATE = "電子証明書"
 
 # --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
@@ -197,10 +199,22 @@ def get_all_data():
     
     return df
 
-# --- データ取得関数 (新規入職者用: エラーハンドリング強化) ---
+# --- データ取得関数 (新規入職者用) ---
 def get_new_employee_data():
     try:
         worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+        records = worksheet.get_all_records()
+        return pd.DataFrame(records)
+    except gspread.WorksheetNotFound:
+        return None
+    except Exception as e:
+        st.error(f"データ取得エラー: {e}")
+        return pd.DataFrame()
+
+# --- データ取得関数 (電子証明書用) ---
+def get_certificate_data():
+    try:
+        worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
         records = worksheet.get_all_records()
         return pd.DataFrame(records)
     except gspread.WorksheetNotFound:
@@ -429,7 +443,7 @@ def show_onboarding_task_dialog(row_data):
     st.write(f"### ID: {row_data.get('ID', '')}")
     
     with st.form("onboarding_task_form"):
-        # 基本情報の編集 (氏名・フリガナも編集可能に)
+        # 基本情報の編集
         c_name1, c_name2 = st.columns(2)
         with c_name1:
             new_name = st.text_input("氏名", value=row_data.get('氏名', ''))
@@ -455,7 +469,6 @@ def show_onboarding_task_dialog(row_data):
         cols = st.columns(2)
         for i, task_name in enumerate(ONBOARDING_TASKS):
             with cols[i % 2]:
-                # 既存の値を初期値として表示
                 current_val = str(row_data.get(task_name, ''))
                 task_status[task_name] = st.text_input(task_name, value=current_val)
         
@@ -470,30 +483,69 @@ def show_onboarding_task_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             try:
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+                headers = worksheet.row_values(1)
                 
-                # 更新用データの構築
-                # ID, 氏名, フリガナ, 入職日, 職種, 部署, ステータス, PC...その他, 備考
-                row_to_save = [
-                    row_data.get('ID', ''),
-                    new_name,
-                    new_furigana,
-                    str(new_date) if new_date else '',
-                    new_job,
-                    new_dept,
-                    new_status
-                ]
-                
-                # タスク列の値を追加
+                # 辞書でデータを構築
+                data_dict = {
+                    "ID": row_data.get('ID', ''),
+                    "氏名": new_name,
+                    "フリガナ": new_furigana,
+                    "入職日": str(new_date) if new_date else '',
+                    "職種": new_job,
+                    "部署": new_dept,
+                    "ステータス": new_status,
+                    "備考": new_note
+                }
                 for task_name in ONBOARDING_TASKS:
-                    row_to_save.append(task_status[task_name])
+                    data_dict[task_name] = task_status[task_name]
                 
-                row_to_save.append(new_note)
+                row_to_save = [data_dict.get(h, "") for h in headers]
                 
-                # IDで行を検索して更新
                 cell = worksheet.find(str(row_data.get('ID', '')))
                 if cell:
                     r = cell.row
-                    # A列から最後まで一括更新
+                    worksheet.update(f"A{r}", [row_to_save])
+                    st.toast("更新しました！", icon="✅")
+                    st.rerun()
+                else:
+                    st.error("エラー: IDが見つかりませんでした。")
+            except Exception as e:
+                st.error(f"更新エラー: {e}")
+
+# --- ポップアップ詳細・編集画面 (電子証明書用) ---
+@st.dialog("📝 電子証明書の編集")
+def show_cert_dialog(row_data):
+    st.write(f"### ID: {row_data.get('ID', '')}")
+    
+    with st.form("cert_edit_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            new_type = st.text_input("種類", value=row_data.get('種類', ''))
+            val_date = parse_date(row_data.get('有効期限'))
+            new_exp = st.date_input("有効期限", value=val_date)
+        with c2:
+            new_device = st.text_input("端末", value=row_data.get('端末', ''))
+            
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        
+        if st.form_submit_button("✅ 更新する"):
+            try:
+                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
+                headers = worksheet.row_values(1)
+                
+                data_dict = {
+                    "ID": row_data.get('ID', ''),
+                    "種類": new_type,
+                    "端末": new_device,
+                    "有効期限": str(new_exp) if new_exp else '',
+                    "備考": new_note
+                }
+                
+                row_to_save = [data_dict.get(h, "") for h in headers]
+                
+                cell = worksheet.find(str(row_data.get('ID', '')))
+                if cell:
+                    r = cell.row
                     worksheet.update(f"A{r}", [row_to_save])
                     st.toast("更新しました！", icon="✅")
                     st.rerun()
@@ -507,7 +559,7 @@ st.title('📱 総務備品管理アプリ')
 
 with st.sidebar:
     # ページ切替ラジオボタン
-    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "👤 新規入職者管理", "📅 5年経過リスト (PC/iPad)"])
+    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", "📅 5年経過リスト (PC/iPad)"])
     
     st.markdown("---")
     
@@ -523,16 +575,19 @@ with st.sidebar:
         * 左上のメニューで各機能画面を切り替えられます。
 
         **2. 新規入職者管理**
-        * 入職者のPCや制服などの準備状況をフリーワードで管理できます。
+        * 入職者のPCや制服などの準備状況を管理できます。
         * ステータスが「完了」の人は一覧の下に移動します。
+
+        **3. 電子証明書管理**
+        * 期限が **75日以内** の場合、画面上部にアラートが出ます。
         
-        **3. 検索機能 (在庫管理)**
+        **4. 検索機能 (在庫管理)**
         * 画面上部の枠に文字を入れて `Enter` を押すと検索できます。
 
-        **4. 訪問車期日アラート**
-        * 期限が **45日以内**（車）の場合、検索窓の下に赤字で警告が出ます。
+        **5. 訪問車期日アラート**
+        * 期限が **45日以内**（車）の場合、検索窓の下にアラートが出ます。
 
-        **5. 5年経過リスト**
+        **6. 5年経過リスト**
         * 購入から5年以上経過したPCとiPadだけを一覧表示します。
         """)
 
@@ -1013,7 +1068,7 @@ try:
                     with c1:
                         d_buy = st.date_input("購入日", value=None)
                         custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                        custom_values['電話番号'] = st.text_input("電話番号")
+                        custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号', ''))
                         custom_values['SIM'] = st.text_input("SIM")
                         custom_values['メーカー'] = st.text_input("メーカー")
                     with c2:
@@ -1279,13 +1334,25 @@ try:
                             if cell:
                                 st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
                             else:
-                                # 保存データ作成 (フリガナ追加)
-                                row_to_save = [
-                                    ne_id, ne_name, ne_furigana, str(ne_date), ne_job, ne_dept, "準備中"
-                                ]
-                                # タスク列はすべて空文字で初期化
-                                row_to_save.extend([""] * len(ONBOARDING_TASKS))
-                                row_to_save.append(ne_note)
+                                headers = worksheet.row_values(1) # スプレッドシートの見出しを取得
+                                
+                                # 保存データを辞書で構築
+                                data_dict = {
+                                    "ID": ne_id,
+                                    "氏名": ne_name,
+                                    "フリガナ": ne_furigana,
+                                    "入職日": str(ne_date) if ne_date else '',
+                                    "職種": ne_job,
+                                    "部署": ne_dept,
+                                    "ステータス": "準備中",
+                                    "備考": ne_note
+                                }
+                                # タスク列は空文字
+                                for task_name in ONBOARDING_TASKS:
+                                    data_dict[task_name] = ""
+                                    
+                                # ★スプレッドシートの見出し順に合わせてリスト化
+                                row_to_save = [data_dict.get(h, "") for h in headers]
                                 
                                 worksheet.append_row(row_to_save)
                                 st.toast("新規入職者を登録しました！", icon="✅")
@@ -1294,7 +1361,141 @@ try:
                             st.error(f"登録エラー: {e}")
 
     # ==========================================
-    # ページ3：5年経過リスト
+    # ページ3：電子証明書管理
+    # ==========================================
+    elif page_selection == "🔐 電子証明書管理":
+        cert_tab1, cert_tab2 = st.tabs(["📋 一覧・検索", "➕ 新規登録"])
+        
+        df_cert = get_certificate_data()
+        
+        with cert_tab1:
+            st.markdown("#### 電子証明書の管理")
+            
+            if df_cert is None:
+                st.error(f"シート「{SHEET_CERTIFICATE}」が見つかりません。スプレッドシートに作成してください。")
+            elif df_cert.empty:
+                st.info("登録されているデータはありません。")
+            else:
+                # --- アラートの収集 (75日以内) ---
+                alert_items_cert = []
+                today = datetime.now().date()
+                for index, row in df_cert.iterrows():
+                    exp_val = row.get('有効期限')
+                    dt = parse_date(exp_val)
+                    if dt:
+                        diff = (dt.date() - today).days
+                        if diff < 0:
+                            alert_items_cert.append({
+                                "row": row,
+                                "title": f"【{row.get('端末', '不明')}】 {row.get('種類', '')}",
+                                "messages": [f"有効期限 超過 ({dt.strftime('%Y-%m-%d')})"]
+                            })
+                        elif diff <= 75:
+                            alert_items_cert.append({
+                                "row": row,
+                                "title": f"【{row.get('端末', '不明')}】 {row.get('種類', '')}",
+                                "messages": [f"有効期限 あと{diff}日 ({dt.strftime('%Y-%m-%d')})"]
+                            })
+                
+                # --- アラートの表示 ---
+                if alert_items_cert:
+                    st.markdown("""
+                        <div class="alert-box" style="background-color: #ffcccc; padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid #ff4b4b;">
+                            <h5 style="margin: 0; padding: 0.2rem 0; color: #8B0000; font-size: 1rem;">⚠️ 電子証明書 期日アラート (75日以内)</h5>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    for i, item in enumerate(alert_items_cert):
+                        c1, c2 = st.columns([5, 1])
+                        alert_str = f"{item['title']} : " + ", ".join(item['messages'])
+                        c1.markdown(f"<div style='color: #8B0000; font-weight: bold;'>{alert_str}</div>", unsafe_allow_html=True)
+                        if c2.button("詳細", key=f"alert_cert_btn_{i}"):
+                            show_cert_dialog(item['row'])
+                        if i < len(alert_items_cert) - 1:
+                            st.markdown('<hr style="margin: 0.2rem 0; border-top: 1px dotted #ff9999;">', unsafe_allow_html=True)
+                    
+                    st.write("")
+
+                # 検索機能
+                cert_query = st.text_input("フリーワード検索", placeholder="キーワード入力")
+                if cert_query:
+                    df_cert = df_cert[df_cert.astype(str).apply(lambda row: row.str.contains(cert_query, case=False).any(), axis=1)]
+                    st.success(f"検索結果: {len(df_cert)} 件")
+
+                # 有効期限でソート (期限が近い順)
+                df_cert['sort_date'] = pd.to_datetime(df_cert['有効期限'], errors='coerce')
+                df_cert = df_cert.sort_values(by=['sort_date'], ascending=[True])
+
+                cols = st.columns([0.8, 1.5, 2, 2, 1.5, 3])
+                cols[0].write("**編集**")
+                cols[1].write("**ID**")
+                cols[2].write("**種類**")
+                cols[3].write("**端末**")
+                cols[4].write("**有効期限**")
+                cols[5].write("**備考**")
+                st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+
+                for index, row in df_cert.iterrows():
+                    c = st.columns([0.8, 1.5, 2, 2, 1.5, 3])
+                    
+                    if c[0].button("詳細", key=f"cert_btn_{index}"):
+                        show_cert_dialog(row)
+                    
+                    c[1].write(str(row.get('ID', '')))
+                    c[2].write(str(row.get('種類', '')))
+                    c[3].write(str(row.get('端末', '')))
+                    
+                    # 色の変更を廃止し、通常表示にする
+                    c[4].write(str(row.get('有効期限', '')))
+                        
+                    c[5].write(str(row.get('備考', '')))
+                    
+                    st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
+
+        with cert_tab2:
+            st.subheader("電子証明書の新規登録")
+            with st.form("add_cert_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    cert_id = st.text_input("ID", placeholder="例: CERT-001")
+                    cert_type = st.text_input("種類", placeholder="例: ORCA, e-Gov など")
+                with col2:
+                    cert_device = st.text_input("端末", placeholder="例: 宇都宮受付PC")
+                    cert_exp = st.date_input("有効期限", value=None)
+                
+                cert_note = st.text_area("備考")
+                
+                if st.form_submit_button("登録する"):
+                    if not cert_id:
+                        st.error("IDは必須です。")
+                    else:
+                        try:
+                            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
+                            
+                            cell = worksheet.find(cert_id)
+                            if cell:
+                                st.error(f"エラー: ID '{cert_id}' は既に登録されています。")
+                            else:
+                                headers = worksheet.row_values(1)
+                                
+                                data_dict = {
+                                    "ID": cert_id,
+                                    "種類": cert_type,
+                                    "端末": cert_device,
+                                    "有効期限": str(cert_exp) if cert_exp else '',
+                                    "備考": cert_note
+                                }
+                                
+                                row_to_save = [data_dict.get(h, "") for h in headers]
+                                
+                                worksheet.append_row(row_to_save)
+                                st.toast("電子証明書を登録しました！", icon="✅")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"登録エラー: {e}")
+
+    # ==========================================
+    # ページ4：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
         st.title("📅 5年経過リスト (PC/iPad)")
