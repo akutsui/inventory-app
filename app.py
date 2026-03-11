@@ -175,6 +175,14 @@ if 'page_number' not in st.session_state:
 if 'active_search_query' not in st.session_state:
     st.session_state['active_search_query'] = ""
 
+# --- 自動画面遷移のためのセッションステート設定 ---
+if 'tab_zaiko' not in st.session_state:
+    st.session_state['tab_zaiko'] = "🔍 一覧・検索"
+if 'tab_newemp' not in st.session_state:
+    st.session_state['tab_newemp'] = "📋 タスク管理・一覧"
+if 'tab_cert' not in st.session_state:
+    st.session_state['tab_cert'] = "📋 一覧・検索"
+
 # --- データ取得関数 (在庫用) ---
 @st.cache_data(ttl=600)
 def get_all_data():
@@ -635,10 +643,13 @@ try:
     # ページ1：在庫管理 (メイン)
     # ==========================================
     if page_selection == "📦 在庫管理 (メイン)":
-        main_tab1, main_tab2, main_tab3 = st.tabs(["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"])
+        
+        # 画面切替用のラジオボタン
+        st.radio("機能切替", ["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"], horizontal=True, key="tab_zaiko", label_visibility="collapsed")
+        st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
 
         # === タブ1：一覧・検索 ===
-        with main_tab1:
+        if st.session_state['tab_zaiko'] == "🔍 一覧・検索":
             st.markdown("#### 在庫データの検索")
             
             # --- アラートデータの収集 ---
@@ -1011,7 +1022,7 @@ try:
                                         st.rerun()
 
         # === タブ2：新規登録 (在庫用) ===
-        with main_tab2:
+        elif st.session_state['tab_zaiko'] == "📝 新規登録":
             st.header("新規データの登録")
             st.caption("※既存データの編集は、一覧タブの「詳細」ボタンから行ってください。")
             
@@ -1177,12 +1188,14 @@ try:
                                 worksheet.append_row(row_to_save)
                                 st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
                                 get_all_data.clear()
+                                # 登録後に一覧へ戻る
+                                st.session_state['tab_zaiko'] = "🔍 一覧・検索"
                                 st.rerun()
                         except Exception as e:
                             st.error(f"書き込みエラー: {e}")
 
         # === タブ3：CSV一括入出力 ===
-        with main_tab3:
+        elif st.session_state['tab_zaiko'] == "📂 CSV一括入出力":
             st.header("📂 CSVによる一括登録・編集")
             st.caption("既存データの編集や、大量の新規データをまとめて登録するのに便利です。")
 
@@ -1275,6 +1288,8 @@ try:
                         st.success("一括処理が完了しました！")
                         get_all_data.clear() # キャッシュクリア
                         time.sleep(1)
+                        # 完了後に一覧へ戻る
+                        st.session_state['tab_zaiko'] = "🔍 一覧・検索"
                         st.rerun()
                         
                 except Exception as e:
@@ -1284,13 +1299,14 @@ try:
     # ページ2：新規入職者管理
     # ==========================================
     elif page_selection == "👤 新規入職者管理":
-        new_emp_tab1, new_emp_tab2 = st.tabs(["📋 タスク管理・一覧", "➕ 新規登録"])
+        st.radio("機能切替", ["📋 タスク管理・一覧", "➕ 新規登録"], horizontal=True, key="tab_newemp", label_visibility="collapsed")
+        st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
         
         # --- データ取得 ---
         df_new_emp = get_new_employee_data()
         
         # === タブ1: 一覧 ===
-        with new_emp_tab1:
+        if st.session_state['tab_newemp'] == "📋 タスク管理・一覧":
             st.markdown("#### 新規入職者の準備状況")
             
             if df_new_emp is None:
@@ -1347,7 +1363,7 @@ try:
                         st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
         # === タブ2: 新規登録 ===
-        with new_emp_tab2:
+        elif st.session_state['tab_newemp'] == "➕ 新規登録":
             st.subheader("新規入職予定の登録")
             
             # --- ID自動採番 (新規入職者用) ---
@@ -1378,7 +1394,7 @@ try:
                             if cell:
                                 st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
                             else:
-                                headers = worksheet.row_values(1)
+                                headers = worksheet.row_values(1) # スプレッドシートの見出しを取得
                                 
                                 # 保存データを辞書で構築
                                 data_dict = {
@@ -1400,6 +1416,8 @@ try:
                                 
                                 worksheet.append_row(row_to_save)
                                 st.toast("新規入職者を登録しました！", icon="✅")
+                                # 登録後に一覧へ戻る
+                                st.session_state['tab_newemp'] = "📋 タスク管理・一覧"
                                 st.rerun()
                         except Exception as e:
                             st.error(f"登録エラー: {e}")
@@ -1408,11 +1426,12 @@ try:
     # ページ3：電子証明書管理
     # ==========================================
     elif page_selection == "🔐 電子証明書管理":
-        cert_tab1, cert_tab2 = st.tabs(["📋 一覧・検索", "➕ 新規登録"])
+        st.radio("機能切替", ["📋 一覧・検索", "➕ 新規登録"], horizontal=True, key="tab_cert", label_visibility="collapsed")
+        st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
         
         df_cert = get_certificate_data()
         
-        with cert_tab1:
+        if st.session_state['tab_cert'] == "📋 一覧・検索":
             st.markdown("#### 電子証明書の管理")
             
             if df_cert is None:
@@ -1496,7 +1515,7 @@ try:
                     
                     st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
-        with cert_tab2:
+        elif st.session_state['tab_cert'] == "➕ 新規登録":
             st.subheader("電子証明書の新規登録")
             
             # --- ID自動採番 (電子証明書用) ---
@@ -1538,6 +1557,8 @@ try:
                                 
                                 worksheet.append_row(row_to_save)
                                 st.toast("電子証明書を登録しました！", icon="✅")
+                                # 登録後に一覧へ戻る
+                                st.session_state['tab_cert'] = "📋 一覧・検索"
                                 st.rerun()
                         except Exception as e:
                             st.error(f"登録エラー: {e}")
