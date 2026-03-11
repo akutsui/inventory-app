@@ -199,6 +199,43 @@ def get_all_data():
     
     return df
 
+# --- ID自動採番用共通関数 ---
+def generate_auto_id(df_target, prefix, id_col='ID'):
+    if df_target is None or df_target.empty:
+        return f"{prefix}0001"
+    
+    max_num = 0
+    if id_col in df_target.columns:
+        for val in df_target[id_col].astype(str):
+            val = val.strip()
+            if val.startswith(prefix):
+                try:
+                    num = int(val[len(prefix):])
+                    if num > max_num:
+                        max_num = num
+                except ValueError:
+                    pass
+    return f"{prefix}{max_num + 1:04d}"
+
+# --- ID自動採番関数 (在庫用) ---
+def get_auto_id(category, current_df):
+    prefix_dict = {
+        "PC": "A",
+        "訪問車": "B",
+        "iPad": "C",
+        "携帯電話": "D",
+        "Office365": "E",
+        "ウイルスバスター": "F",
+        "その他機器": "G"
+    }
+    prefix = prefix_dict.get(category, "Z")
+    
+    if current_df is None or current_df.empty:
+        return f"{prefix}0001"
+        
+    df_cat = current_df[current_df['カテゴリ'] == category]
+    return generate_auto_id(df_cat, prefix)
+
 # --- データ取得関数 (新規入職者用) ---
 def get_new_employee_data():
     try:
@@ -981,12 +1018,15 @@ try:
             st.subheader("① カテゴリとIDを指定")
             selected_category_key = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True, key="new_reg_cat")
             target_sheet_name = CATEGORY_MAP[selected_category_key]
+            
+            # --- ID自動採番 ---
+            auto_id = get_auto_id(selected_category_key, df)
 
             st.subheader("② 詳細情報の入力")
             with st.form("new_entry_form"):
                 col_basic1, col_basic2 = st.columns(2)
                 with col_basic1:
-                    input_id = st.text_input("ID (資産番号)")
+                    input_id = st.text_input("ID (資産番号) ※自動採番", value=auto_id)
                     input_name = st.text_input("品名 (管理上の名称)")
                 with col_basic2:
                     input_user = st.text_input("利用者(代表)")
@@ -1069,13 +1109,13 @@ try:
                         d_buy = st.date_input("購入日", value=None)
                         custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
                         custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号', ''))
-                        custom_values['SIM'] = st.text_input("SIM")
-                        custom_values['メーカー'] = st.text_input("メーカー")
+                        custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM', ''))
+                        custom_values['メーカー'] = st.text_input("メーカー", value=row_data.get('メーカー', ''))
                     with c2:
-                        custom_values['製造番号'] = st.text_input("製造番号")
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        custom_values['保管場所'] = st.text_input("保管場所")
-                        custom_values['キャリア'] = st.text_input("キャリア")
+                        custom_values['製造番号'] = st.text_input("製造番号", value=row_data.get('製造番号', ''))
+                        custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
+                        custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所', ''))
+                        custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア', ''))
                     custom_values['備考'] = st.text_area("備考")
 
                 elif selected_category_key == "Office365":
@@ -1309,10 +1349,14 @@ try:
         # === タブ2: 新規登録 ===
         with new_emp_tab2:
             st.subheader("新規入職予定の登録")
+            
+            # --- ID自動採番 (新規入職者用) ---
+            ne_auto_id = generate_auto_id(df_new_emp, "H")
+            
             with st.form("add_new_emp_form"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    ne_id = st.text_input("ID (社員番号など)", placeholder="例: 9001")
+                    ne_id = st.text_input("ID ※自動採番", value=ne_auto_id)
                     ne_name = st.text_input("氏名", placeholder="例: 山田 太郎")
                     ne_furigana = st.text_input("フリガナ", placeholder="例: ヤマダ タロウ")
                 with col2:
@@ -1334,7 +1378,7 @@ try:
                             if cell:
                                 st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
                             else:
-                                headers = worksheet.row_values(1) # スプレッドシートの見出しを取得
+                                headers = worksheet.row_values(1)
                                 
                                 # 保存データを辞書で構築
                                 data_dict = {
@@ -1351,7 +1395,7 @@ try:
                                 for task_name in ONBOARDING_TASKS:
                                     data_dict[task_name] = ""
                                     
-                                # ★スプレッドシートの見出し順に合わせてリスト化
+                                # スプレッドシートの見出し順に合わせてリスト化
                                 row_to_save = [data_dict.get(h, "") for h in headers]
                                 
                                 worksheet.append_row(row_to_save)
@@ -1445,7 +1489,7 @@ try:
                     c[2].write(str(row.get('種類', '')))
                     c[3].write(str(row.get('端末', '')))
                     
-                    # 色の変更を廃止し、通常表示にする
+                    # 文字色変更をなくし、通常表示
                     c[4].write(str(row.get('有効期限', '')))
                         
                     c[5].write(str(row.get('備考', '')))
@@ -1454,10 +1498,14 @@ try:
 
         with cert_tab2:
             st.subheader("電子証明書の新規登録")
+            
+            # --- ID自動採番 (電子証明書用) ---
+            cert_auto_id = generate_auto_id(df_cert, "I")
+
             with st.form("add_cert_form"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    cert_id = st.text_input("ID", placeholder="例: CERT-001")
+                    cert_id = st.text_input("ID ※自動採番", value=cert_auto_id)
                     cert_type = st.text_input("種類", placeholder="例: ORCA, e-Gov など")
                 with col2:
                     cert_device = st.text_input("端末", placeholder="例: 宇都宮受付PC")
