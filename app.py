@@ -175,6 +175,11 @@ if 'page_number' not in st.session_state:
 if 'active_search_query' not in st.session_state:
     st.session_state['active_search_query'] = ""
 
+# 登録完了メッセージ表示用のフラグ
+if 'zaiko_reg_success' not in st.session_state: st.session_state.zaiko_reg_success = False
+if 'emp_reg_success' not in st.session_state: st.session_state.emp_reg_success = False
+if 'cert_reg_success' not in st.session_state: st.session_state.cert_reg_success = False
+
 # --- データ取得関数 (在庫用) ---
 @st.cache_data(ttl=600)
 def get_all_data():
@@ -1012,174 +1017,183 @@ try:
 
         # === タブ2：新規登録 (在庫用) ===
         with main_tab2:
-            st.header("新規データの登録")
-            st.caption("※既存データの編集は、一覧タブの「詳細」ボタンから行ってください。")
-            
-            st.subheader("① カテゴリとIDを指定")
-            selected_category_key = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True, key="new_reg_cat")
-            target_sheet_name = CATEGORY_MAP[selected_category_key]
-            
-            # --- ID自動採番 ---
-            auto_id = get_auto_id(selected_category_key, df)
-
-            st.subheader("② 詳細情報の入力")
-            with st.form("new_entry_form"):
-                col_basic1, col_basic2 = st.columns(2)
-                with col_basic1:
-                    input_id = st.text_input("ID (資産番号) ※自動採番", value=auto_id)
-                    input_name = st.text_input("品名 (管理上の名称)")
-                with col_basic2:
-                    input_user = st.text_input("利用者(代表)")
-                    input_status = st.selectbox("ステータス", ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"])
-
-                st.markdown("---")
-                st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
+            if st.session_state.zaiko_reg_success:
+                st.success(f"✅ 新規登録が完了しました！ (ID: {st.session_state.get('zaiko_reg_id', '')})")
+                st.info("左の「🔍 一覧・検索」タブをクリックして登録内容を確認してください。")
+                if st.button("続けて別の備品を登録する"):
+                    st.session_state.zaiko_reg_success = False
+                    st.rerun()
+            else:
+                st.header("新規データの登録")
+                st.caption("※既存データの編集は、一覧タブの「詳細」ボタンから行ってください。")
                 
-                custom_values = {}
+                st.subheader("① カテゴリとIDを指定")
+                selected_category_key = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True, key="new_reg_cat")
+                target_sheet_name = CATEGORY_MAP[selected_category_key]
+                
+                # --- ID自動採番 ---
+                auto_id = get_auto_id(selected_category_key, df)
 
-                if selected_category_key == "PC":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        d_buy = st.date_input("購入日", value=None)
-                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                        custom_values['OS'] = st.text_input("OS")
-                        custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)")
-                        custom_values['ラベル'] = st.text_input("ラベル")
-                    with c2:
-                        custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振")
-                        custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮")
-                        custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼")
-                        custom_values['ORCA益子'] = st.text_input("ORCA益子")
-                        custom_values['チームビューワID'] = st.text_input("チームビューワID")
-                        custom_values['チームビューワPW'] = st.text_input("チームビューワPW")
+                st.subheader("② 詳細情報の入力")
+                with st.form("new_entry_form"):
+                    col_basic1, col_basic2 = st.columns(2)
+                    with col_basic1:
+                        input_id = st.text_input("ID (資産番号) ※自動採番", value=auto_id)
+                        input_name = st.text_input("品名 (管理上の名称)")
+                    with col_basic2:
+                        input_user = st.text_input("利用者(代表)")
+                        input_status = st.selectbox("ステータス", ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"])
+
+                    st.markdown("---")
+                    st.markdown(f"##### 📝 {selected_category_key} 詳細情報")
                     
-                    st.caption("ウィルスバスター情報")
-                    c3, c4, c5 = st.columns(3)
-                    with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo")
-                    with c4: 
-                        d_vb = st.date_input("VB期限", value=None)
-                        custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
-                    with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム")
-                    custom_values['備考'] = st.text_area("備考")
+                    custom_values = {}
 
-                elif selected_category_key == "訪問車":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        custom_values['登録番号'] = st.text_input("登録番号")
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        custom_values['洗車グループ'] = st.text_input("洗車グループ")
-                        custom_values['駐車場'] = st.text_input("駐車場")
-                        custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ")
-                        custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所")
-                        custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無")
-                    with c2:
-                        d_lease_s = st.date_input("リース開始日", value=None)
-                        custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
-                        d_lease_e = st.date_input("リース満了日", value=None)
-                        custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
-                        d_syaken = st.date_input("車検満了日", value=None)
-                        custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
-                        d_park = st.date_input("駐禁除外指定満了日", value=None)
-                        custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
-                        d_road = st.date_input("通行禁止許可満了日", value=None)
-                        custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
-                    custom_values['備考'] = st.text_area("備考")
+                    if selected_category_key == "PC":
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            custom_values['使用部署'] = st.text_input("使用部署")
+                            d_buy = st.date_input("購入日", value=None)
+                            custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                            custom_values['OS'] = st.text_input("OS")
+                            custom_values['プロダクトID(シリアルNo)'] = st.text_input("プロダクトID(シリアルNo)")
+                            custom_values['ラベル'] = st.text_input("ラベル")
+                        with c2:
+                            custom_values['officeのアカウント割振'] = st.text_input("officeのアカウント割振")
+                            custom_values['ORCA宇都宮'] = st.text_input("ORCA宇都宮")
+                            custom_values['ORCA鹿沼'] = st.text_input("ORCA鹿沼")
+                            custom_values['ORCA益子'] = st.text_input("ORCA益子")
+                            custom_values['チームビューワID'] = st.text_input("チームビューワID")
+                            custom_values['チームビューワPW'] = st.text_input("チームビューワPW")
+                        
+                        st.caption("ウィルスバスター情報")
+                        c3, c4, c5 = st.columns(3)
+                        with c3: custom_values['ウィルスバスターシリアルNo'] = st.text_input("VBシリアルNo")
+                        with c4: 
+                            d_vb = st.date_input("VB期限", value=None)
+                            custom_values['ウィルスバスター期限'] = d_vb.strftime('%Y-%m-%d') if d_vb else ''
+                        with c5: custom_values['ウィルスバスター識別ネーム'] = st.text_input("VB識別ネーム")
+                        custom_values['備考'] = st.text_area("備考")
 
-                elif selected_category_key == "iPad":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        d_buy = st.date_input("購入日", value=None)
-                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                        custom_values['ラベル'] = st.text_input("ラベル")
-                        custom_values['AppleID'] = st.text_input("AppleID")
-                        custom_values['AppleIDパスワード'] = st.text_input("AppleIDパスワード")
-                        custom_values['シリアルNo'] = st.text_input("シリアルNo")
-                        custom_values['ストレージ'] = st.text_input("ストレージ")
-                    with c2:
-                        custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI")
-                        custom_values['端末番号'] = st.text_input("端末番号")
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        custom_values['キャリア'] = st.text_input("キャリア")
-                    custom_values['備考'] = st.text_area("備考")
+                    elif selected_category_key == "訪問車":
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            custom_values['登録番号'] = st.text_input("登録番号")
+                            custom_values['使用部署'] = st.text_input("使用部署")
+                            custom_values['洗車グループ'] = st.text_input("洗車グループ")
+                            custom_values['駐車場'] = st.text_input("駐車場")
+                            custom_values['タイヤサイズ'] = st.text_input("タイヤサイズ")
+                            custom_values['タイヤ保管場所'] = st.text_input("タイヤ保管場所")
+                            custom_values['スタッドレス有無'] = st.text_input("スタッドレス有無")
+                        with c2:
+                            d_lease_s = st.date_input("リース開始日", value=None)
+                            custom_values['リース開始日'] = d_lease_s.strftime('%Y-%m-%d') if d_lease_s else ''
+                            d_lease_e = st.date_input("リース満了日", value=None)
+                            custom_values['リース満了日'] = d_lease_e.strftime('%Y-%m-%d') if d_lease_e else ''
+                            d_syaken = st.date_input("車検満了日", value=None)
+                            custom_values['車検満了日'] = d_syaken.strftime('%Y-%m-%d') if d_syaken else ''
+                            d_park = st.date_input("駐禁除外指定満了日", value=None)
+                            custom_values['駐禁除外指定満了日'] = d_park.strftime('%Y-%m-%d') if d_park else ''
+                            d_road = st.date_input("通行禁止許可満了日", value=None)
+                            custom_values['通行禁止許可満了日'] = d_road.strftime('%Y-%m-%d') if d_road else ''
+                        custom_values['備考'] = st.text_area("備考")
 
-                elif selected_category_key == "携帯電話":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        d_buy = st.date_input("購入日", value=None)
-                        custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                        custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号', ''))
-                        custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM', ''))
-                        custom_values['メーカー'] = st.text_input("メーカー", value=row_data.get('メーカー', ''))
-                    with c2:
-                        custom_values['製造番号'] = st.text_input("製造番号", value=row_data.get('製造番号', ''))
-                        custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
-                        custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所', ''))
-                        custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア', ''))
-                    custom_values['備考'] = st.text_area("備考")
+                    elif selected_category_key == "iPad":
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            d_buy = st.date_input("購入日", value=None)
+                            custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                            custom_values['ラベル'] = st.text_input("ラベル")
+                            custom_values['AppleID'] = st.text_input("AppleID")
+                            custom_values['AppleIDパスワード'] = st.text_input("AppleIDパスワード")
+                            custom_values['シリアルNo'] = st.text_input("シリアルNo")
+                            custom_values['ストレージ'] = st.text_input("ストレージ")
+                        with c2:
+                            custom_values['製造番号IMEI'] = st.text_input("製造番号IMEI")
+                            custom_values['端末番号'] = st.text_input("端末番号")
+                            custom_values['使用部署'] = st.text_input("使用部署")
+                            custom_values['キャリア'] = st.text_input("キャリア")
+                        custom_values['備考'] = st.text_area("備考")
 
-                elif selected_category_key == "Office365":
-                    c1, c2 = st.columns(2)
-                    with c1: custom_values['アカウントID'] = st.text_input("アカウントID")
-                    with c2: custom_values['パスワード'] = st.text_input("パスワード")
-                    
-                    st.caption("共有利用者")
-                    c_u1, c_u2, c_u3 = st.columns(3)
-                    with c_u1: custom_values['利用者1'] = st.text_input("利用者1")
-                    with c_u2: custom_values['利用者2'] = st.text_input("利用者2")
-                    with c_u3: custom_values['利用者3'] = st.text_input("利用者3")
-                    
-                    c_u4, c_u5 = st.columns(2)
-                    with c_u4: custom_values['利用者4'] = st.text_input("利用者4")
-                    with c_u5: custom_values['利用者5'] = st.text_input("利用者5")
-                    
-                    custom_values['備考'] = st.text_area("備考")
+                    elif selected_category_key == "携帯電話":
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            d_buy = st.date_input("購入日", value=None)
+                            custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
+                            custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号', ''))
+                            custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM', ''))
+                            custom_values['メーカー'] = st.text_input("メーカー", value=row_data.get('メーカー', ''))
+                        with c2:
+                            custom_values['製造番号'] = st.text_input("製造番号", value=row_data.get('製造番号', ''))
+                            custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
+                            custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所', ''))
+                            custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア', ''))
+                        custom_values['備考'] = st.text_area("備考")
 
-                elif selected_category_key == "ウイルスバスター":
-                    st.caption("利用者情報")
-                    c1, c2, c3 = st.columns(3)
-                    with c1: custom_values['利用者1'] = st.text_input("利用者1")
-                    with c2: custom_values['利用者2'] = st.text_input("利用者2")
-                    with c3: custom_values['利用者3'] = st.text_input("利用者3")
-                    
-                    st.caption("期限")
-                    d_exp = st.date_input("期限", value=None)
-                    custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
-                    
-                    custom_values['備考'] = st.text_area("備考")
+                    elif selected_category_key == "Office365":
+                        c1, c2 = st.columns(2)
+                        with c1: custom_values['アカウントID'] = st.text_input("アカウントID")
+                        with c2: custom_values['パスワード'] = st.text_input("パスワード")
+                        
+                        st.caption("共有利用者")
+                        c_u1, c_u2, c_u3 = st.columns(3)
+                        with c_u1: custom_values['利用者1'] = st.text_input("利用者1")
+                        with c_u2: custom_values['利用者2'] = st.text_input("利用者2")
+                        with c_u3: custom_values['利用者3'] = st.text_input("利用者3")
+                        
+                        c_u4, c_u5 = st.columns(2)
+                        with c_u4: custom_values['利用者4'] = st.text_input("利用者4")
+                        with c_u5: custom_values['利用者5'] = st.text_input("利用者5")
+                        
+                        custom_values['備考'] = st.text_area("備考")
 
-                elif selected_category_key == "その他機器":
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        custom_values['使用部署'] = st.text_input("使用部署")
-                        custom_values['使用場所'] = st.text_input("使用場所")
-                    with c2:
-                        d_start = st.date_input("使用開始日", value=None)
-                        custom_values['使用開始日'] = d_start.strftime('%Y-%m-%d') if d_start else ''
-                    
-                    custom_values['備考'] = st.text_area("備考")
+                    elif selected_category_key == "ウイルスバスター":
+                        st.caption("利用者情報")
+                        c1, c2, c3 = st.columns(3)
+                        with c1: custom_values['利用者1'] = st.text_input("利用者1")
+                        with c2: custom_values['利用者2'] = st.text_input("利用者2")
+                        with c3: custom_values['利用者3'] = st.text_input("利用者3")
+                        
+                        st.caption("期限")
+                        d_exp = st.date_input("期限", value=None)
+                        custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
+                        
+                        custom_values['備考'] = st.text_area("備考")
 
-                st.markdown("---")
-                if st.form_submit_button("新規登録"):
-                    if not input_id or not input_name:
-                        st.error("IDと品名は必須です！")
-                    else:
-                        try:
-                            worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
-                            current_time = datetime.now().strftime('%Y-%m-%d')
-                            row_to_save = [input_id, selected_category_key, input_name, input_user, input_status, current_time]
-                            for col_name in COLUMNS_DEF.get(selected_category_key, []):
-                                row_to_save.append(custom_values.get(col_name, ''))
-                            
-                            if worksheet.find(input_id):
-                                st.error(f"エラー: ID '{input_id}' は既に登録されています。")
-                            else:
-                                worksheet.append_row(row_to_save)
-                                st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
-                                get_all_data.clear()
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"書き込みエラー: {e}")
+                    elif selected_category_key == "その他機器":
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            custom_values['使用部署'] = st.text_input("使用部署")
+                            custom_values['使用場所'] = st.text_input("使用場所")
+                        with c2:
+                            d_start = st.date_input("使用開始日", value=None)
+                            custom_values['使用開始日'] = d_start.strftime('%Y-%m-%d') if d_start else ''
+                        
+                        custom_values['備考'] = st.text_area("備考")
+
+                    st.markdown("---")
+                    if st.form_submit_button("新規登録"):
+                        if not input_id or not input_name:
+                            st.error("IDと品名は必須です！")
+                        else:
+                            try:
+                                worksheet = client.open(SPREADSHEET_NAME).worksheet(target_sheet_name)
+                                current_time = datetime.now().strftime('%Y-%m-%d')
+                                row_to_save = [input_id, selected_category_key, input_name, input_user, input_status, current_time]
+                                for col_name in COLUMNS_DEF.get(selected_category_key, []):
+                                    row_to_save.append(custom_values.get(col_name, ''))
+                                
+                                if worksheet.find(input_id):
+                                    st.error(f"エラー: ID '{input_id}' は既に登録されています。")
+                                else:
+                                    worksheet.append_row(row_to_save)
+                                    st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
+                                    get_all_data.clear()
+                                    st.session_state.zaiko_reg_success = True
+                                    st.session_state['zaiko_reg_id'] = input_id
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"書き込みエラー: {e}")
 
         # === タブ3：CSV一括入出力 ===
         with main_tab3:
@@ -1348,61 +1362,70 @@ try:
 
         # === タブ2: 新規登録 ===
         with new_emp_tab2:
-            st.subheader("新規入職予定の登録")
-            
-            # --- ID自動採番 (新規入職者用) ---
-            ne_auto_id = generate_auto_id(df_new_emp, "H")
-            
-            with st.form("add_new_emp_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    ne_id = st.text_input("ID ※自動採番", value=ne_auto_id)
-                    ne_name = st.text_input("氏名", placeholder="例: 山田 太郎")
-                    ne_furigana = st.text_input("フリガナ", placeholder="例: ヤマダ タロウ")
-                with col2:
-                    ne_date = st.date_input("入職予定日")
-                    ne_job = st.text_input("職種")
-                    ne_dept = st.text_input("配属部署")
+            if st.session_state.emp_reg_success:
+                st.success(f"✅ 新規登録が完了しました！ (ID: {st.session_state.get('emp_reg_id', '')})")
+                st.info("左の「📋 タスク管理・一覧」タブをクリックして確認してください。")
+                if st.button("続けて別の入職者を登録する"):
+                    st.session_state.emp_reg_success = False
+                    st.rerun()
+            else:
+                st.subheader("新規入職予定の登録")
                 
-                ne_note = st.text_area("備考")
+                # --- ID自動採番 (新規入職者用) ---
+                ne_auto_id = generate_auto_id(df_new_emp, "H")
                 
-                if st.form_submit_button("登録する"):
-                    if not ne_id or not ne_name:
-                        st.error("IDと氏名は必須です。")
-                    else:
-                        try:
-                            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
-                            
-                            # ID重複チェック
-                            cell = worksheet.find(ne_id)
-                            if cell:
-                                st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
-                            else:
-                                headers = worksheet.row_values(1) # スプレッドシートの見出しを取得
+                with st.form("add_new_emp_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        ne_id = st.text_input("ID ※自動採番", value=ne_auto_id)
+                        ne_name = st.text_input("氏名", placeholder="例: 山田 太郎")
+                        ne_furigana = st.text_input("フリガナ", placeholder="例: ヤマダ タロウ")
+                    with col2:
+                        ne_date = st.date_input("入職予定日")
+                        ne_job = st.text_input("職種")
+                        ne_dept = st.text_input("配属部署")
+                    
+                    ne_note = st.text_area("備考")
+                    
+                    if st.form_submit_button("登録する"):
+                        if not ne_id or not ne_name:
+                            st.error("IDと氏名は必須です。")
+                        else:
+                            try:
+                                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
                                 
-                                # 保存データを辞書で構築
-                                data_dict = {
-                                    "ID": ne_id,
-                                    "氏名": ne_name,
-                                    "フリガナ": ne_furigana,
-                                    "入職日": str(ne_date) if ne_date else '',
-                                    "職種": ne_job,
-                                    "部署": ne_dept,
-                                    "ステータス": "準備中",
-                                    "備考": ne_note
-                                }
-                                # タスク列は空文字
-                                for task_name in ONBOARDING_TASKS:
-                                    data_dict[task_name] = ""
+                                # ID重複チェック
+                                cell = worksheet.find(ne_id)
+                                if cell:
+                                    st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
+                                else:
+                                    headers = worksheet.row_values(1) # スプレッドシートの見出しを取得
                                     
-                                # スプレッドシートの見出し順に合わせてリスト化
-                                row_to_save = [data_dict.get(h, "") for h in headers]
-                                
-                                worksheet.append_row(row_to_save)
-                                st.toast("新規入職者を登録しました！", icon="✅")
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"登録エラー: {e}")
+                                    # 保存データを辞書で構築
+                                    data_dict = {
+                                        "ID": ne_id,
+                                        "氏名": ne_name,
+                                        "フリガナ": ne_furigana,
+                                        "入職日": str(ne_date) if ne_date else '',
+                                        "職種": ne_job,
+                                        "部署": ne_dept,
+                                        "ステータス": "準備中",
+                                        "備考": ne_note
+                                    }
+                                    # タスク列は空文字
+                                    for task_name in ONBOARDING_TASKS:
+                                        data_dict[task_name] = ""
+                                        
+                                    # スプレッドシートの見出し順に合わせてリスト化
+                                    row_to_save = [data_dict.get(h, "") for h in headers]
+                                    
+                                    worksheet.append_row(row_to_save)
+                                    st.toast("新規入職者を登録しました！", icon="✅")
+                                    st.session_state.emp_reg_success = True
+                                    st.session_state['emp_reg_id'] = ne_id
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"登録エラー: {e}")
 
     # ==========================================
     # ページ3：電子証明書管理
@@ -1491,50 +1514,59 @@ try:
                     st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
         with cert_tab2:
-            st.subheader("電子証明書の新規登録")
-            
-            # --- ID自動採番 (電子証明書用) ---
-            cert_auto_id = generate_auto_id(df_cert, "I")
+            if st.session_state.cert_reg_success:
+                st.success(f"✅ 新規登録が完了しました！ (ID: {st.session_state.get('cert_reg_id', '')})")
+                st.info("左の「📋 一覧・検索」タブをクリックして確認してください。")
+                if st.button("続けて別の証明書を登録する"):
+                    st.session_state.cert_reg_success = False
+                    st.rerun()
+            else:
+                st.subheader("電子証明書の新規登録")
+                
+                # --- ID自動採番 (電子証明書用) ---
+                cert_auto_id = generate_auto_id(df_cert, "I")
 
-            with st.form("add_cert_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    cert_id = st.text_input("ID ※自動採番", value=cert_auto_id)
-                    cert_type = st.text_input("種類", placeholder="例: ORCA, e-Gov など")
-                with col2:
-                    cert_device = st.text_input("端末", placeholder="例: 宇都宮受付PC")
-                    cert_exp = st.date_input("有効期限", value=None)
-                
-                cert_note = st.text_area("備考")
-                
-                if st.form_submit_button("登録する"):
-                    if not cert_id:
-                        st.error("IDは必須です。")
-                    else:
-                        try:
-                            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
-                            
-                            cell = worksheet.find(cert_id)
-                            if cell:
-                                st.error(f"エラー: ID '{cert_id}' は既に登録されています。")
-                            else:
-                                headers = worksheet.row_values(1)
+                with st.form("add_cert_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        cert_id = st.text_input("ID ※自動採番", value=cert_auto_id)
+                        cert_type = st.text_input("種類", placeholder="例: ORCA, e-Gov など")
+                    with col2:
+                        cert_device = st.text_input("端末", placeholder="例: 宇都宮受付PC")
+                        cert_exp = st.date_input("有効期限", value=None)
+                    
+                    cert_note = st.text_area("備考")
+                    
+                    if st.form_submit_button("登録する"):
+                        if not cert_id:
+                            st.error("IDは必須です。")
+                        else:
+                            try:
+                                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
                                 
-                                data_dict = {
-                                    "ID": cert_id,
-                                    "種類": cert_type,
-                                    "端末": cert_device,
-                                    "有効期限": str(cert_exp) if cert_exp else '',
-                                    "備考": cert_note
-                                }
-                                
-                                row_to_save = [data_dict.get(h, "") for h in headers]
-                                
-                                worksheet.append_row(row_to_save)
-                                st.toast("電子証明書を登録しました！", icon="✅")
-                                st.rerun()
-                        except Exception as e:
-                            st.error(f"登録エラー: {e}")
+                                cell = worksheet.find(cert_id)
+                                if cell:
+                                    st.error(f"エラー: ID '{cert_id}' は既に登録されています。")
+                                else:
+                                    headers = worksheet.row_values(1)
+                                    
+                                    data_dict = {
+                                        "ID": cert_id,
+                                        "種類": cert_type,
+                                        "端末": cert_device,
+                                        "有効期限": str(cert_exp) if cert_exp else '',
+                                        "備考": cert_note
+                                    }
+                                    
+                                    row_to_save = [data_dict.get(h, "") for h in headers]
+                                    
+                                    worksheet.append_row(row_to_save)
+                                    st.toast("電子証明書を登録しました！", icon="✅")
+                                    st.session_state.cert_reg_success = True
+                                    st.session_state['cert_reg_id'] = cert_id
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"登録エラー: {e}")
 
     # ==========================================
     # ページ4：5年経過リスト
