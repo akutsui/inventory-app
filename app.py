@@ -1177,7 +1177,7 @@ try:
                                 worksheet.append_row(row_to_save)
                                 st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
                                 get_all_data.clear()
-                                st.rerun() # リロードしてタブを初期状態に戻す
+                                st.rerun()
                         except Exception as e:
                             st.error(f"書き込みエラー: {e}")
 
@@ -1298,7 +1298,7 @@ try:
             elif df_new_emp.empty:
                 st.info("登録されているデータはありません。")
             else:
-                # 必須カラムチェック
+                # 必須カラムチェック (フリガナを追加)
                 req_cols = ["ID", "氏名", "フリガナ", "入職日", "職種", "部署", "ステータス"]
                 missing = [c for c in req_cols if c not in df_new_emp.columns]
                 
@@ -1314,7 +1314,7 @@ try:
                     # 並び替え: 完了フラグ(昇順 0->1) -> 日付(昇順)
                     df_new_emp = df_new_emp.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
 
-                    # テーブルヘッダー
+                    # テーブルヘッダー (フリガナを追加して幅を調整)
                     cols = st.columns([0.8, 0.8, 1.5, 1.5, 1.2, 1.2, 1.2, 1.2])
                     cols[0].write("**編集**")
                     cols[1].write("**ID**")
@@ -1400,7 +1400,7 @@ try:
                                 
                                 worksheet.append_row(row_to_save)
                                 st.toast("新規入職者を登録しました！", icon="✅")
-                                st.rerun() # リロードしてタブを初期状態に戻す
+                                st.rerun()
                         except Exception as e:
                             st.error(f"登録エラー: {e}")
 
@@ -1428,17 +1428,15 @@ try:
                     dt = parse_date(exp_val)
                     if dt:
                         diff = (dt.date() - today).days
-                        if diff < 0:
+                        # 種類のみ取得（端末名は外す）
+                        cert_type = row.get('種類', '不明')
+                        msg = f"あと{diff}日" if diff >= 0 else "超過"
+                        exp_str = dt.strftime('%Y-%m-%d')
+                        
+                        if diff <= 75:
                             alert_items_cert.append({
-                                "row": row,
-                                "title": f"【{row.get('端末', '不明')}】 {row.get('種類', '')}",
-                                "messages": [f"有効期限 超過 ({dt.strftime('%Y-%m-%d')})"]
-                            })
-                        elif diff <= 75:
-                            alert_items_cert.append({
-                                "row": row,
-                                "title": f"【{row.get('端末', '不明')}】 {row.get('種類', '')}",
-                                "messages": [f"有効期限 あと{diff}日 ({dt.strftime('%Y-%m-%d')})"]
+                                "row": row, "idx": index,
+                                "text": f"**{cert_type} : 有効期限 {msg} ({exp_str})**"
                             })
                 
                 # --- アラートの表示 ---
@@ -1451,8 +1449,7 @@ try:
 
                     for i, item in enumerate(alert_items_cert):
                         c1, c2 = st.columns([5, 1])
-                        alert_str = f"**{item['title']} : " + ", ".join(item['messages']) + "**"
-                        c1.markdown(f"<div style='color: #8B0000;'>{alert_str}</div>", unsafe_allow_html=True)
+                        c1.markdown(f"<div style='color: #8B0000;'>{item['text']}</div>", unsafe_allow_html=True)
                         if c2.button("詳細", key=f"alert_cert_btn_{i}"):
                             show_cert_dialog(item['row'])
                         if i < len(alert_items_cert) - 1:
@@ -1535,7 +1532,7 @@ try:
                                 
                                 worksheet.append_row(row_to_save)
                                 st.toast("電子証明書を登録しました！", icon="✅")
-                                st.rerun() # リロードしてタブを初期状態に戻す
+                                st.rerun()
                         except Exception as e:
                             st.error(f"登録エラー: {e}")
 
