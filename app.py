@@ -3,29 +3,46 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
-import time
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整: 行間を詰め、ヘッダーを固定) ---
+# --- 🎨 UIデザインの復元 (CSS) ---
 st.markdown("""
     <style>
+        /* メインコンテナの余白調整 */
         .block-container { padding-top: 4rem !important; padding-bottom: 5rem; }
+        
+        /* タイトルヘッダーを上部に固定 */
         div[data-testid="stVerticalBlock"] > div:has(h1) {
             position: sticky !important; top: 2.875rem !important; background-color: white !important;
             z-index: 1000 !important; padding-top: 1rem !important; padding-bottom: 0.5rem !important;
             border-bottom: 2px solid #f0f2f6; margin-bottom: 0 !important;
         }
         h1 { margin: 0 !important; padding: 0 !important; font-size: 1.8rem !important; }
-        div[data-baseweb="tab-list"], div[role="tablist"] {
+        
+        /* タブ/ラジオボタンの固定 */
+        div[data-baseweb="tab-list"], div[role="tablist"], .stRadio > div {
             position: sticky !important; top: 6.8rem !important; background-color: white !important;
             z-index: 999 !important; padding-top: 0.5rem !important; padding-bottom: 0.5rem !important;
         }
-        .stButton button { height: 1.6rem !important; min-height: 1.6rem !important; font-size: 0.8rem !important; }
-        p { margin-bottom: 0px !important; font-size: 0.9rem !important; line-height: 1.7rem !important; }
-        hr { margin: 2px 0 !important; }
-        .alert-box { padding: 0.5rem 1rem !important; margin-bottom: 0.5rem; }
+        
+        /* ボタンを小さく、行間をタイトに */
+        .stButton button { height: 1.8rem !important; min-height: 1.8rem !important; font-size: 0.85rem !important; padding: 0 1rem !important; }
+        p, .stMarkdown { margin-bottom: 0px !important; font-size: 0.95rem !important; line-height: 1.8rem !important; }
+        hr { margin: 5px 0 !important; }
+        
+        /* アラートボックスの装飾 */
+        .alert-row {
+            background-color: #fff5f5;
+            border-left: 5px solid #ff4b4b;
+            padding: 0.5rem 1rem;
+            margin-bottom: 5px;
+            border-radius: 0 5px 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -36,7 +53,6 @@ CATEGORY_MAP = {
 }
 SHEET_NEW_EMPLOYEE = "新規入職者"
 SHEET_CERTIFICATE = "電子証明書"
-ONBOARDING_TASKS = ["PC", "iPad", "携帯", "駐車場", "LineworksID", "モバカルモバナーID", "MCS", "アルコールチェックID", "訪問車両", "備品", "机・椅子", "三文判", "シャチハタ"]
 
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
@@ -54,16 +70,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service
 client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
 
-# --- セッションステート初期化 ---
-if 'active_search_query' not in st.session_state: st.session_state['active_search_query'] = ""
-if 'page_number' not in st.session_state: st.session_state['page_number'] = 0
-
-# タブの強制切り替えフラグ
-if 'force_switch_zaiko' not in st.session_state: st.session_state['force_switch_zaiko'] = False
-if 'force_switch_newemp' not in st.session_state: st.session_state['force_switch_newemp'] = False
-if 'force_switch_cert' not in st.session_state: st.session_state['force_switch_cert'] = False
-
-# --- データ取得・補助関数 ---
+# --- データ操作関数 ---
 @st.cache_data(ttl=600)
 def get_all_data():
     all_data = []
@@ -79,12 +86,6 @@ def get_all_data():
         df['sort_order'] = df['ステータス'].apply(lambda x: 1 if x == '廃棄' else 0)
         df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
     return df
-
-def get_new_employee_data():
-    try:
-        worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
-        return pd.DataFrame(worksheet.get_all_records())
-    except: return pd.DataFrame()
 
 def get_certificate_data():
     try:
@@ -104,112 +105,86 @@ def generate_auto_id(df_target, prefix):
     ids = [int(str(x)[len(prefix):]) for x in df_target['ID'] if str(x).startswith(prefix) and str(x)[len(prefix):].isdigit()]
     return f"{prefix}{max(ids)+1:04d}" if ids else f"{prefix}0001"
 
-def safe_text(text): return str(text).replace("@", "@\u200B")
-
-# --- ダイアログ（詳細編集画面） ---
-@st.dialog("📝 電子証明書の編集")
+# --- ダイアログ ---
+@st.dialog("🔐 電子証明書の詳細編集")
 def show_cert_dialog(row_data):
     with st.form("cert_edit_form"):
         new_type = st.text_input("種類", value=row_data.get('種類', ''))
         new_device = st.text_input("端末", value=row_data.get('端末', ''))
-        curr_exp = parse_date(row_data.get('有効期限'))
-        new_exp = st.date_input("有効期限", value=curr_exp)
+        new_exp = st.date_input("有効期限", value=parse_date(row_data.get('有効期限')))
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         if st.form_submit_button("更新"):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
             cell = worksheet.find(str(row_data['ID']))
             if cell:
                 worksheet.update(f"A{cell.row}", [[row_data['ID'], new_type, new_device, str(new_exp), new_note]])
-                st.success("更新しました！"); st.rerun()
+                st.success("更新しました"); st.rerun()
 
-@st.dialog("📝 詳細情報の編集")
-def show_detail_dialog(row_data):
-    cat = row_data['カテゴリ']
-    with st.form("edit_form"):
-        st.write(f"ID: {row_data['ID']} / カテゴリ: {cat}")
-        new_name = st.text_input("品名", value=row_data.get('品名', ''))
-        new_user = st.text_input("利用者", value=row_data.get('利用者', ''))
-        status_opts = ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"]
-        new_status = st.selectbox("ステータス", status_opts, index=status_opts.index(row_data['ステータス']) if row_data['ステータス'] in status_opts else 0)
-        
-        custom_values = {}
-        for col in COLUMNS_DEF.get(cat, []):
-            custom_values[col] = st.text_input(col, value=row_data.get(col, ''))
-            
-        if st.form_submit_button("更新"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(CATEGORY_MAP[cat])
-            cell = worksheet.find(str(row_data['ID']))
-            if cell:
-                update_data = [row_data['ID'], cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
-                for col in COLUMNS_DEF.get(cat, []): update_data.append(custom_values[col])
-                worksheet.update(f"A{cell.row}", [update_data])
-                get_all_data.clear()
-                st.success("更新しました！"); st.rerun()
-
-# --- メイン画面 ---
-st.title("📱 総務備品管理アプリ")
+# --- メインロジック ---
+st.title("🏢 総務備品管理システム")
 
 with st.sidebar:
-    page_selection = st.radio("メニュー", ["📦 在庫管理", "👤 新規入職者管理", "🔐 電子証明書管理", "📅 5年経過リスト"])
-    if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
+    page = st.radio("メニュー", ["📦 在庫管理", "🔐 電子証明書管理", "👤 新規入職者管理", "📅 5年経過リスト"])
+    st.markdown("---")
+    if st.button("🔄 データを最新に更新"): get_all_data.clear(); st.rerun()
 
-# --- 1. 在庫管理 ---
-if page_selection == "📦 在庫管理":
-    if st.session_state.force_switch_zaiko:
-        st.session_state.tab_zaiko_key = "🔍 一覧・検索"; st.session_state.force_switch_zaiko = False
-    
-    tab_select = st.radio("機能", ["🔍 一覧・検索", "📝 新規登録"], horizontal=True, key="tab_zaiko_key")
-    df = get_all_data()
-    
-    if tab_select == "🔍 一覧・検索":
-        query = st.text_input("フリーワード検索", key="main_search")
-        if query and not df.empty:
-            df = df[df.astype(str).apply(lambda row: row.str.contains(query, case=False).any(), axis=1)]
-        st.dataframe(df, use_container_width=True)
-
-# --- 2. 電子証明書管理 ---
-elif page_selection == "🔐 電子証明書管理":
-    if st.session_state.force_switch_cert:
-        st.session_state.tab_cert_key = "📋 一覧・検索"; st.session_state.force_switch_cert = False
-
-    tab_cert = st.radio("機能", ["📋 一覧・検索", "➕ 新規登録"], horizontal=True, key="tab_cert_key")
+# --- 電子証明書管理ページ ---
+if page == "🔐 電子証明書管理":
+    st.subheader("電子証明書の管理")
+    tab_cert = st.radio("表示切替", ["📋 一覧・アラート", "➕ 新規登録"], horizontal=True)
     df_cert = get_certificate_data()
 
-    if tab_cert == "📋 一覧・検索":
+    if tab_cert == "📋 一覧・アラート":
         if not df_cert.empty:
             today = datetime.now().date()
-            alert_items = []
-            for _, row in df_cert.iterrows():
+            alert_found = False
+            
+            # アラート表示エリア
+            for i, row in df_cert.iterrows():
                 dt = parse_date(row.get('有効期限'))
                 if dt:
                     diff = (dt.date() - today).days
                     if diff <= 75:
+                        if not alert_found:
+                            st.markdown("##### ⚠️ 期限切れ間近のアラート (75日以内)")
+                            alert_found = True
+                        
+                        # 指定のフォーマットで表示
                         msg = f"あと{diff}日" if diff >= 0 else "超過"
-                        alert_items.append({"row": row, "text": f"**{row.get('種類', '不明')} : 有効期限 {msg} ({dt.strftime('%Y-%m-%d')})**"})
+                        exp_str = dt.strftime('%Y-%m-%d')
+                        cert_type = row.get('種類', '不明')
+                        
+                        col_text, col_btn = st.columns([5, 1])
+                        with col_text:
+                            st.markdown(f"**{cert_type} : 有効期限 {msg} ({exp_str})**")
+                        with col_btn:
+                            if st.button("詳細", key=f"btn_cert_{i}"):
+                                show_cert_dialog(row)
+                        st.markdown('<hr>', unsafe_allow_html=True)
             
-            if alert_items:
-                st.markdown('<div class="alert-box" style="background-color:#ffcccc; border:1px solid red; border-radius:5px; padding:10px;">⚠️ 電子証明書 期日アラート (75日以内)</div>', unsafe_allow_html=True)
-                for item in alert_items:
-                    c1, c2 = st.columns([5, 1])
-                    c1.markdown(item['text'])
-                    if c2.button("詳細", key=f"btn_cert_{item['row']['ID']}"): show_cert_dialog(item['row'])
+            if not alert_found:
+                st.success("期限が近い証明書はありません。")
             
-            st.write("---")
+            st.markdown("##### 📋 全データ一覧")
             st.dataframe(df_cert, use_container_width=True)
 
     elif tab_cert == "➕ 新規登録":
-        with st.form("new_cert"):
+        with st.form("new_cert_form"):
             new_id = generate_auto_id(df_cert, "I")
-            c_type = st.text_input("種類")
-            c_dev = st.text_input("端末")
+            c_type = st.text_input("種類 (例: 電子請求書, e-Tax)")
+            c_dev = st.text_input("インストール端末")
             c_exp = st.date_input("有効期限")
-            if st.form_submit_button("登録"):
+            c_note = st.text_area("備考")
+            if st.form_submit_button("新規登録"):
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
-                worksheet.append_row([new_id, c_type, c_dev, str(c_exp), ""])
-                st.success("登録しました！"); st.session_state.force_switch_cert = True; st.rerun()
+                worksheet.append_row([new_id, c_type, c_dev, str(c_exp), c_note])
+                st.success("登録完了しました！"); st.rerun()
 
-# --- 3. 新規入職者管理・5年経過リスト (簡易版) ---
-elif page_selection == "👤 新規入職者管理":
-    st.info("入職者管理画面（開発中）")
-elif page_selection == "📅 5年経過リスト":
-    st.info("5年経過リスト（開発中）")
+# --- その他のページ (在庫管理など) ---
+elif page == "📦 在庫管理":
+    st.subheader("在庫・備品一覧")
+    df = get_all_data()
+    st.dataframe(df, use_container_width=True)
+
+else:
+    st.info(f"{page} 画面は現在調整中です。")
