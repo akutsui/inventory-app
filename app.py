@@ -183,6 +183,14 @@ if 'tab_newemp' not in st.session_state:
 if 'tab_cert' not in st.session_state:
     st.session_state['tab_cert'] = "📋 一覧・検索"
 
+# 遷移フラグ（これを使って安全にタブを切り替える）
+if 'force_switch_zaiko' not in st.session_state:
+    st.session_state['force_switch_zaiko'] = False
+if 'force_switch_newemp' not in st.session_state:
+    st.session_state['force_switch_newemp'] = False
+if 'force_switch_cert' not in st.session_state:
+    st.session_state['force_switch_cert'] = False
+
 # --- データ取得関数 (在庫用) ---
 @st.cache_data(ttl=600)
 def get_all_data():
@@ -644,6 +652,11 @@ try:
     # ==========================================
     if page_selection == "📦 在庫管理 (メイン)":
         
+        # 強制タブ切り替え処理
+        if st.session_state.get('force_switch_zaiko'):
+            st.session_state['tab_zaiko'] = "🔍 一覧・検索"
+            st.session_state['force_switch_zaiko'] = False
+            
         # 画面切替用のラジオボタン
         st.radio("機能切替", ["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"], horizontal=True, key="tab_zaiko", label_visibility="collapsed")
         st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
@@ -1188,8 +1201,8 @@ try:
                                 worksheet.append_row(row_to_save)
                                 st.toast(f"新規登録しました！ ID: {input_id}", icon="✅")
                                 get_all_data.clear()
-                                # 登録後に一覧へ戻る
-                                st.session_state['tab_zaiko'] = "🔍 一覧・検索"
+                                # 登録後に安全に一覧へ戻る
+                                st.session_state['force_switch_zaiko'] = True
                                 st.rerun()
                         except Exception as e:
                             st.error(f"書き込みエラー: {e}")
@@ -1288,8 +1301,8 @@ try:
                         st.success("一括処理が完了しました！")
                         get_all_data.clear() # キャッシュクリア
                         time.sleep(1)
-                        # 完了後に一覧へ戻る
-                        st.session_state['tab_zaiko'] = "🔍 一覧・検索"
+                        # 完了後に安全に一覧へ戻る
+                        st.session_state['force_switch_zaiko'] = True
                         st.rerun()
                         
                 except Exception as e:
@@ -1299,6 +1312,12 @@ try:
     # ページ2：新規入職者管理
     # ==========================================
     elif page_selection == "👤 新規入職者管理":
+        
+        # 強制タブ切り替え処理
+        if st.session_state.get('force_switch_newemp'):
+            st.session_state['tab_newemp'] = "📋 タスク管理・一覧"
+            st.session_state['force_switch_newemp'] = False
+            
         st.radio("機能切替", ["📋 タスク管理・一覧", "➕ 新規登録"], horizontal=True, key="tab_newemp", label_visibility="collapsed")
         st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
         
@@ -1394,7 +1413,7 @@ try:
                             if cell:
                                 st.error(f"エラー: ID '{ne_id}' は既に登録されています。")
                             else:
-                                headers = worksheet.row_values(1) # スプレッドシートの見出しを取得
+                                headers = worksheet.row_values(1)
                                 
                                 # 保存データを辞書で構築
                                 data_dict = {
@@ -1416,8 +1435,8 @@ try:
                                 
                                 worksheet.append_row(row_to_save)
                                 st.toast("新規入職者を登録しました！", icon="✅")
-                                # 登録後に一覧へ戻る
-                                st.session_state['tab_newemp'] = "📋 タスク管理・一覧"
+                                # 登録後に安全に一覧へ戻る
+                                st.session_state['force_switch_newemp'] = True
                                 st.rerun()
                         except Exception as e:
                             st.error(f"登録エラー: {e}")
@@ -1426,6 +1445,12 @@ try:
     # ページ3：電子証明書管理
     # ==========================================
     elif page_selection == "🔐 電子証明書管理":
+        
+        # 強制タブ切り替え処理
+        if st.session_state.get('force_switch_cert'):
+            st.session_state['tab_cert'] = "📋 一覧・検索"
+            st.session_state['force_switch_cert'] = False
+            
         st.radio("機能切替", ["📋 一覧・検索", "➕ 新規登録"], horizontal=True, key="tab_cert", label_visibility="collapsed")
         st.markdown("<hr style='margin-top: 0px;'>", unsafe_allow_html=True)
         
@@ -1507,10 +1532,7 @@ try:
                     c[1].write(str(row.get('ID', '')))
                     c[2].write(str(row.get('種類', '')))
                     c[3].write(str(row.get('端末', '')))
-                    
-                    # 文字色変更をなくし、通常表示
                     c[4].write(str(row.get('有効期限', '')))
-                        
                     c[5].write(str(row.get('備考', '')))
                     
                     st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
@@ -1557,8 +1579,8 @@ try:
                                 
                                 worksheet.append_row(row_to_save)
                                 st.toast("電子証明書を登録しました！", icon="✅")
-                                # 登録後に一覧へ戻る
-                                st.session_state['tab_cert'] = "📋 一覧・検索"
+                                # 登録後に安全に一覧へ戻る
+                                st.session_state['force_switch_cert'] = True
                                 st.rerun()
                         except Exception as e:
                             st.error(f"登録エラー: {e}")
