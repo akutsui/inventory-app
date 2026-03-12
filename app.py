@@ -1,5 +1,4 @@
 import streamlit as st
-import pd as pd
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -9,7 +8,7 @@ import time
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
 
-# --- CSS (UI調整) ---
+# --- CSS (UI調整: 行間を詰め、ヘッダーを固定) ---
 st.markdown("""
     <style>
         .block-container { padding-top: 4rem !important; padding-bottom: 5rem; }
@@ -64,7 +63,7 @@ if 'force_switch_zaiko' not in st.session_state: st.session_state['force_switch_
 if 'force_switch_newemp' not in st.session_state: st.session_state['force_switch_newemp'] = False
 if 'force_switch_cert' not in st.session_state: st.session_state['force_switch_cert'] = False
 
-# --- 関数群 ---
+# --- データ取得・補助関数 ---
 @st.cache_data(ttl=600)
 def get_all_data():
     all_data = []
@@ -107,7 +106,22 @@ def generate_auto_id(df_target, prefix):
 
 def safe_text(text): return str(text).replace("@", "@\u200B")
 
-# --- ダイアログ関数 ---
+# --- ダイアログ（詳細編集画面） ---
+@st.dialog("📝 電子証明書の編集")
+def show_cert_dialog(row_data):
+    with st.form("cert_edit_form"):
+        new_type = st.text_input("種類", value=row_data.get('種類', ''))
+        new_device = st.text_input("端末", value=row_data.get('端末', ''))
+        curr_exp = parse_date(row_data.get('有効期限'))
+        new_exp = st.date_input("有効期限", value=curr_exp)
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        if st.form_submit_button("更新"):
+            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
+            cell = worksheet.find(str(row_data['ID']))
+            if cell:
+                worksheet.update(f"A{cell.row}", [[row_data['ID'], new_type, new_device, str(new_exp), new_note]])
+                st.success("更新しました！"); st.rerun()
+
 @st.dialog("📝 詳細情報の編集")
 def show_detail_dialog(row_data):
     cat = row_data['カテゴリ']
@@ -115,7 +129,8 @@ def show_detail_dialog(row_data):
         st.write(f"ID: {row_data['ID']} / カテゴリ: {cat}")
         new_name = st.text_input("品名", value=row_data.get('品名', ''))
         new_user = st.text_input("利用者", value=row_data.get('利用者', ''))
-        new_status = st.selectbox("ステータス", ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"], index=0)
+        status_opts = ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"]
+        new_status = st.selectbox("ステータス", status_opts, index=status_opts.index(row_data['ステータス']) if row_data['ステータス'] in status_opts else 0)
         
         custom_values = {}
         for col in COLUMNS_DEF.get(cat, []):
@@ -128,43 +143,17 @@ def show_detail_dialog(row_data):
                 update_data = [row_data['ID'], cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
                 for col in COLUMNS_DEF.get(cat, []): update_data.append(custom_values[col])
                 worksheet.update(f"A{cell.row}", [update_data])
-                st.success("更新しました"); st.rerun()
+                get_all_data.clear()
+                st.success("更新しました！"); st.rerun()
 
-@st.dialog("🔐 電子証明書の編集")
-def show_cert_dialog(row_data):
-    with st.form("cert_edit_form"):
-        new_type = st.text_input("種類", value=row_data.get('種類', ''))
-        new_device = st.text_input("端末", value=row_data.get('端末', ''))
-        new_exp = st.date_input("有効期限", value=parse_date(row_data.get('有効期限')))
-        new_note = st.text_area("備考", value=row_data.get('備考', ''))
-        if st.form_submit_button("更新"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
-            cell = worksheet.find(str(row_data['ID']))
-            if cell:
-                worksheet.update(f"A{cell.row}", [[row_data['ID'], new_type, new_device, str(new_exp), new_note]])
-                st.success("更新しました"); st.rerun()
-
-@st.dialog("👤 入職者タスク管理")
-def show_onboarding_task_dialog(row_data):
-    with st.form("onboard_form"):
-        new_status = st.selectbox("全体ステータス", ["準備中", "完了"], index=0)
-        task_vals = {}
-        for task in ONBOARDING_TASKS:
-            task_vals[task] = st.text_input(task, value=row_data.get(task, ''))
-        if st.form_submit_button("更新"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
-            cell = worksheet.find(str(row_data['ID']))
-            if cell:
-                # 簡易更新
-                st.success("更新しました（デモ）"); st.rerun()
-
-# --- メインロジック ---
+# --- メイン画面 ---
 st.title("📱 総務備品管理アプリ")
+
 with st.sidebar:
     page_selection = st.radio("メニュー", ["📦 在庫管理", "👤 新規入職者管理", "🔐 電子証明書管理", "📅 5年経過リスト"])
     if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
 
-# --- ページ1: 在庫管理 ---
+# --- 1. 在庫管理 ---
 if page_selection == "📦 在庫管理":
     if st.session_state.force_switch_zaiko:
         st.session_state.tab_zaiko_key = "🔍 一覧・検索"; st.session_state.force_switch_zaiko = False
@@ -174,28 +163,20 @@ if page_selection == "📦 在庫管理":
     
     if tab_select == "🔍 一覧・検索":
         query = st.text_input("フリーワード検索", key="main_search")
-        if query: df = df[df.astype(str).apply(lambda row: row.str.contains(query, case=False).any(), axis=1)]
-        st.dataframe(df)
+        if query and not df.empty:
+            df = df[df.astype(str).apply(lambda row: row.str.contains(query, case=False).any(), axis=1)]
+        st.dataframe(df, use_container_width=True)
 
-# --- ページ2: 新規入職者管理 ---
-elif page_selection == "👤 新規入職者管理":
-    if st.session_state.force_switch_newemp:
-        st.session_state.tab_emp_key = "📋 一覧"; st.session_state.force_switch_newemp = False
-    st.radio("機能", ["📋 一覧", "➕ 新規登録"], horizontal=True, key="tab_emp_key")
-
-# --- ページ3: 電子証明書管理 ---
+# --- 2. 電子証明書管理 ---
 elif page_selection == "🔐 電子証明書管理":
-    # 安全なタブ切り替え処理
     if st.session_state.force_switch_cert:
-        st.session_state.tab_cert_key = "📋 一覧・検索"
-        st.session_state.force_switch_cert = False
+        st.session_state.tab_cert_key = "📋 一覧・検索"; st.session_state.force_switch_cert = False
 
     tab_cert = st.radio("機能", ["📋 一覧・検索", "➕ 新規登録"], horizontal=True, key="tab_cert_key")
     df_cert = get_certificate_data()
 
     if tab_cert == "📋 一覧・検索":
         if not df_cert.empty:
-            # アラート判定
             today = datetime.now().date()
             alert_items = []
             for _, row in df_cert.iterrows():
@@ -207,15 +188,14 @@ elif page_selection == "🔐 電子証明書管理":
                         alert_items.append({"row": row, "text": f"**{row.get('種類', '不明')} : 有効期限 {msg} ({dt.strftime('%Y-%m-%d')})**"})
             
             if alert_items:
-                st.markdown('<div class="alert-box" style="background-color:#ffcccc; border:1px solid red; border-radius:5px; padding:10px;">⚠️ 電子証明書 期日アラート</div>', unsafe_allow_html=True)
+                st.markdown('<div class="alert-box" style="background-color:#ffcccc; border:1px solid red; border-radius:5px; padding:10px;">⚠️ 電子証明書 期日アラート (75日以内)</div>', unsafe_allow_html=True)
                 for item in alert_items:
                     c1, c2 = st.columns([5, 1])
                     c1.markdown(item['text'])
                     if c2.button("詳細", key=f"btn_cert_{item['row']['ID']}"): show_cert_dialog(item['row'])
             
             st.write("---")
-            st.write("### 証明書一覧")
-            st.dataframe(df_cert)
+            st.dataframe(df_cert, use_container_width=True)
 
     elif tab_cert == "➕ 新規登録":
         with st.form("new_cert"):
@@ -226,8 +206,10 @@ elif page_selection == "🔐 電子証明書管理":
             if st.form_submit_button("登録"):
                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
                 worksheet.append_row([new_id, c_type, c_dev, str(c_exp), ""])
-                st.success("登録完了"); st.session_state.force_switch_cert = True; st.rerun()
+                st.success("登録しました！"); st.session_state.force_switch_cert = True; st.rerun()
 
-# --- ページ4: 5年経過リスト ---
+# --- 3. 新規入職者管理・5年経過リスト (簡易版) ---
+elif page_selection == "👤 新規入職者管理":
+    st.info("入職者管理画面（開発中）")
 elif page_selection == "📅 5年経過リスト":
-    st.write("購入から5年以上経過したPC/iPadを表示します。")
+    st.info("5年経過リスト（開発中）")
