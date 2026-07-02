@@ -1127,14 +1127,14 @@ try:
                         with c1:
                             d_buy = st.date_input("購入日", value=None)
                             custom_values['購入日'] = d_buy.strftime('%Y-%m-%d') if d_buy else ''
-                            custom_values['電話番号'] = st.text_input("電話番号", value=row_data.get('電話番号', ''))
-                            custom_values['SIM'] = st.text_input("SIM", value=row_data.get('SIM', ''))
-                            custom_values['メーカー'] = st.text_input("メーカー", value=row_data.get('メーカー', ''))
+                            custom_values['電話番号'] = st.text_input("電話番号")
+                            custom_values['SIM'] = st.text_input("SIM")
+                            custom_values['メーカー'] = st.text_input("メーカー")
                         with c2:
-                            custom_values['製造番号'] = st.text_input("製造番号", value=row_data.get('製造番号', ''))
-                            custom_values['使用部署'] = st.text_input("使用部署", value=row_data.get('使用部署', ''))
-                            custom_values['保管場所'] = st.text_input("保管場所", value=row_data.get('保管場所', ''))
-                            custom_values['キャリア'] = st.text_input("キャリア", value=row_data.get('キャリア', ''))
+                            custom_values['製造番号'] = st.text_input("製造番号")
+                            custom_values['使用部署'] = st.text_input("使用部署")
+                            custom_values['保管場所'] = st.text_input("保管場所")
+                            custom_values['キャリア'] = st.text_input("キャリア")
                         custom_values['備考'] = st.text_area("備考")
 
                     elif selected_category_key == "Office365":
