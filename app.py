@@ -124,8 +124,9 @@ ONBOARDING_TASKS = [
     "備品", "机・椅子", "三文判", "シャチハタ"
 ]
 
-# --- 設定: 電子証明書管理用のシート名 ---
+# --- 設定: 電子証明書管理・タスク管理用のシート名 ---
 SHEET_CERTIFICATE = "電子証明書"
+SHEET_TASK = "タスク管理"
 
 # --- 設定: 各シートの列定義 ---
 COLUMNS_DEF = {
@@ -154,7 +155,7 @@ COLUMNS_DEF = {
         "アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"
     ],
     "ウイルスバスター": [
-        "利用者1", "利用者2", "利用者3", "期限", "備考"
+        "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"
     ],
     "その他機器": [
         "使用部署", "使用場所", "使用開始日", "備考"
@@ -177,6 +178,7 @@ if 'active_search_query' not in st.session_state:
 if 'zaiko_reg_success' not in st.session_state: st.session_state.zaiko_reg_success = False
 if 'emp_reg_success' not in st.session_state: st.session_state.emp_reg_success = False
 if 'cert_reg_success' not in st.session_state: st.session_state.cert_reg_success = False
+if 'task_reg_success' not in st.session_state: st.session_state.task_reg_success = False
 
 # --- データ取得関数 (在庫用) ---
 @st.cache_data(ttl=600)
@@ -255,6 +257,18 @@ def get_new_employee_data():
 def get_certificate_data():
     try:
         worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
+        records = worksheet.get_all_records()
+        return pd.DataFrame(records)
+    except gspread.WorksheetNotFound:
+        return None
+    except Exception as e:
+        st.error(f"データ取得エラー: {e}")
+        return pd.DataFrame()
+
+# --- データ取得関数 (タスク管理用) ---
+def get_task_data():
+    try:
+        worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
         records = worksheet.get_all_records()
         return pd.DataFrame(records)
     except gspread.WorksheetNotFound:
@@ -603,12 +617,80 @@ def show_cert_dialog(row_data):
             except Exception as e:
                 st.error(f"更新エラー: {e}")
 
+# --- ポップアップ詳細・編集画面 (タスク管理用) ---
+@st.dialog("📝 タスクの編集")
+def show_task_dialog(row_data):
+    st.write(f"### ID: {row_data.get('ID', '')}")
+    
+    with st.form("task_edit_form"):
+        new_name = st.text_input("タスク名", value=row_data.get('タスク名', ''))
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            new_assignee = st.text_input("担当者 (カンマ区切りで複数可)", value=row_data.get('担当者', ''), placeholder="例: 山田, 佐藤")
+        with c2:
+            new_watchers = st.text_input("関係者 (カンマ区切りで複数可)", value=row_data.get('関係者', ''), placeholder="例: 鈴木, 高橋")
+        
+        val_date = parse_date(row_data.get('期限'))
+        new_limit = st.date_input("期限", value=val_date)
+        
+        c3, c4 = st.columns(2)
+        with c3:
+            priorities = ["高", "中", "低"]
+            curr_pri = row_data.get('優先度', '中')
+            new_pri = st.selectbox("優先度", priorities, index=priorities.index(curr_pri) if curr_pri in priorities else 1)
+        with c4:
+            statuses = ["未着手", "進行中", "完了", "保留"]
+            curr_status = row_data.get('ステータス', '未着手')
+            new_status = st.selectbox("ステータス", statuses, index=statuses.index(curr_status) if curr_status in statuses else 0)
+        
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        
+        if st.form_submit_button("✅ 更新する"):
+            try:
+                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+                headers = worksheet.row_values(1)
+                
+                # 将来的なLINE WORKS連携時のイメージ（担当者名をID配列に変換する処理をここに挟む）
+                # assignees_list = [name.strip() for name in new_assignee.split(",")]
+                # watchers_list = [name.strip() for name in new_watchers.split(",")]
+                
+                data_dict = {
+                    "ID": row_data.get('ID', ''),
+                    "タスク名": new_name,
+                    "担当者": new_assignee,
+                    "関係者": new_watchers,
+                    "期限": str(new_limit) if new_limit else '',
+                    "優先度": new_pri,
+                    "ステータス": new_status,
+                    "備考": new_note
+                }
+                
+                row_to_save = [data_dict.get(h, "") for h in headers]
+                
+                cell = worksheet.find(str(row_data.get('ID', '')))
+                if cell:
+                    r = cell.row
+                    worksheet.update(f"A{r}", [row_to_save])
+                    st.toast("更新しました！", icon="✅")
+                    st.rerun()
+                else:
+                    st.error("エラー: IDが見つかりませんでした。")
+            except Exception as e:
+                st.error(f"更新エラー: {e}")
+
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
 
 with st.sidebar:
     # ページ切替ラジオボタン
-    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", "📅 5年経過リスト (PC/iPad)"])
+    page_selection = st.radio("メニュー切替", [
+        "📦 在庫管理 (メイン)", 
+        "👤 新規入職者管理", 
+        "🔐 電子証明書管理", 
+        "📋 タスク管理", 
+        "📅 5年経過リスト (PC/iPad)"
+    ])
     
     st.markdown("---")
     
@@ -636,7 +718,10 @@ with st.sidebar:
         **5. 訪問車期日アラート**
         * 期限が **45日以内**（車）の場合、検索窓の下にアラートが出ます。
 
-        **6. 5年経過リスト**
+        **6. タスク管理**
+        * 総務やチーム内のToDoを管理します。期限が近いものは色が変わります。
+
+        **7. 5年経過リスト**
         * 購入から5年以上経過したPCとiPadだけを一覧表示します。
         """)
 
@@ -1588,7 +1673,148 @@ try:
                                 st.error(f"登録エラー: {e}")
 
     # ==========================================
-    # ページ4：5年経過リスト
+    # ページ4：タスク管理
+    # ==========================================
+    elif page_selection == "📋 タスク管理":
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
+        
+        df_task = get_task_data()
+        
+        with task_tab1:
+            st.markdown("#### タスク一覧")
+            
+            if df_task is None:
+                st.error(f"シート「{SHEET_TASK}」が見つかりません。スプレッドシートに作成してください。")
+            elif df_task.empty:
+                st.info("登録されているタスクはありません。")
+            else:
+                # 必須カラムチェック
+                req_cols = ["ID", "タスク名", "担当者", "関係者", "期限", "優先度", "ステータス", "備考"]
+                missing = [c for c in req_cols if c not in df_task.columns]
+                
+                if missing:
+                    st.error(f"エラー: スプレッドシートに以下の列が見つかりません: {', '.join(missing)}")
+                    st.warning("シートの見出し行を確認してください。")
+                else:
+                    # ソート (完了を下に、日付が近いものを上に)
+                    df_task['is_completed'] = df_task['ステータス'].apply(lambda x: 1 if str(x) == '完了' else 0)
+                    df_task['sort_date'] = pd.to_datetime(df_task['期限'], errors='coerce')
+                    df_task = df_task.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
+
+                    cols = st.columns([0.7, 1, 2.0, 1.5, 1.5, 1.2, 1, 1.2])
+                    cols[0].write("**編集**")
+                    cols[1].write("**ID**")
+                    cols[2].write("**タスク名**")
+                    cols[3].write("**担当者**")
+                    cols[4].write("**関係者**")
+                    cols[5].write("**期限**")
+                    cols[6].write("**優先度**")
+                    cols[7].write("**ステータス**")
+                    st.markdown("<hr style='margin: 5px 0;'>", unsafe_allow_html=True)
+
+                    for index, row in df_task.iterrows():
+                        c = st.columns([0.7, 1, 2.0, 1.5, 1.5, 1.2, 1, 1.2])
+                        
+                        if c[0].button("詳細", key=f"task_btn_{index}"):
+                            show_task_dialog(row)
+                        
+                        c[1].write(str(row.get('ID', '')))
+                        c[2].write(f"**{safe_text(row.get('タスク名', ''))}**")
+                        c[3].write(str(row.get('担当者', '')))
+                        c[4].write(str(row.get('関係者', '')))
+                        
+                        # 期限の警告表示
+                        deadline_str = str(row.get('期限', ''))
+                        dt = parse_date(deadline_str)
+                        if dt and row.get('ステータス') != '完了':
+                            diff = (dt.date() - datetime.now().date()).days
+                            if diff < 0:
+                                c[5].markdown(f"<span style='color:red; font-weight:bold;'>{deadline_str} (超過)</span>", unsafe_allow_html=True)
+                            elif diff <= 3:
+                                c[5].markdown(f"<span style='color:orange; font-weight:bold;'>{deadline_str} (あと{diff}日)</span>", unsafe_allow_html=True)
+                            else:
+                                c[5].write(deadline_str)
+                        else:
+                            c[5].write(deadline_str)
+                            
+                        # 優先度の色分け
+                        pri = str(row.get('優先度', ''))
+                        if pri == '高': c[6].error("高")
+                        elif pri == '中': c[6].warning("中")
+                        else: c[6].info("低")
+                        
+                        # ステータスのアイコン
+                        status = str(row.get('ステータス', ''))
+                        if status == "完了": c[7].success("完了", icon="✅")
+                        elif status == "進行中": c[7].info("進行中", icon="🏃")
+                        elif status == "未着手": c[7].write("未着手")
+                        else: c[7].write(status)
+                        
+                        st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
+
+        with task_tab2:
+            if st.session_state.task_reg_success:
+                st.success(f"✅ 新規登録が完了しました！ (ID: {st.session_state.get('task_reg_id', '')})")
+                st.info("左の「📋 タスク一覧」タブをクリックして確認してください。")
+                if st.button("続けて別のタスクを登録する"):
+                    st.session_state.task_reg_success = False
+                    st.rerun()
+            else:
+                st.subheader("新規タスクの登録")
+                
+                # --- ID自動採番 (タスク用) ---
+                task_auto_id = generate_auto_id(df_task, "T")
+                
+                with st.form("add_task_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        task_id = st.text_input("ID ※自動採番", value=task_auto_id)
+                        task_name = st.text_input("タスク名", placeholder="例: ○○さんのPC手配")
+                        task_assignee = st.text_input("担当者 (複数可: カンマ区切り)", placeholder="例: 山田, 佐藤")
+                    with col2:
+                        task_watchers = st.text_input("関係者/共有者 (複数可: カンマ区切り)", placeholder="例: 鈴木, 高橋")
+                        task_limit = st.date_input("期限", value=None)
+                        task_pri = st.selectbox("優先度", ["高", "中", "低"], index=1)
+                        
+                    task_status = st.selectbox("ステータス", ["未着手", "進行中", "完了", "保留"], index=0)
+                    task_note = st.text_area("備考", placeholder="複数人に入力する場合は、カンマ( , )で区切って入力してください。将来のLINE WORKS連携時に自動分割されます。")
+                    
+                    if st.form_submit_button("登録する"):
+                        if not task_id or not task_name:
+                            st.error("IDとタスク名は必須です。")
+                        else:
+                            try:
+                                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+                                
+                                cell = worksheet.find(task_id)
+                                if cell:
+                                    st.error(f"エラー: ID '{task_id}' は既に登録されています。")
+                                else:
+                                    headers = worksheet.row_values(1)
+                                    
+                                    data_dict = {
+                                        "ID": task_id,
+                                        "タスク名": task_name,
+                                        "担当者": task_assignee,
+                                        "関係者": task_watchers,
+                                        "期限": str(task_limit) if task_limit else '',
+                                        "優先度": task_pri,
+                                        "ステータス": task_status,
+                                        "備考": task_note
+                                    }
+                                    
+                                    row_to_save = [data_dict.get(h, "") for h in headers]
+                                    
+                                    worksheet.append_row(row_to_save)
+                                    st.toast("タスクを登録しました！", icon="✅")
+                                    st.session_state.task_reg_success = True
+                                    st.session_state['task_reg_id'] = task_id
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"登録エラー: {e}")
+
+    # ==========================================
+    # ページ5：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
         st.title("📅 5年経過リスト (PC/iPad)")
@@ -1645,9 +1871,6 @@ try:
                     
                     # 詳細ボタン
                     if c1.button("詳細", key=f"old_btn_{item['index']}"):
-                        # 元のDataFrameから該当行を取得してダイアログ表示
-                        # (itemは辞書化されているので、元のSeries形式に戻すか、辞書対応のダイアログが必要)
-                        # ここでは簡易的に、元のdfから再取得して渡す
                         original_row = df.loc[item['index']]
                         show_detail_dialog(original_row)
                     
