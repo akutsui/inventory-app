@@ -3,9 +3,8 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
-import time
-import jwt
 import requests
+import time
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
@@ -71,55 +70,43 @@ for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_re
     if key not in st.session_state: st.session_state[key] = False
 
 # ==========================================
-# 🌟 LINE WORKS 連携用設定 🌟
+# 🌟 LINE WORKS 連携用設定 (OAuth版) 🌟
 # ==========================================
-# 案A: 名前とLINE WORKS ID（メールアドレス等）の変換辞書
 LINEWORKS_USER_MAP = {
-    "橘田菜穂": "n.kitta@satsuki-hc.com",  # ←ここを実際のIDに書き換えてください
-    "野崎聡": "s.nozaki@satsuki-hc.com",
-    "森田恭平": "k.morita@satsuki-hc.com",
-    "阿久津雅浩": "m.akutsu@satsuki-hc.com", 
-    "水上直人": "n.mizukami@satsuki-hc.com"
+    "山田": "yamada@yourdomain.com",  # ←ここを実際のIDに書き換えてください
+    "佐藤": "sato@yourdomain.com",
+    "鈴木": "suzuki@yourdomain.com"
 }
-# このリストがプルダウンの選択肢になります
 USER_OPTIONS = list(LINEWORKS_USER_MAP.keys())
 
-
 def get_lineworks_token():
-    """LINE WORKSのアクセストークンを取得する関数"""
+    """LINE WORKSのアクセストークンを取得する関数 (Refresh Token方式)"""
     try:
         lw_secrets = st.secrets["lineworks"]
         client_id = lw_secrets["client_id"]
         client_secret = lw_secrets["client_secret"]
-        service_account = lw_secrets["service_account"]
-        private_key = lw_secrets["private_key"]
+        refresh_token = lw_secrets.get("refresh_token", "")
         
-        current_time = int(time.time())
-        payload = {
-            "iss": client_id,
-            "sub": service_account,
-            "iat": current_time,
-            "exp": current_time + 3600
-        }
-        encoded_jwt = jwt.encode(payload, private_key, algorithm="RS256")
+        if not refresh_token:
+            st.error("🔑 金庫(Secrets)に refresh_token がありません。左メニューの「⚙️ 初期設定」を行ってください。")
+            return None
         
         url = "https://auth.worksmobile.com/oauth2/v2.0/token"
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         data = {
-            "assertion": encoded_jwt,
-            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token",
             "client_id": client_id,
             "client_secret": client_secret,
-            "scope": "task" 
         }
         res = requests.post(url, headers=headers, data=data)
         if res.status_code == 200:
             return res.json().get("access_token")
         else:
-            st.error(f"LINE WORKS トークン取得エラー: {res.text}")
+            st.error(f"LINE WORKS トークン再取得エラー: {res.text}")
             return None
     except Exception as e:
-        st.error(f"LINE WORKS トークン生成エラー: {e}\n（Secretsの設定を確認してください）")
+        st.error(f"LINE WORKS トークン生成エラー: {e}")
         return None
 
 def create_lineworks_task(task_name, assignee_str, watcher_str, deadline_date, note_text):
@@ -127,7 +114,6 @@ def create_lineworks_task(task_name, assignee_str, watcher_str, deadline_date, n
     token = get_lineworks_token()
     if not token: return False
     
-    # 名前(カンマ区切り)をLINE WORKSのID形式のリストに変換
     assignees = []
     if assignee_str:
         for name in str(assignee_str).split(","):
@@ -147,9 +133,7 @@ def create_lineworks_task(task_name, assignee_str, watcher_str, deadline_date, n
     if assignees: payload["assignees"] = assignees
     if watchers: payload["watchers"] = watchers
     
-    # 期限の設定 (LINE WORKSの仕様上 ISO8601形式が必要)
     if deadline_date:
-        # 期限日の23:59:59を期限とする
         deadline_str = f"{deadline_date}T23:59:59+09:00"
         payload["dueDate"] = deadline_str
         
@@ -323,13 +307,11 @@ def show_cert_dialog(row_data):
             cell = worksheet.find(str(row_data['ID']))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
 
-# --- ポップアップ詳細・編集画面 (タスク管理用) ---
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
         new_name = st.text_input("タスク名", value=row_data.get('タスク名', ''))
         
-        # 保存されているカンマ区切りの文字列をリストに戻す（辞書に存在するものだけ）
         curr_assignees = [u.strip() for u in str(row_data.get('担当者', '')).split(',') if u.strip() in USER_OPTIONS]
         curr_watchers = [u.strip() for u in str(row_data.get('関係者', '')).split(',') if u.strip() in USER_OPTIONS]
 
@@ -356,19 +338,13 @@ def show_task_dialog(row_data):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
             headers = worksheet.row_values(1)
             
-            # リストをカンマ区切りの文字列に戻して保存
             new_assignee_str = ", ".join(sel_assignees)
             new_watchers_str = ", ".join(sel_watchers)
 
             data_dict = {
-                "ID": row_data.get('ID', ''), 
-                "タスク名": new_name, 
-                "担当者": new_assignee_str, 
-                "関係者": new_watchers_str, 
-                "期限": str(new_limit) if new_limit else '', 
-                "優先度": new_pri, 
-                "ステータス": new_status, 
-                "備考": new_note
+                "ID": row_data.get('ID', ''), "タスク名": new_name, "担当者": new_assignee_str, 
+                "関係者": new_watchers_str, "期限": str(new_limit) if new_limit else '', 
+                "優先度": new_pri, "ステータス": new_status, "備考": new_note
             }
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID', '')))
@@ -380,19 +356,79 @@ def show_task_dialog(row_data):
 st.title('📱 総務備品管理アプリ')
 
 with st.sidebar:
-    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", "📋 タスク管理", "📅 5年経過リスト (PC/iPad)"])
+    # 📝 ここに初期設定メニューを追加しました！
+    page_selection = st.radio("メニュー切替", [
+        "📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", 
+        "📋 タスク管理", "📅 5年経過リスト (PC/iPad)", "⚙️ LINE WORKS初期設定 (1回だけ)"
+    ])
     if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
 
 try:
     df = get_all_data()
 
     # ==========================================
+    # ページ：LINE WORKS 初期設定
+    # ==========================================
+    if page_selection == "⚙️ LINE WORKS初期設定 (1回だけ)":
+        st.header("⚙️ LINE WORKS 初期設定")
+        st.markdown("タスク機能を呼び出すための「特別な鍵（リフレッシュトークン）」をここで発行します。この作業は**最初の一回だけ**でOKです！")
+        
+        try:
+            lw_secrets = st.secrets["lineworks"]
+            client_id = lw_secrets["client_id"]
+            client_secret = lw_secrets["client_secret"]
+            redirect_uri = "https://localhost"
+            
+            st.markdown("### Step 1: 認証ページにアクセスして同意する")
+            st.info("以下のリンクをクリックすると、ブラウザの新しいタブでLINE WORKSのログイン・同意画面が開きます。")
+            
+            # URLエンコードしたスコープ
+            auth_url = f"https://auth.worksmobile.com/oauth2/v2.0/authorize?client_id={client_id}&redirect_uri={redirect_uri}&scope=task%20user.read&response_type=code&state=test"
+            st.markdown(f"### 👉 [ここをクリックして認証画面を開く]({auth_url})")
+            
+            st.warning("""
+            **⚠️ 注意事項：**
+            同意ボタンを押すと、「サイトにアクセスできません」というような**真っ白なエラー画面に飛ばされますが、それで大正解です！**
+            
+            その画面の上の「URLバー（アドレスバー）」を見てください。
+            `https://localhost/?code=XXXXX&state=test` のようになっているはずです。
+            この **`code=` から `&state=` の前までの文字列（XXXXXの部分）** をコピーして、下の枠に貼り付けてください。
+            """)
+            
+            st.markdown("### Step 2: 取得したコードを入力する")
+            auth_code = st.text_input("コピーしたコード(code)をここに貼り付けてください")
+            
+            if st.button("🔑 リフレッシュトークンを発行する"):
+                if not auth_code:
+                    st.error("コードを入力してください！")
+                else:
+                    url = "https://auth.worksmobile.com/oauth2/v2.0/token"
+                    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                    data = {
+                        "code": auth_code,
+                        "grant_type": "authorization_code",
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                    }
+                    res = requests.post(url, headers=headers, data=data)
+                    if res.status_code == 200:
+                        refresh_token = res.json().get("refresh_token")
+                        st.success("🎉 リフレッシュトークンの取得に成功しました！！")
+                        st.markdown("以下の文字列をコピーして、Streamlit Cloudの **Secrets (金庫)** の `[lineworks]` の一番下に追記して保存してください。")
+                        st.code(f'refresh_token = "{refresh_token}"', language="toml")
+                        st.balloons()
+                    else:
+                        st.error(f"エラーが発生しました。コードが間違っているか、有効期限(数分)が切れた可能性があります。\n{res.text}")
+                        
+        except Exception as e:
+            st.error(f"Secretsの読み込みエラー: 金庫に Client ID 等が登録されているか確認してください。({e})")
+
+    # ==========================================
     # ページ1：在庫管理 (メイン)
     # ==========================================
-    if page_selection == "📦 在庫管理 (メイン)":
+    elif page_selection == "📦 在庫管理 (メイン)":
         main_tab1, main_tab2, main_tab3 = st.tabs(["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"])
         with main_tab1:
-            # 訪問車アラート
             today = datetime.now().date()
             alert_items = []
             if not df.empty:
@@ -404,7 +440,6 @@ try:
                             alert_items.append(f"【{row['品名']}】{col}: あと{(dt.date()-today).days}日")
             
             if alert_items: st.error("⚠️ 訪問車期日アラート (45日以内)\n\n" + "\n".join(alert_items))
-
             st.text_input("フリーワード検索", placeholder="Enterで検索", key="input_search_key", on_change=submit_search)
             
             cat_tabs = st.tabs(["すべて"] + list(CATEGORY_MAP.keys()))
@@ -559,16 +594,11 @@ try:
                     with col1:
                         task_id = st.text_input("ID ※自動採番", value=generate_auto_id(df_task, "T"))
                         task_name = st.text_input("タスク名")
-                        
-                        # 📝 プルダウン(マルチセレクト)に変更
                         sel_assignees = st.multiselect("担当者", options=USER_OPTIONS)
                         task_assignee = ", ".join(sel_assignees)
-                        
                     with col2:
-                        # 📝 プルダウン(マルチセレクト)に変更
                         sel_watchers = st.multiselect("関係者/共有者", options=USER_OPTIONS)
                         task_watchers = ", ".join(sel_watchers)
-                        
                         task_limit = st.date_input("期限", value=None)
                         task_pri = st.selectbox("優先度", ["高", "中", "低"], index=1)
                         
@@ -580,7 +610,6 @@ try:
                             st.error("タスク名は必須です。")
                         else:
                             try:
-                                # 1. スプレッドシートに保存
                                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
                                 headers = worksheet.row_values(1)
                                 data_dict = {
@@ -591,15 +620,13 @@ try:
                                 row_to_save = [data_dict.get(h, "") for h in headers]
                                 worksheet.append_row(row_to_save)
                                 
-                                # 2. LINE WORKS APIにタスクを投げる
                                 is_success = create_lineworks_task(task_name, task_assignee, task_watchers, task_limit, task_note)
                                 if is_success:
                                     st.toast("LINE WORKS連携 成功！", icon="✅")
                                     st.session_state.task_reg_success = True
                                     st.rerun()
                                 else:
-                                    # 失敗した時はリフレッシュ(rerun)させない
-                                    st.warning("⚠️ スプレッドシートには保存できましたが、LINE WORKSへの送信に失敗しました。上の赤いエラーメッセージを確認してください！")
+                                    st.warning("⚠️ スプレッドシートには保存できましたが、LINE WORKSへの送信に失敗しました。上の赤いエラーメッセージを確認してください。")
                             except Exception as e:
                                 st.error(f"登録エラー: {e}")
 
