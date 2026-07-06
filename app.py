@@ -140,19 +140,36 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     res = requests.post(url, headers=headers, json=payload)
     return res.status_code in [200, 201]
 
+# ★ 超頑丈に書き直したステータス更新関数 ★
 def update_task_status(task_id, new_status):
+    if not task_id or pd.isna(task_id):
+        st.error("エラー: タスクIDが空のため更新できません。")
+        return False
+        
     try:
         worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
-        cell = worksheet.find(str(task_id))
+        headers = worksheet.row_values(1)
+        
+        if "ID" not in headers or "ステータス" not in headers:
+            st.error("エラー: シートに「ID」または「ステータス」列が見つかりません。")
+            return False
+            
+        id_col_idx = headers.index("ID") + 1
+        status_col_idx = headers.index("ステータス") + 1
+        
+        # ID列の中から該当のIDをピンポイントで探す
+        cell = worksheet.find(str(task_id), in_column=id_col_idx)
+        
         if cell:
-            headers = worksheet.row_values(1)
-            if "ステータス" in headers:
-                col_idx = headers.index("ステータス") + 1
-                worksheet.update_cell(cell.row, col_idx, new_status)
-                return True
-    except:
-        pass
-    return False
+            worksheet.update_cell(cell.row, status_col_idx, new_status)
+            return True
+        else:
+            st.error(f"エラー: シート内に ID「{task_id}」が見つかりませんでした。")
+            return False
+            
+    except Exception as e:
+        st.error(f"スプレッドシート更新エラー: {e}")
+        return False
 
 # --- データ取得・補助関数 ---
 @st.cache_data(ttl=600)
@@ -354,7 +371,7 @@ def show_task_dialog(row_data):
             cell = worksheet.find(str(row_data.get('ID', '')))
             if cell: 
                 worksheet.update(f"A{cell.row}", [row_to_save])
-                get_all_data.clear()  # ★更新時もキャッシュクリア
+                get_all_data.clear()
                 st.rerun()
 
 # --- アプリの画面構成 ---
@@ -510,7 +527,6 @@ try:
                 df_task['sort_date'] = pd.to_datetime(df_task['期限'], errors='coerce')
                 df_task = df_task.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
 
-                # ▼ ヘッダー行の追加 ▼
                 hc = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
                 hc[0].markdown("<span style='font-size:0.85rem; color:gray;'>操作</span>", unsafe_allow_html=True)
                 hc[1].markdown("<span style='font-size:0.85rem; color:gray;'>タスク名</span>", unsafe_allow_html=True)
@@ -522,7 +538,6 @@ try:
                 hc[7].markdown("<span style='font-size:0.85rem; color:gray;'>状態</span>", unsafe_allow_html=True)
                 hc[8].markdown("<span style='font-size:0.85rem; color:gray;'>クイック更新</span>", unsafe_allow_html=True)
                 st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #ccc;'>", unsafe_allow_html=True)
-                # ▲ ヘッダー行の追加 ▲
 
                 for index, row in df_task.iterrows():
                     c = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
@@ -545,16 +560,15 @@ try:
                     c[6].write(row.get('優先度', ''))
                     c[7].write(row.get('ステータス', ''))
                     
-                    # ★ キャッシュクリアを追加して画面が即座に切り替わるように修正
                     if row.get('ステータス') != '完了':
                         if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                             if update_task_status(row.get('ID'), "完了"):
-                                get_all_data.clear()  # ★ここを追加
+                                get_all_data.clear()
                                 st.rerun()
                     else:
                         if c[8].button("↩️ 戻す", key=f"rev_{index}"):
                             if update_task_status(row.get('ID'), "未着手"):
-                                get_all_data.clear()  # ★ここを追加
+                                get_all_data.clear()
                                 st.rerun()
                                 
                     st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
@@ -593,40 +607,4 @@ try:
                                 
                                 data_dict = {
                                     "ID": hidden_task_id, "タスク名": task_name, "作成者": task_creator,
-                                    "担当者": task_assignee, "関係者": task_watchers, 
-                                    "期限": str(task_limit) if task_limit else '',
-                                    "優先度": task_pri, "ステータス": task_status, "備考": task_note
-                                }
-                                row_to_save = [data_dict.get(h, "") for h in headers]
-                                worksheet.append_row(row_to_save)
-                                
-                                creator_id = LINEWORKS_USER_MAP.get(task_creator)
-                                is_success = register_lineworks_calendar_event(
-                                    task_name, task_assignee, str(task_limit), 
-                                    task_pri, task_note, creator_id, task_creator
-                                )
-                                
-                                if is_success:
-                                    st.toast(f"LINE WORKSカレンダー連携 成功! ({task_creator}名義)", icon="✅")
-                                    st.session_state.task_reg_success = True
-                                    get_all_data.clear()  # ★新規登録時もキャッシュをクリア
-                                    st.rerun()
-                                else:
-                                    st.warning("⚠️ スプレッドシートには保存できましたが、カレンダー登録に失敗しました。上の赤いエラーを確認してください。")
-                            except Exception as e:
-                                st.error(f"登録エラー: {e}")
-
-    # ==========================================
-    # ページ5：5年経過リスト
-    # ==========================================
-    elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        st.info("購入から5年以上経過したPCおよびiPadを表示します。")
-        df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
-        if not df_old.empty:
-            five_years_ago = datetime.now() - timedelta(days=365*5)
-            df_old['dt'] = df_old['購入日'].apply(parse_date)
-            df_old = df_old[df_old['dt'] <= five_years_ago]
-            st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
-
-except Exception as e:
-    st.error(f"エラー: {e}")
+                                    "担当
