@@ -71,13 +71,12 @@ for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_re
     if key not in st.session_state: st.session_state[key] = False
 
 # ==========================================
-# 🌟 LINE WORKS 連携用設定 (金庫連動版) 🌟
+# 🌟 LINE WORKS 連携用設定 🌟
 # ==========================================
 LINEWORKS_USER_MAP = st.secrets["lineworks"].get("members", {})
 USER_OPTIONS = list(LINEWORKS_USER_MAP.keys())
 
 def get_lineworks_token():
-    """LINE WORKSのアクセストークンを取得する関数"""
     try:
         lw_secrets = st.secrets["lineworks"]
         client_id = lw_secrets["client_id"]
@@ -88,7 +87,7 @@ def get_lineworks_token():
         current_time = int(time.time())
         payload = {
             "iss": client_id,
-            "sub": service_account,  # ★ 修正: ここは絶対に Service Account ID でなければいけません！
+            "sub": service_account,
             "iat": current_time,
             "exp": current_time + 3600
         }
@@ -107,26 +106,20 @@ def get_lineworks_token():
         if res.status_code == 200:
             return res.json().get("access_token")
         else:
-            st.error(f"LINE WORKS トークン取得エラー: {res.text}")
             return None
     except Exception as e:
-        st.error(f"LINE WORKS トークン生成エラー: {e}")
         return None
 
 def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, task_pri, note_text, creator_id, creator_name):
-    """LINE WORKSのカレンダーAPIを使って終日の予定を登録する関数"""
-    token = get_lineworks_token()  # ★ 修正: 正しい鍵の発行方法に戻しました
+    token = get_lineworks_token()
     if not token: return False
     
     calendar_id = st.secrets["lineworks"].get("calendar_id")
-    if not calendar_id:
-        st.error("🔑 Secretsに calendar_id が設定されていません。")
-        return False
+    if not calendar_id: return False
         
     if not deadline_date or deadline_date == "None":
         deadline_date = datetime.now().strftime('%Y-%m-%d')
         
-    # ★ APIを叩くURLにだけ、操作する人(入力した人)のIDを含めます
     url = f"https://www.worksapis.com/v1.0/users/{creator_id}/calendars/{calendar_id}/events"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -138,22 +131,29 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
             {
                 "summary": f"【タスク】{task_name}",
                 "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}",
-                "start": {
-                    "date": deadline_date
-                },
-                "end": {
-                    "date": deadline_date
-                }
+                "start": {"date": deadline_date},
+                "end": {"date": deadline_date}
             }
         ]
     }
     
     res = requests.post(url, headers=headers, json=payload)
-    if res.status_code in [200, 201]:
-        return True
-    else:
-        st.error(f"LINE WORKS カレンダー登録エラー: {res.text}")
-        return False
+    return res.status_code in [200, 201]
+
+# ★追加機能：ボタン一発でステータスを書き換える専用関数
+def update_task_status(task_id, new_status):
+    try:
+        worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+        cell = worksheet.find(str(task_id))
+        if cell:
+            headers = worksheet.row_values(1)
+            if "ステータス" in headers:
+                col_idx = headers.index("ステータス") + 1
+                worksheet.update_cell(cell.row, col_idx, new_status)
+                return True
+    except:
+        pass
+    return False
 
 # --- データ取得・補助関数 ---
 @st.cache_data(ttl=600)
@@ -314,6 +314,7 @@ def show_cert_dialog(row_data):
 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
+    # ★ ここでもIDの表示は隠し、内部的には保持しておきます
     with st.form("task_edit_form"):
         new_name = st.text_input("タスク名", value=row_data.get('タスク名', ''))
         
@@ -497,7 +498,7 @@ try:
                     ws.append_row([c_id, c_type, c_dev, str(c_exp), ""]); st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # ページ4：タスク管理 (🌟作成者動的選択版🌟)
+    # ページ4：タスク管理 (🌟ID非表示 ＆ 完了ボタン追加版🌟)
     # ==========================================
     elif page_selection == "📋 タスク管理":
         task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
@@ -510,25 +511,38 @@ try:
                 df_task['sort_date'] = pd.to_datetime(df_task['期限'], errors='coerce')
                 df_task = df_task.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
 
+                # ★ カラム幅の調整（ID列を削除し、右端にボタン列を追加）
                 for index, row in df_task.iterrows():
-                    c = st.columns([0.6, 0.8, 1.8, 1.2, 1.2, 1.2, 1.0, 0.8, 1.0])
+                    c = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
+                    
                     if c[0].button("詳細", key=f"task_btn_{index}"): show_task_dialog(row)
-                    c[1].write(str(row.get('ID', '')))
-                    c[2].write(f"**{safe_text(row.get('タスク名', ''))}**")
-                    c[3].write(f"👤 {row.get('作成者', '')}")
-                    c[4].write(str(row.get('担当者', '')))
-                    c[5].write(str(row.get('関係者', '')))
+                    
+                    c[1].write(f"**{safe_text(row.get('タスク名', ''))}**")
+                    c[2].write(f"👤 {row.get('作成者', '')}")
+                    c[3].write(str(row.get('担当者', '')))
+                    c[4].write(str(row.get('関係者', '')))
                     
                     dt = parse_date(row.get('期限'))
                     if dt and row.get('ステータス') != '完了':
                         diff = (dt.date() - datetime.now().date()).days
-                        if diff < 0: c[6].error(f"{row.get('期限')} (超過)")
-                        elif diff <= 3: c[6].warning(f"{row.get('期限')} (あと{diff}日)")
-                        else: c[6].write(row.get('期限'))
-                    else: c[6].write(row.get('期限', ''))
+                        if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
+                        elif diff <= 3: c[5].warning(f"{row.get('期限')} (あと{diff}日)")
+                        else: c[5].write(row.get('期限'))
+                    else: c[5].write(row.get('期限', ''))
                         
-                    c[7].write(row.get('優先度', ''))
-                    c[8].write(row.get('ステータス', ''))
+                    c[6].write(row.get('優先度', ''))
+                    c[7].write(row.get('ステータス', ''))
+                    
+                    # 🚀 ボタン一発でステータス変更！
+                    if row.get('ステータス') != '完了':
+                        if c[8].button("✅ 完了にする", key=f"comp_{index}"):
+                            if update_task_status(row.get('ID'), "完了"):
+                                st.rerun()
+                    else:
+                        if c[8].button("↩️ 戻す", key=f"rev_{index}"):
+                            if update_task_status(row.get('ID'), "未着手"):
+                                st.rerun()
+                                
                     st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
 
         with task_tab2:
@@ -540,11 +554,9 @@ try:
                 with st.form("add_task_form"):
                     col1, col2 = st.columns(2)
                     with col1:
-                        task_id = st.text_input("ID ※自動採番", value=generate_auto_id(df_task, "T"))
+                        # ★ 画面上からIDのテキストボックスを完全に消去しました
                         task_name = st.text_input("タスク名")
-                        
                         task_creator = st.selectbox("作成者 (あなた)", options=USER_OPTIONS)
-                        
                         sel_assignees = st.multiselect("担当者", options=USER_OPTIONS)
                         task_assignee = ", ".join(sel_assignees)
                     with col2:
@@ -564,8 +576,11 @@ try:
                                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
                                 headers = worksheet.row_values(1)
                                 
+                                # ★ 保存する直前に、裏側でこっそりIDを自動生成して持たせます
+                                hidden_task_id = generate_auto_id(df_task, "T")
+                                
                                 data_dict = {
-                                    "ID": task_id, "タスク名": task_name, "作成者": task_creator,
+                                    "ID": hidden_task_id, "タスク名": task_name, "作成者": task_creator,
                                     "担当者": task_assignee, "関係者": task_watchers, 
                                     "期限": str(task_limit) if task_limit else '',
                                     "優先度": task_pri, "ステータス": task_status, "備考": task_note
