@@ -110,7 +110,7 @@ def get_lineworks_token():
             "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "client_id": client_id,
             "client_secret": client_secret,
-            "scope": "task user.read bot"
+            "scope": "task" 
         }
         res = requests.post(url, headers=headers, data=data)
         if res.status_code == 200:
