@@ -607,4 +607,40 @@ try:
                                 
                                 data_dict = {
                                     "ID": hidden_task_id, "タスク名": task_name, "作成者": task_creator,
-                                    "担当
+                                    "担当者": task_assignee, "関係者": task_watchers, 
+                                    "期限": str(task_limit) if task_limit else '',
+                                    "優先度": task_pri, "ステータス": task_status, "備考": task_note
+                                }
+                                row_to_save = [data_dict.get(h, "") for h in headers]
+                                worksheet.append_row(row_to_save)
+                                
+                                creator_id = LINEWORKS_USER_MAP.get(task_creator)
+                                is_success = register_lineworks_calendar_event(
+                                    task_name, task_assignee, str(task_limit), 
+                                    task_pri, task_note, creator_id, task_creator
+                                )
+                                
+                                if is_success:
+                                    st.toast(f"LINE WORKSカレンダー連携 成功! ({task_creator}名義)", icon="✅")
+                                    st.session_state.task_reg_success = True
+                                    get_all_data.clear()
+                                    st.rerun()
+                                else:
+                                    st.warning("⚠️ スプレッドシートには保存できましたが、カレンダー登録に失敗しました。上の赤いエラーを確認してください。")
+                            except Exception as e:
+                                st.error(f"登録エラー: {e}")
+
+    # ==========================================
+    # ページ5：5年経過リスト
+    # ==========================================
+    elif page_selection == "📅 5年経過リスト (PC/iPad)":
+        st.info("購入から5年以上経過したPCおよびiPadを表示します。")
+        df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
+        if not df_old.empty:
+            five_years_ago = datetime.now() - timedelta(days=365*5)
+            df_old['dt'] = df_old['購入日'].apply(parse_date)
+            df_old = df_old[df_old['dt'] <= five_years_ago]
+            st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
+
+except Exception as e:
+    st.error(f"エラー: {e}")
