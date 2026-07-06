@@ -73,12 +73,11 @@ for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_re
 # ==========================================
 # 🌟 LINE WORKS 連携用設定 (金庫連動版) 🌟
 # ==========================================
-# Secretsの [lineworks.members] から名前とIDの一覧を自動取得します
 LINEWORKS_USER_MAP = st.secrets["lineworks"].get("members", {})
 USER_OPTIONS = list(LINEWORKS_USER_MAP.keys())
 
-def get_lineworks_token(user_id):
-    """LINE WORKSのアクセストークンを取得する関数 (指定した作成者の名義でトークンを発行します)"""
+def get_lineworks_token():
+    """LINE WORKSのアクセストークンを取得する関数"""
     try:
         lw_secrets = st.secrets["lineworks"]
         client_id = lw_secrets["client_id"]
@@ -89,7 +88,7 @@ def get_lineworks_token(user_id):
         current_time = int(time.time())
         payload = {
             "iss": client_id,
-            "sub": user_id,  # ★ 選択された作成者のIDをsubに指定して代理認証します
+            "sub": service_account,  # ★ 修正: ここは絶対に Service Account ID でなければいけません！
             "iat": current_time,
             "exp": current_time + 3600
         }
@@ -116,8 +115,7 @@ def get_lineworks_token(user_id):
 
 def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, task_pri, note_text, creator_id, creator_name):
     """LINE WORKSのカレンダーAPIを使って終日の予定を登録する関数"""
-    # ★ 選択された作成者(入力した人)のトークンを動的に取得
-    token = get_lineworks_token(creator_id)
+    token = get_lineworks_token()  # ★ 修正: 正しい鍵の発行方法に戻しました
     if not token: return False
     
     calendar_id = st.secrets["lineworks"].get("calendar_id")
@@ -128,7 +126,7 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     if not deadline_date or deadline_date == "None":
         deadline_date = datetime.now().strftime('%Y-%m-%d')
         
-    # ★ URLのusers/{id}の部分も、入力した人のIDに切り替えます
+    # ★ APIを叩くURLにだけ、操作する人(入力した人)のIDを含めます
     url = f"https://www.worksapis.com/v1.0/users/{creator_id}/calendars/{calendar_id}/events"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -139,7 +137,6 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
         "eventComponents": [
             {
                 "summary": f"【タスク】{task_name}",
-                # 本文に作成者名も分かりやすく記載します
                 "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}",
                 "start": {
                     "date": deadline_date
@@ -364,7 +361,10 @@ def show_task_dialog(row_data):
 st.title('📱 総務備品管理アプリ')
 
 with st.sidebar:
-    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", "📋 タスク管理", "📅 5年経過リスト (PC/iPad)"])
+    page_selection = st.radio("メニュー切替", [
+        "📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", 
+        "📋 タスク管理", "📅 5年経過リスト (PC/iPad)"
+    ])
     if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
 
 try:
@@ -510,13 +510,12 @@ try:
                 df_task['sort_date'] = pd.to_datetime(df_task['期限'], errors='coerce')
                 df_task = df_task.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
 
-                # 表示列を調整（作成者を表示するためにスパン変更）
                 for index, row in df_task.iterrows():
                     c = st.columns([0.6, 0.8, 1.8, 1.2, 1.2, 1.2, 1.0, 0.8, 1.0])
                     if c[0].button("詳細", key=f"task_btn_{index}"): show_task_dialog(row)
                     c[1].write(str(row.get('ID', '')))
                     c[2].write(f"**{safe_text(row.get('タスク名', ''))}**")
-                    c[3].write(f"👤 {row.get('作成者', '')}")  # ★一覧に作成者を表示
+                    c[3].write(f"👤 {row.get('作成者', '')}")
                     c[4].write(str(row.get('担当者', '')))
                     c[5].write(str(row.get('関係者', '')))
                     
@@ -544,7 +543,6 @@ try:
                         task_id = st.text_input("ID ※自動採番", value=generate_auto_id(df_task, "T"))
                         task_name = st.text_input("タスク名")
                         
-                        # ★ 新機能: 作成者(あなた)の選択ドロップダウン
                         task_creator = st.selectbox("作成者 (あなた)", options=USER_OPTIONS)
                         
                         sel_assignees = st.multiselect("担当者", options=USER_OPTIONS)
@@ -563,11 +561,9 @@ try:
                             st.error("タスク名は必須です。")
                         else:
                             try:
-                                # 1. スプレッドシートに保存
                                 worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
                                 headers = worksheet.row_values(1)
                                 
-                                # 送信・保存用データを作成（作成者の名前も辞書に含めます）
                                 data_dict = {
                                     "ID": task_id, "タスク名": task_name, "作成者": task_creator,
                                     "担当者": task_assignee, "関係者": task_watchers, 
@@ -577,7 +573,6 @@ try:
                                 row_to_save = [data_dict.get(h, "") for h in headers]
                                 worksheet.append_row(row_to_save)
                                 
-                                # 2. LINE WORKS カレンダーに、選択された人の名義で登録
                                 creator_id = LINEWORKS_USER_MAP.get(task_creator)
                                 is_success = register_lineworks_calendar_event(
                                     task_name, task_assignee, str(task_limit), 
