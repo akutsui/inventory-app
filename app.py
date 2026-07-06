@@ -325,7 +325,6 @@ def show_cert_dialog(row_data):
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data['ID']))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
-            get_certificate_data.clear() # キャッシュクリア追加
             st.rerun()
 
 @st.dialog("📝 タスクの編集")
