@@ -567,4 +567,62 @@ try:
                                 row_to_save = [data_dict.get(h, "") for h in headers]
                                 worksheet.append_row(row_to_save)
                                 
-                                is_success = register_lineworks_calendar_event(task_
+                                is_success = register_lineworks_calendar_event(task_name, task_assignee, str(task_limit), task_pri, task_note)
+                                if is_success:
+                                    st.toast("LINE WORKSカレンダー連携 成功！", icon="✅")
+                                    st.session_state.task_reg_success = True
+                                    st.rerun()
+                                else:
+                                    st.warning("⚠️ スプレッドシートには保存できましたが、カレンダー登録に失敗しました。上の赤いエラーを確認してください。")
+                            except Exception as e:
+                                st.error(f"登録エラー: {e}")
+
+    # ==========================================
+    # ページ5：5年経過リスト
+    # ==========================================
+    elif page_selection == "📅 5年経過リスト (PC/iPad)":
+        st.info("購入から5年以上経過したPCおよびiPadを表示します。")
+        df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
+        if not df_old.empty:
+            five_years_ago = datetime.now() - timedelta(days=365*5)
+            df_old['dt'] = df_old['購入日'].apply(parse_date)
+            df_old = df_old[df_old['dt'] <= five_years_ago]
+            st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
+
+    # ==========================================
+    # ページ6：🔍 カレンダーID検索ツール (NEW!)
+    # ==========================================
+    elif page_selection == "🔍 カレンダーID検索ツール":
+        st.header("🔍 カレンダーID検索ツール")
+        st.markdown("画面からは見えない「カレンダーID」を、裏口（API）から直接探し出します！")
+        
+        target_user = st.text_input("あなたのLINE WORKS ID（ログイン用のメールアドレス等）を入力してください", placeholder="例: yamada@yourdomain.com")
+        
+        if st.button("連携可能なカレンダー一覧を取得する"):
+            if not target_user:
+                st.error("IDを入力してください！")
+            else:
+                token = get_lineworks_token()
+                if token:
+                    # ユーザーがアクセスできるすべてのカレンダーを取得するAPI
+                    url = f"https://www.worksapis.com/v1.0/users/{target_user}/calendar-personals"
+                    headers = {"Authorization": f"Bearer {token}"}
+                    res = requests.get(url, headers=headers)
+                    
+                    if res.status_code == 200:
+                        calendars = res.json().get("calendars", [])
+                        if calendars:
+                            st.success(f"{len(calendars)}個のカレンダーが見つかりました！")
+                            for cal in calendars:
+                                name = cal.get('calendarName', '名称不明')
+                                c_id = cal.get('calendarId', '')
+                                st.code(f"【カレンダー名】 {name}\n【カレンダーID】 {c_id}", language="text")
+                                
+                            st.info("👆 「総務班」のカレンダーID（ c_ から始まる文字列 ）をコピーして、Streamlit Cloudの Secrets (金庫) の `calendar_id = \"ここ\"` に貼り付けてください！")
+                        else:
+                            st.warning("カレンダーが見つかりませんでした。")
+                    else:
+                        st.error(f"取得エラー: IDが間違っているか、権限が足りない可能性があります。\n詳細: {res.text}")
+
+except Exception as e:
+    st.error(f"エラー: {e}")
