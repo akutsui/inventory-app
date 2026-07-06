@@ -140,7 +140,6 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     res = requests.post(url, headers=headers, json=payload)
     return res.status_code in [200, 201]
 
-# ★ 超頑丈に書き直したステータス更新関数 ★
 def update_task_status(task_id, new_status):
     if not task_id or pd.isna(task_id):
         st.error("エラー: タスクIDが空のため更新できません。")
@@ -157,7 +156,6 @@ def update_task_status(task_id, new_status):
         id_col_idx = headers.index("ID") + 1
         status_col_idx = headers.index("ステータス") + 1
         
-        # ID列の中から該当のIDをピンポイントで探す
         cell = worksheet.find(str(task_id), in_column=id_col_idx)
         
         if cell:
@@ -326,7 +324,9 @@ def show_cert_dialog(row_data):
             data_dict = {"ID":row_data['ID'], "種類":new_type, "端末":new_dev, "有効期限":str(new_exp) if new_exp else '', "備考":new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data['ID']))
-            if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
+            if cell: worksheet.update(f"A{cell.row}", [row_to_save])
+            get_certificate_data.clear() # キャッシュクリア追加
+            st.rerun()
 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
@@ -490,19 +490,61 @@ try:
                         ws.append_row(new_row); st.session_state.emp_reg_success = True; st.rerun()
 
     # ==========================================
-    # ページ3：電子証明書管理
+    # ページ3：電子証明書管理 (🌟詳細ボタン＆ヘッダー追加版🌟)
     # ==========================================
     elif page_selection == "🔐 電子証明書管理":
         t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
         df_cert = get_certificate_data()
         with t1:
             today = datetime.now().date()
+            alert_items = []
+            
+            # 期日アラートの処理
             for idx, row in df_cert.iterrows():
                 dt = parse_date(row.get('有効期限'))
                 if dt and (dt.date() - today).days <= 75:
                     msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
-                    st.warning(f"**【{row['端末']}】{row['種類']} : 有効期限 {msg} ({dt.strftime('%Y-%m-%d')})**")
-            st.dataframe(df_cert, use_container_width=True)
+                    alert_items.append(f"**【{row['端末']}】{row['種類']} : 有効期限 {msg} ({dt.strftime('%Y-%m-%d')})**")
+            
+            if alert_items:
+                for msg in alert_items:
+                    st.warning(msg)
+            
+            # ★ ここから：一覧を見やすいカスタムリストに変更！
+            if not df_cert.empty:
+                # ヘッダー行
+                hc = st.columns([0.8, 1, 2, 2, 2, 3])
+                hc[0].markdown("<span style='font-size:0.85rem; color:gray;'>操作</span>", unsafe_allow_html=True)
+                hc[1].markdown("<span style='font-size:0.85rem; color:gray;'>ID</span>", unsafe_allow_html=True)
+                hc[2].markdown("<span style='font-size:0.85rem; color:gray;'>種類</span>", unsafe_allow_html=True)
+                hc[3].markdown("<span style='font-size:0.85rem; color:gray;'>端末</span>", unsafe_allow_html=True)
+                hc[4].markdown("<span style='font-size:0.85rem; color:gray;'>有効期限</span>", unsafe_allow_html=True)
+                hc[5].markdown("<span style='font-size:0.85rem; color:gray;'>備考</span>", unsafe_allow_html=True)
+                st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #ccc;'>", unsafe_allow_html=True)
+
+                # データ行
+                for index, row in df_cert.iterrows():
+                    c = st.columns([0.8, 1, 2, 2, 2, 3])
+                    
+                    # 🚀 ここに詳細ボタンを設置しました！
+                    if c[0].button("詳細", key=f"cert_btn_{index}"): show_cert_dialog(row)
+                    
+                    c[1].write(str(row.get('ID', '')))
+                    c[2].write(f"**{safe_text(row.get('種類', ''))}**")
+                    c[3].write(str(row.get('端末', '')))
+                    
+                    # 期限を色分けしてわかりやすく表示
+                    dt = parse_date(row.get('有効期限'))
+                    if dt:
+                        diff = (dt.date() - datetime.now().date()).days
+                        if diff < 0: c[4].error(f"{row.get('有効期限')} (超過)")
+                        elif diff <= 75: c[4].warning(f"{row.get('有効期限')} (あと{diff}日)")
+                        else: c[4].write(row.get('有効期限'))
+                    else: c[4].write(row.get('有効期限', ''))
+                    
+                    c[5].write(str(row.get('備考', '')))
+                    st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
+
         with t2:
             with st.form("cert_reg"):
                 c_id = st.text_input("ID", value=generate_auto_id(df_cert, "I"))
