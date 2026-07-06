@@ -3,8 +3,9 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
-import requests
 import time
+import jwt
+import requests
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務備品管理アプリ", page_icon="🏢", layout="wide")
@@ -70,86 +71,87 @@ for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_re
     if key not in st.session_state: st.session_state[key] = False
 
 # ==========================================
-# 🌟 LINE WORKS 連携用設定 (OAuth版) 🌟
+# 🌟 LINE WORKS 連携用設定 (カレンダー版) 🌟
 # ==========================================
 LINEWORKS_USER_MAP = {
-    "橘田菜穂": "n.kitta@satsuki-hc.com",  # ←ここを実際のIDに書き換えてください
-    "野崎聡": "s.nozaki@satsuki-hc.com",
-    "森田恭平": "k.morita@satsuki-hc.com",
-    "阿久津雅浩": "m.akutsu@satsuki-hc.com", 
-    "水上直人": "n.mizukami@satsuki-hc.com"
+    "山田": "yamada@yourdomain.com",
+    "佐藤": "sato@yourdomain.com",
+    "鈴木": "suzuki@yourdomain.com"
 }
 USER_OPTIONS = list(LINEWORKS_USER_MAP.keys())
 
 def get_lineworks_token():
-    """LINE WORKSのアクセストークンを取得する関数 (Refresh Token方式)"""
+    """LINE WORKSのアクセストークンを取得する関数 (Service Account方式)"""
     try:
         lw_secrets = st.secrets["lineworks"]
         client_id = lw_secrets["client_id"]
         client_secret = lw_secrets["client_secret"]
-        refresh_token = lw_secrets.get("refresh_token", "")
+        service_account = lw_secrets["service_account"]
+        private_key = lw_secrets["private_key"]
         
-        if not refresh_token:
-            st.error("🔑 金庫(Secrets)に refresh_token がありません。左メニューの「⚙️ 初期設定」を行ってください。")
-            return None
+        current_time = int(time.time())
+        payload = {
+            "iss": client_id,
+            "sub": service_account,
+            "iat": current_time,
+            "exp": current_time + 3600
+        }
+        encoded_jwt = jwt.encode(payload, private_key, algorithm="RS256")
         
         url = "https://auth.worksmobile.com/oauth2/v2.0/token"
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         data = {
-            "refresh_token": refresh_token,
-            "grant_type": "refresh_token",
+            "assertion": encoded_jwt,
+            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "client_id": client_id,
             "client_secret": client_secret,
+            "scope": "calendar"
         }
         res = requests.post(url, headers=headers, data=data)
         if res.status_code == 200:
             return res.json().get("access_token")
         else:
-            st.error(f"LINE WORKS トークン再取得エラー: {res.text}")
+            st.error(f"LINE WORKS トークン取得エラー: {res.text}")
             return None
     except Exception as e:
         st.error(f"LINE WORKS トークン生成エラー: {e}")
         return None
 
-def create_lineworks_task(task_name, assignee_str, watcher_str, deadline_date, note_text):
-    """LINE WORKS APIを使ってタスクを作成する関数"""
+def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, task_pri, note_text):
+    """LINE WORKSのカレンダーAPIを使って終日の予定を登録する関数"""
     token = get_lineworks_token()
     if not token: return False
     
-    assignees = []
-    if assignee_str:
-        for name in str(assignee_str).split(","):
-            user_id = LINEWORKS_USER_MAP.get(name.strip())
-            if user_id: assignees.append({"userId": user_id})
-            
-    watchers = []
-    if watcher_str:
-        for name in str(watcher_str).split(","):
-            user_id = LINEWORKS_USER_MAP.get(name.strip())
-            if user_id: watchers.append({"userId": user_id})
-            
-    payload = {
-        "title": task_name,
-        "content": note_text if note_text else ""
-    }
-    if assignees: payload["assignees"] = assignees
-    if watchers: payload["watchers"] = watchers
-    
-    if deadline_date:
-        deadline_str = f"{deadline_date}T23:59:59+09:00"
-        payload["dueDate"] = deadline_str
+    calendar_id = st.secrets["lineworks"].get("calendar_id")
+    if not calendar_id:
+        st.error("🔑 Secretsに calendar_id が設定されていません。")
+        return False
         
-    url = "https://www.worksapis.com/v1.0/tasks"
+    if not deadline_date or deadline_date == "None":
+        deadline_date = datetime.now().strftime('%Y-%m-%d')
+        
+    url = f"https://www.worksapis.com/v1.0/calendars/{calendar_id}/events"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "summary": f"【タスク】{task_name}",
+        "description": f"担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"担当者: {assignee_str}\n優先度: {task_pri}",
+        "start": {
+            "date": deadline_date
+        },
+        "end": {
+            "date": deadline_date
+        }
     }
     
     res = requests.post(url, headers=headers, json=payload)
     if res.status_code in [200, 201]:
         return True
     else:
-        st.error(f"LINE WORKS タスク作成エラー: {res.text}")
+        st.error(f"LINE WORKS カレンダー登録エラー: {res.text}")
         return False
 
 # --- データ取得・補助関数 ---
@@ -358,10 +360,10 @@ def show_task_dialog(row_data):
 st.title('📱 総務備品管理アプリ')
 
 with st.sidebar:
-    # 📝 ここに初期設定メニューを追加しました！
+    # 🌟 メニューに「🔍 カレンダーID検索ツール」を追加！
     page_selection = st.radio("メニュー切替", [
         "📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", 
-        "📋 タスク管理", "📅 5年経過リスト (PC/iPad)", "⚙️ LINE WORKS初期設定 (1回だけ)"
+        "📋 タスク管理", "📅 5年経過リスト (PC/iPad)", "🔍 カレンダーID検索ツール"
     ])
     if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
 
@@ -369,66 +371,9 @@ try:
     df = get_all_data()
 
     # ==========================================
-    # ページ：LINE WORKS 初期設定
-    # ==========================================
-    if page_selection == "⚙️ LINE WORKS初期設定 (1回だけ)":
-        st.header("⚙️ LINE WORKS 初期設定")
-        st.markdown("タスク機能を呼び出すための「特別な鍵（リフレッシュトークン）」をここで発行します。この作業は**最初の一回だけ**でOKです！")
-        
-        try:
-            lw_secrets = st.secrets["lineworks"]
-            client_id = lw_secrets["client_id"]
-            client_secret = lw_secrets["client_secret"]
-            redirect_uri = "https://localhost"
-            
-            st.markdown("### Step 1: 認証ページにアクセスして同意する")
-            st.info("以下のリンクをクリックすると、ブラウザの新しいタブでLINE WORKSのログイン・同意画面が開きます。")
-            
-            # URLエンコードしたスコープ
-            auth_url = f"https://auth.worksmobile.com/oauth2/v2.0/authorize?client_id={client_id}&redirect_uri={redirect_uri}&scope=task%20user.read&response_type=code&state=test"
-            st.markdown(f"### 👉 [ここをクリックして認証画面を開く]({auth_url})")
-            
-            st.warning("""
-            **⚠️ 注意事項：**
-            同意ボタンを押すと、「サイトにアクセスできません」というような**真っ白なエラー画面に飛ばされますが、それで大正解です！**
-            
-            その画面の上の「URLバー（アドレスバー）」を見てください。
-            `https://localhost/?code=XXXXX&state=test` のようになっているはずです。
-            この **`code=` から `&state=` の前までの文字列（XXXXXの部分）** をコピーして、下の枠に貼り付けてください。
-            """)
-            
-            st.markdown("### Step 2: 取得したコードを入力する")
-            auth_code = st.text_input("コピーしたコード(code)をここに貼り付けてください")
-            
-            if st.button("🔑 リフレッシュトークンを発行する"):
-                if not auth_code:
-                    st.error("コードを入力してください！")
-                else:
-                    url = "https://auth.worksmobile.com/oauth2/v2.0/token"
-                    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-                    data = {
-                        "code": auth_code,
-                        "grant_type": "authorization_code",
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                    }
-                    res = requests.post(url, headers=headers, data=data)
-                    if res.status_code == 200:
-                        refresh_token = res.json().get("refresh_token")
-                        st.success("🎉 リフレッシュトークンの取得に成功しました！！")
-                        st.markdown("以下の文字列をコピーして、Streamlit Cloudの **Secrets (金庫)** の `[lineworks]` の一番下に追記して保存してください。")
-                        st.code(f'refresh_token = "{refresh_token}"', language="toml")
-                        st.balloons()
-                    else:
-                        st.error(f"エラーが発生しました。コードが間違っているか、有効期限(数分)が切れた可能性があります。\n{res.text}")
-                        
-        except Exception as e:
-            st.error(f"Secretsの読み込みエラー: 金庫に Client ID 等が登録されているか確認してください。({e})")
-
-    # ==========================================
     # ページ1：在庫管理 (メイン)
     # ==========================================
-    elif page_selection == "📦 在庫管理 (メイン)":
+    if page_selection == "📦 在庫管理 (メイン)":
         main_tab1, main_tab2, main_tab3 = st.tabs(["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"])
         with main_tab1:
             today = datetime.now().date()
@@ -552,7 +497,7 @@ try:
                     ws.append_row([c_id, c_type, c_dev, str(c_exp), ""]); st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # ページ4：タスク管理 (🌟LINE WORKS連携🌟)
+    # ページ4：タスク管理 (🌟カレンダー連携版🌟)
     # ==========================================
     elif page_selection == "📋 タスク管理":
         task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
@@ -587,7 +532,7 @@ try:
 
         with task_tab2:
             if st.session_state.task_reg_success:
-                st.success("✅ 登録完了しました！ LINE WORKSへの連携も完了しています。")
+                st.success("✅ 登録完了しました！ グループカレンダーに終日予定として追加されました。")
                 st.button("続けてタスクを登録する", on_click=lambda: setattr(st.session_state, 'task_reg_success', False))
             else:
                 st.subheader("新規タスクの登録")
@@ -607,7 +552,7 @@ try:
                     task_status = st.selectbox("ステータス", ["未着手", "進行中", "完了", "保留"], index=0)
                     task_note = st.text_area("備考", placeholder="補足事項があれば入力してください")
                     
-                    if st.form_submit_button("登録してLINE WORKSにも送信する"):
+                    if st.form_submit_button("登録してカレンダーに反映する"):
                         if not task_name:
                             st.error("タスク名は必須です。")
                         else:
@@ -622,27 +567,4 @@ try:
                                 row_to_save = [data_dict.get(h, "") for h in headers]
                                 worksheet.append_row(row_to_save)
                                 
-                                is_success = create_lineworks_task(task_name, task_assignee, task_watchers, task_limit, task_note)
-                                if is_success:
-                                    st.toast("LINE WORKS連携 成功！", icon="✅")
-                                    st.session_state.task_reg_success = True
-                                    st.rerun()
-                                else:
-                                    st.warning("⚠️ スプレッドシートには保存できましたが、LINE WORKSへの送信に失敗しました。上の赤いエラーメッセージを確認してください。")
-                            except Exception as e:
-                                st.error(f"登録エラー: {e}")
-
-    # ==========================================
-    # ページ5：5年経過リスト
-    # ==========================================
-    elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        st.info("購入から5年以上経過したPCおよびiPadを表示します。")
-        df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
-        if not df_old.empty:
-            five_years_ago = datetime.now() - timedelta(days=365*5)
-            df_old['dt'] = df_old['購入日'].apply(parse_date)
-            df_old = df_old[df_old['dt'] <= five_years_ago]
-            st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
-
-except Exception as e:
-    st.error(f"エラー: {e}")
+                                is_success = register_lineworks_calendar_event(task_
