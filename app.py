@@ -73,9 +73,11 @@ for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_re
 # 🌟 LINE WORKS 連携用設定 (OAuth版) 🌟
 # ==========================================
 LINEWORKS_USER_MAP = {
-    "山田": "yamada@yourdomain.com",  # ←ここを実際のIDに書き換えてください
-    "佐藤": "sato@yourdomain.com",
-    "鈴木": "suzuki@yourdomain.com"
+    "橘田菜穂": "n.kitta@satsuki-hc.com",  # ←ここを実際のIDに書き換えてください
+    "野崎聡": "s.nozaki@satsuki-hc.com",
+    "森田恭平": "k.morita@satsuki-hc.com",
+    "阿久津雅浩": "m.akutsu@satsuki-hc.com", 
+    "水上直人": "n.mizukami@satsuki-hc.com"
 }
 USER_OPTIONS = list(LINEWORKS_USER_MAP.keys())
 
