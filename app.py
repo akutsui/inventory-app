@@ -588,9 +588,11 @@ try:
                                 is_success = create_lineworks_task(task_name, task_assignee, task_watchers, task_limit, task_note)
                                 if is_success:
                                     st.toast("LINE WORKS連携 成功！", icon="✅")
-                                
-                                st.session_state.task_reg_success = True
-                                st.rerun()
+                                    st.session_state.task_reg_success = True
+                                    st.rerun()
+                                else:
+                                    # 失敗した時はリフレッシュ(rerun)させない
+                                    st.warning("⚠️ スプレッドシートには保存できましたが、LINE WORKSへの送信に失敗しました。上の赤いエラーメッセージを確認してください！")
                             except Exception as e:
                                 st.error(f"登録エラー: {e}")
 
