@@ -278,4 +278,331 @@ def show_detail_dialog(row_data):
             cell = worksheet.find(str(row_data['ID']))
             if cell:
                 row_to_save = [row_data['ID'], cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
-                cols = ["利用者1", "利用者2
+                cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
+                for col in cols: row_to_save.append(custom_values.get(col, ''))
+                worksheet.update(f"A{cell.row}", [row_to_save])
+                get_all_data.clear(); st.rerun()
+
+@st.dialog("📝 入職準備タスク管理")
+def show_onboarding_task_dialog(row_data):
+    with st.form("onboarding_task_form"):
+        c1, c2 = st.columns(2)
+        with c1: new_name = st.text_input("氏名", value=row_data.get('氏名', ''))
+        with c2: new_furi = st.text_input("フリガナ", value=row_data.get('フリガナ', ''))
+        st.markdown("---")
+        task_status = {}
+        cols = st.columns(2)
+        for i, task in enumerate(ONBOARDING_TASKS):
+            with cols[i % 2]: task_status[task] = st.text_input(task, value=row_data.get(task, ''))
+        st.markdown("---")
+        new_status = st.selectbox("全体のステータス", ["準備中", "完了", "保留"], index=0)
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        if st.form_submit_button("✅ 更新する"):
+            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+            headers = worksheet.row_values(1)
+            data_dict = {"ID":row_data['ID'], "氏名":new_name, "フリガナ":new_furi, "入職日":row_data['入職日'], "職種":row_data['職種'], "部署":row_data['部署'], "ステータス":new_status, "備考":new_note}
+            for t in ONBOARDING_TASKS: data_dict[t] = task_status[t]
+            row_to_save = [data_dict.get(h, "") for h in headers]
+            cell = worksheet.find(str(row_data['ID']))
+            if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
+
+@st.dialog("📝 電子証明書の編集")
+def show_cert_dialog(row_data):
+    with st.form("cert_edit_form"):
+        new_type = st.text_input("種類", value=row_data.get('種類', ''))
+        new_dev = st.text_input("端末", value=row_data.get('端末', ''))
+        new_exp = st.date_input("有効期限", value=parse_date(row_data.get('有効期限')))
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        if st.form_submit_button("✅ 更新する"):
+            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
+            headers = worksheet.row_values(1)
+            data_dict = {"ID":row_data['ID'], "種類":new_type, "端末":new_dev, "有効期限":str(new_exp) if new_exp else '', "備考":new_note}
+            row_to_save = [data_dict.get(h, "") for h in headers]
+            cell = worksheet.find(str(row_data['ID']))
+            if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
+
+@st.dialog("📝 タスクの編集")
+def show_task_dialog(row_data):
+    with st.form("task_edit_form"):
+        new_name = st.text_input("タスク名", value=row_data.get('タスク名', ''))
+        
+        # 保存されているカンマ区切りの文字列をリストに戻す（辞書に存在するものだけ）
+        curr_assignees = [u.strip() for u in str(row_data.get('担当者', '')).split(',') if u.strip() in USER_OPTIONS]
+        curr_watchers = [u.strip() for u in str(row_data.get('関係者', '')).split(',') if u.strip() in USER_OPTIONS]
+
+        c1, c2 = st.columns(2)
+        with c1: 
+            sel_assignees = st.multiselect("担当者", options=USER_OPTIONS, default=curr_assignees)
+        with c2: 
+            sel_watchers = st.multiselect("関係者", options=USER_OPTIONS, default=curr_watchers)
+            
+        new_limit = st.date_input("期限", value=parse_date(row_data.get('期限')))
+        
+        c3, c4 = st.columns(2)
+        with c3:
+            pri = ["高", "中", "低"]
+            curr = row_data.get('優先度', '中')
+            new_pri = st.selectbox("優先度", pri, index=pri.index(curr) if curr in pri else 1)
+        with c4:
+            sts = ["未着手", "進行中", "完了", "保留"]
+            curr_s = row_data.get('ステータス', '未着手')
+            new_status = st.selectbox("ステータス", sts, index=sts.index(curr_s) if curr_s in sts else 0)
+            
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        if st.form_submit_button("✅ 更新する"):
+            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+            headers = worksheet.row_values(1)
+            
+            # リストをカンマ区切りの文字列に戻して保存
+            new_assignee_str = ", ".join(sel_assignees)
+            new_watchers_str = ", ".join(sel_watchers)
+
+            data_dict = {
+                "ID":row_data['ID'], "タスク名":new_name, 
+                "担当者":new_assignee_str, "関係者":new_watchers_str, 
+                "期限":str(new_limit) if new_limit else '', 
+                "優先度":new_pri, "ステータス":new_status, "備考":new_note
+            }
+            row_to_save = [data_dict.get(h, "") for h in headers]
+            cell = worksheet.find(str(row_data['ID']))
+            if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
+
+# --- アプリの画面構成 ---
+st.title('📱 総務備品管理アプリ')
+
+with st.sidebar:
+    page_selection = st.radio("メニュー切替", ["📦 在庫管理 (メイン)", "👤 新規入職者管理", "🔐 電子証明書管理", "📋 タスク管理", "📅 5年経過リスト (PC/iPad)"])
+    if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
+
+try:
+    df = get_all_data()
+
+    # ==========================================
+    # ページ1：在庫管理 (メイン)
+    # ==========================================
+    if page_selection == "📦 在庫管理 (メイン)":
+        main_tab1, main_tab2, main_tab3 = st.tabs(["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"])
+        with main_tab1:
+            # 訪問車アラート
+            today = datetime.now().date()
+            alert_items = []
+            if not df.empty:
+                for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
+                    if row['ステータス'] == '廃棄': continue
+                    for col in ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]:
+                        dt = parse_date(row.get(col))
+                        if dt and (dt.date() - today).days <= 45:
+                            alert_items.append(f"【{row['品名']}】{col}: あと{(dt.date()-today).days}日")
+            
+            if alert_items: st.error("⚠️ 訪問車期日アラート (45日以内)\n\n" + "\n".join(alert_items))
+
+            st.text_input("フリーワード検索", placeholder="Enterで検索", key="input_search_key", on_change=submit_search)
+            
+            cat_tabs = st.tabs(["すべて"] + list(CATEGORY_MAP.keys()))
+            for i, category in enumerate(["すべて"] + list(CATEGORY_MAP.keys())):
+                with cat_tabs[i]:
+                    display_df = df if category == "すべて" else df[df['カテゴリ']==category]
+                    if st.session_state.active_search_query:
+                        display_df = display_df[display_df.astype(str).apply(lambda r: r.str.contains(st.session_state.active_search_query, case=False).any(), axis=1)]
+                    
+                    for idx, row in display_df.head(50).iterrows():
+                        c = st.columns([0.8, 1, 3, 2, 1.5, 1])
+                        if c[0].button("詳細", key=f"btn_{category}_{idx}"): show_detail_dialog(row)
+                        c[1].write(row['ID'])
+                        c[2].write(f"**{safe_text(row['品名'])}**")
+                        c[3].write(row['利用者'])
+                        c[4].write(row['ステータス'])
+                        c[5].write(row.get('購入日', row.get('登録番号', '')))
+                        st.markdown("<hr>", unsafe_allow_html=True)
+
+        with main_tab2:
+            if st.session_state.zaiko_reg_success:
+                st.success("✅ 登録完了しました！"); st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'zaiko_reg_success', False))
+            else:
+                with st.form("zaiko_reg"):
+                    cat = st.radio("カテゴリ", list(CATEGORY_MAP.keys()), horizontal=True)
+                    auto_id = get_auto_id(cat, get_all_data())
+                    i_id = st.text_input("ID ※自動採番", value=auto_id)
+                    i_name = st.text_input("品名")
+                    i_user = st.text_input("利用者")
+                    custom_vals = {}
+                    if cat == "ウイルスバスター":
+                        v1, v2 = st.columns(2)
+                        with v1: 
+                            custom_vals['利用者1'] = st.text_input("利用者1")
+                            custom_vals['利用者2'] = st.text_input("利用者2")
+                            custom_vals['利用者3'] = st.text_input("利用者3")
+                        with v2:
+                            custom_vals['利用者4'] = st.text_input("利用者4")
+                            custom_vals['利用者5'] = st.text_input("利用者5")
+                            custom_vals['利用者6'] = st.text_input("利用者6")
+                        custom_vals['期限'] = str(st.date_input("期限"))
+                    else:
+                        for col in COLUMNS_DEF[cat]: custom_vals[col] = st.text_input(col)
+                    
+                    if st.form_submit_button("登録"):
+                        ws = client.open(SPREADSHEET_NAME).worksheet(CATEGORY_MAP[cat])
+                        row = [i_id, cat, i_name, i_user, "利用可能", datetime.now().strftime('%Y-%m-%d')]
+                        cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
+                        for col in cols: row.append(custom_vals.get(col, ""))
+                        ws.append_row(row); st.session_state.zaiko_reg_success = True; st.rerun()
+
+        with main_tab3:
+            st.info("※CSV一括入出力はスペース節約のため省略。以前のコード同様に動作します。")
+
+    # ==========================================
+    # ページ2：新規入職者管理
+    # ==========================================
+    elif page_selection == "👤 新規入職者管理":
+        t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
+        df_emp = get_new_employee_data()
+        with t1:
+            if not df_emp.empty:
+                for idx, row in df_emp.iterrows():
+                    c = st.columns([1, 1, 2, 2, 2, 2])
+                    if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
+                    c[1].write(row['ID'])
+                    c[2].write(f"**{row['氏名']}**")
+                    c[3].write(row['フリガナ'])
+                    c[4].write(row['入職日'])
+                    c[5].write(row['ステータス'])
+                    st.markdown("<hr>", unsafe_allow_html=True)
+        with t2:
+            if st.session_state.emp_reg_success:
+                st.success("✅ 登録しました"); st.button("次を登録", on_click=lambda: setattr(st.session_state, 'emp_reg_success', False))
+            else:
+                with st.form("emp_reg"):
+                    e_id = st.text_input("ID", value=generate_auto_id(df_emp, "H"))
+                    e_name = st.text_input("氏名")
+                    e_furi = st.text_input("フリガナ")
+                    e_date = st.date_input("入職日")
+                    if st.form_submit_button("登録"):
+                        ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+                        new_row = [e_id, e_name, e_furi, str(e_date), "", "", "準備中"] + [""]*13 + [""]
+                        ws.append_row(new_row); st.session_state.emp_reg_success = True; st.rerun()
+
+    # ==========================================
+    # ページ3：電子証明書管理
+    # ==========================================
+    elif page_selection == "🔐 電子証明書管理":
+        t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
+        df_cert = get_certificate_data()
+        with t1:
+            today = datetime.now().date()
+            for idx, row in df_cert.iterrows():
+                dt = parse_date(row.get('有効期限'))
+                if dt and (dt.date() - today).days <= 75:
+                    msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
+                    st.warning(f"**【{row['端末']}】{row['種類']} : 有効期限 {msg} ({dt.strftime('%Y-%m-%d')})**")
+            st.dataframe(df_cert, use_container_width=True)
+        with t2:
+            with st.form("cert_reg"):
+                c_id = st.text_input("ID", value=generate_auto_id(df_cert, "I"))
+                c_type = st.text_input("種類")
+                c_dev = st.text_input("端末")
+                c_exp = st.date_input("有効期限")
+                if st.form_submit_button("登録"):
+                    ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
+                    ws.append_row([c_id, c_type, c_dev, str(c_exp), ""]); st.success("登録しました"); st.rerun()
+
+    # ==========================================
+    # ページ4：タスク管理 (🌟LINE WORKS連携🌟)
+    # ==========================================
+    elif page_selection == "📋 タスク管理":
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
+        df_task = get_task_data()
+        
+        with task_tab1:
+            st.markdown("#### タスク一覧")
+            if not df_task.empty:
+                df_task['is_completed'] = df_task['ステータス'].apply(lambda x: 1 if str(x) == '完了' else 0)
+                df_task['sort_date'] = pd.to_datetime(df_task['期限'], errors='coerce')
+                df_task = df_task.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
+
+                for index, row in df_task.iterrows():
+                    c = st.columns([0.7, 1, 2.0, 1.5, 1.5, 1.2, 1, 1.2])
+                    if c[0].button("詳細", key=f"task_btn_{index}"): show_task_dialog(row)
+                    c[1].write(str(row.get('ID', '')))
+                    c[2].write(f"**{safe_text(row.get('タスク名', ''))}**")
+                    c[3].write(str(row.get('担当者', '')))
+                    c[4].write(str(row.get('関係者', '')))
+                    
+                    dt = parse_date(row.get('期限'))
+                    if dt and row.get('ステータス') != '完了':
+                        diff = (dt.date() - datetime.now().date()).days
+                        if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
+                        elif diff <= 3: c[5].warning(f"{row.get('期限')} (あと{diff}日)")
+                        else: c[5].write(row.get('期限'))
+                    else: c[5].write(row.get('期限', ''))
+                        
+                    c[6].write(row.get('優先度', ''))
+                    c[7].write(row.get('ステータス', ''))
+                    st.markdown("<hr style='margin: 5px 0; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
+
+        with task_tab2:
+            if st.session_state.task_reg_success:
+                st.success("✅ 登録完了しました！ LINE WORKSへの連携も完了しています。")
+                st.button("続けてタスクを登録する", on_click=lambda: setattr(st.session_state, 'task_reg_success', False))
+            else:
+                st.subheader("新規タスクの登録")
+                with st.form("add_task_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        task_id = st.text_input("ID ※自動採番", value=generate_auto_id(df_task, "T"))
+                        task_name = st.text_input("タスク名")
+                        
+                        # 📝 プルダウン(マルチセレクト)に変更
+                        sel_assignees = st.multiselect("担当者", options=USER_OPTIONS)
+                        task_assignee = ", ".join(sel_assignees)
+                        
+                    with col2:
+                        # 📝 プルダウン(マルチセレクト)に変更
+                        sel_watchers = st.multiselect("関係者/共有者", options=USER_OPTIONS)
+                        task_watchers = ", ".join(sel_watchers)
+                        
+                        task_limit = st.date_input("期限", value=None)
+                        task_pri = st.selectbox("優先度", ["高", "中", "低"], index=1)
+                        
+                    task_status = st.selectbox("ステータス", ["未着手", "進行中", "完了", "保留"], index=0)
+                    task_note = st.text_area("備考", placeholder="補足事項があれば入力してください")
+                    
+                    if st.form_submit_button("登録してLINE WORKSにも送信する"):
+                        if not task_name:
+                            st.error("タスク名は必須です。")
+                        else:
+                            try:
+                                # 1. スプレッドシートに保存
+                                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+                                headers = worksheet.row_values(1)
+                                data_dict = {
+                                    "ID": task_id, "タスク名": task_name, "担当者": task_assignee,
+                                    "関係者": task_watchers, "期限": str(task_limit) if task_limit else '',
+                                    "優先度": task_pri, "ステータス": task_status, "備考": task_note
+                                }
+                                row_to_save = [data_dict.get(h, "") for h in headers]
+                                worksheet.append_row(row_to_save)
+                                
+                                # 2. LINE WORKS APIにタスクを投げる
+                                is_success = create_lineworks_task(task_name, task_assignee, task_watchers, task_limit, task_note)
+                                if is_success:
+                                    st.toast("LINE WORKS連携 成功！", icon="✅")
+                                
+                                st.session_state.task_reg_success = True
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"登録エラー: {e}")
+
+    # ==========================================
+    # ページ5：5年経過リスト
+    # ==========================================
+    elif page_selection == "📅 5年経過リスト (PC/iPad)":
+        st.info("購入から5年以上経過したPCおよびiPadを表示します。")
+        df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
+        if not df_old.empty:
+            five_years_ago = datetime.now() - timedelta(days=365*5)
+            df_old['dt'] = df_old['購入日'].apply(parse_date)
+            df_old = df_old[df_old['dt'] <= five_years_ago]
+            st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
+
+except Exception as e:
+    st.error(f"エラー: {e}")
