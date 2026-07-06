@@ -323,6 +323,7 @@ def show_cert_dialog(row_data):
             cell = worksheet.find(str(row_data['ID']))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
 
+# --- ポップアップ詳細・編集画面 (タスク管理用) ---
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
@@ -360,14 +361,20 @@ def show_task_dialog(row_data):
             new_watchers_str = ", ".join(sel_watchers)
 
             data_dict = {
-                "ID":row_data['ID'], "タスク名":new_name, 
-                "担当者":new_assignee_str, "関係者":new_watchers_str, 
-                "期限":str(new_limit) if new_limit else '', 
-                "優先度":new_pri, "ステータス":new_status, "備考":new_note
+                "ID": row_data.get('ID', ''), 
+                "タスク名": new_name, 
+                "担当者": new_assignee_str, 
+                "関係者": new_watchers_str, 
+                "期限": str(new_limit) if new_limit else '', 
+                "優先度": new_pri, 
+                "ステータス": new_status, 
+                "備考": new_note
             }
             row_to_save = [data_dict.get(h, "") for h in headers]
-            cell = worksheet.find(str(row_data['ID']))
-            if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
+            cell = worksheet.find(str(row_data.get('ID', '')))
+            if cell: 
+                worksheet.update(f"A{cell.row}", [row_to_save])
+                st.rerun()
 
 # --- アプリの画面構成 ---
 st.title('📱 総務備品管理アプリ')
