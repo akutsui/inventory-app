@@ -57,7 +57,7 @@ st.markdown("""
             border: none !important;
             background-color: transparent !important;
             background: none !important;
-            box-shadow: transparent 0px 0px 0px 0px !important;
+            box-shadow: none !important;
             outline: none !important;
         }
         [data-testid="stSidebar"] [data-testid="stExpander"] summary {
@@ -73,7 +73,7 @@ st.markdown("""
             gap: 0.1rem !important; 
         }
 
-        /* サイドバー内のボタン（絶対左寄せ・透明） */
+        /* サイドバー内のボタン（絶対左寄せ・透明・光り無し） */
         [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important; padding: 0 !important; width: 100% !important;
         }
@@ -84,7 +84,7 @@ st.markdown("""
             justify-content: flex-start !important;
             padding: 4px 0px 4px 10px !important; 
             margin: 0 !important;
-            box-shadow: transparent 0px 0px 0px 0px !important;
+            box-shadow: none !important;
             outline: none !important;
             width: 100% !important;
         }
@@ -100,19 +100,32 @@ st.markdown("""
             padding-left: 30px !important; 
         }
         
-        /* 🚨【ボタン光り根絶】メインエリアのボタン（白背景・黒文字）🚨 */
+        /* 🚨【超重要】すべてのボタンから光るエフェクト(box-shadow)を全方位で完全消滅させる🚨 */
+        button:focus, 
+        button:active, 
+        button:focus-visible, 
+        button:focus:not(:active),
+        .stButton > button:focus,
+        .stFormSubmitButton > button:focus {
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+            outline: none !important;
+        }
+        
+        /* メインエリア・ダイアログのボタン（白背景・黒文字・光らない） */
         .main .stButton > button,
         .main .stFormSubmitButton > button,
         div[role="dialog"] .stButton > button,
         div[role="dialog"] .stFormSubmitButton > button { 
             height: 1.8rem !important; 
             background-color: #ffffff !important;
+            background: #ffffff !important;
             color: #000000 !important;
             border: 1px solid #cccccc !important;
             justify-content: center !important;
             display: flex !important;
             align-items: center !important;
-            box-shadow: transparent 0px 0px 0px 0px !important; /* 絶対に光らせない */
+            box-shadow: none !important;
             outline: none !important;
         }
         .main .stButton > button p,
@@ -123,80 +136,79 @@ st.markdown("""
             font-weight: bold !important;
         }
         
-        /* ホバー・フォーカス・アクティブ時の全方位ブロック */
+        /* ホバー・アクティブ時も白黒を維持して絶対に光らせない */
         .main .stButton > button:hover,
         .main .stFormSubmitButton > button:hover,
+        div[role="dialog"] .stButton > button:hover,
+        div[role="dialog"] .stFormSubmitButton > button:hover {
+            background-color: #eeeeee !important; 
+            border-color: #999999 !important;
+        }
         .main .stButton > button:focus,
         .main .stButton > button:active,
-        .main .stButton > button:focus-visible,
         .main .stFormSubmitButton > button:focus,
         .main .stFormSubmitButton > button:active,
-        .main .stFormSubmitButton > button:focus-visible,
         div[role="dialog"] .stButton > button:focus,
-        div[role="dialog"] .stButton > button:active,
-        div[role="dialog"] .stButton > button:focus-visible,
-        div[role="dialog"] .stFormSubmitButton > button:focus,
-        div[role="dialog"] .stFormSubmitButton > button:active {
-            background-color: #dddddd !important; 
-            border: 1px solid #999999 !important;
+        div[role="dialog"] .stButton > button:active {
+            background-color: #dddddd !important;
+            border-color: #666666 !important;
             color: #000000 !important;
-            box-shadow: transparent 0px 0px 0px 0px !important; /* 光の残像を完全に透明化 */
+            box-shadow: none !important;
             outline: none !important;
         }
 
-        /* 🚨【超修正】入力フォーム・プルダウンをグレー地（#222222）＋白文字に完全統一 🚨 */
-        /* テキスト入力、テキストエリア、日付入力のベース */
-        div[data-testid="stTextInput"] input, 
-        div[data-testid="stTextArea"] textarea,
-        div[data-testid="stDateInput"] div[data-baseweb="input"],
-        div[data-testid="stDateInput"] input {
+        /* 🚨【超重要】入力フォーム・日付・プルダウンをすべてグレー地（#222222）に統一🚨 */
+        
+        /* 1. テキスト入力・日付の枠と背景 */
+        input, textarea, select {
             background-color: #222222 !important;
             color: #ffffff !important;
             border: 1px solid #555555 !important;
-            -webkit-text-fill-color: #ffffff !important;
         }
-        
-        /* セレクトボックス(単一/複数)の箱の背景をグレーに */
-        div[data-baseweb="select"] > div {
-            background-color: #222222 !important;
-            border: 1px solid #555555 !important;
-        }
-        
-        /* セレクトボックスの中の文字を強制的に白に */
-        div[data-baseweb="select"] span,
-        div[data-baseweb="select"] div[aria-selected="true"] {
-            color: #ffffff !important;
-        }
-        
-        /* プレースホルダー（「Choose options」等）を薄いグレーに */
-        div[data-baseweb="select"] div[aria-placeholder] {
+        ::placeholder {
             color: #aaaaaa !important;
         }
-        
-        /* セレクトボックスの右端アイコン（▼や×）を白に */
-        div[data-baseweb="select"] svg {
-            fill: #ffffff !important;
+
+        /* 2. Streamlit特有のプルダウン・マルチセレクト（baseweb）の強制ダーク化 */
+        [data-baseweb="select"] > div,
+        [data-baseweb="base-input"],
+        [data-baseweb="input"] {
+            background-color: #222222 !important;
+            border: 1px solid #555555 !important;
+            border-radius: 4px !important;
         }
         
-        /* マルチセレクトで選んだ赤いタグの色は維持して文字を白に */
+        /* プルダウンの内側のテキストとアイコンを白に */
+        [data-baseweb="select"] > div * {
+            background-color: transparent !important;
+            color: #ffffff !important;
+            fill: #ffffff !important; /* ▼アイコンなどを白に */
+        }
+        
+        /* マルチセレクトのタグ（選んだ人）は赤背景・白文字 */
         span[data-baseweb="tag"] {
             background-color: #ea4335 !important;
-            color: #ffffff !important;
+            border: none !important;
         }
-        span[data-baseweb="tag"] span {
+        span[data-baseweb="tag"] * {
             color: #ffffff !important;
         }
 
-        /* プルダウンを開いた時の選択肢リスト（ul/li）のダーク化 */
-        ul[role="listbox"] {
+        /* プルダウンを開いた時のリストのダーク化 */
+        ul[role="listbox"], ul[data-baseweb="menu"] {
             background-color: #333333 !important;
         }
-        ul[role="listbox"] li {
+        ul[role="listbox"] li, ul[data-baseweb="menu"] li {
+            background-color: transparent !important;
             color: #ffffff !important;
-            background-color: #333333 !important;
         }
-        ul[role="listbox"] li:hover {
+        ul[role="listbox"] li:hover, ul[data-baseweb="menu"] li:hover {
             background-color: #555555 !important;
+        }
+
+        /* スマホ等のタップハイライト除去 */
+        * {
+            -webkit-tap-highlight-color: transparent !important;
         }
 
         /* 💡 3色角丸カセット（カードデザイン） */
