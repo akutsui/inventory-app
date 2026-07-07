@@ -10,6 +10,14 @@ import requests
 # --- ページ設定 ---
 st.set_page_config(page_title="総務管理アプリ v2", page_icon="🏢", layout="wide")
 
+# 初期状態の設定（ページ移動用）
+if 'page_selection' not in st.session_state:
+    st.session_state['page_selection'] = "🏠 ホーム (ダッシュボード)"
+
+def change_page(page_name):
+    st.session_state['page_selection'] = page_name
+    st.session_state['active_search_query'] = ""
+
 # --- 🌟 新UI完全再現のための強力なカスタムCSS 🌟 ---
 st.markdown("""
     <style>
@@ -31,54 +39,56 @@ st.markdown("""
         [data-testid="stSidebar"] * {
             color: #ffffff !important;
         }
-        [data-testid="stSidebar"] div[role="radiogroup"] label {
+
+        /* 💡 サイドバーの折りたたみメニュー（エキスパンダー）の枠線を消して馴染ませる */
+        [data-testid="stSidebar"] [data-testid="stExpander"] {
+            border: none !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+            padding-left: 0px !important;
             font-size: 0.95rem !important;
-            padding: 4px 0px !important;
+            font-weight: bold !important;
         }
-        
-        /* 💡 UI案通りの3色角丸カセット（カードデザイン） */
-        .cassette-orange {
-            background-color: #fce8e6 !important;
-            padding: 18px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 1.05rem;
-            font-weight: bold;
-            border-left: 5px solid #ea4335;
-        }
-        /* ★ 訪問車：太字(strong)や段落(p)など、中の要素"すべて"を強制的に濃い赤に */
-        .cassette-orange, .cassette-orange *, .cassette-orange strong, .cassette-orange p, .cassette-orange div { 
-            color: #a51d24 !important; 
-        }
-        
-        .cassette-green {
-            background-color: #e6f4ea !important;
-            padding: 18px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 1.05rem;
-            font-weight: bold;
-            border-left: 5px solid #34a853;
-        }
-        /* ★ 電子証明書：太字(strong)や段落(p)など、中の要素"すべて"を強制的に黒に */
-        .cassette-green, .cassette-green *, .cassette-green strong, .cassette-green p, .cassette-green div { 
-            color: #000000 !important; 
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
+            color: #dddddd !important;
         }
 
-        .cassette-blue {
-            background-color: #e8f0fe !important;
-            padding: 22px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 1.05rem;
-            font-weight: bold;
-            border-left: 5px solid #4285f4;
-            line-height: 1.8rem;
+        /* 💡 サイドバー内のボタンを「テキストリンク風のメニュー」に偽装する */
+        [data-testid="stSidebar"] .stButton button {
+            background-color: transparent !important;
+            border: none !important;
+            text-align: left !important;
+            justify-content: flex-start !important;
+            padding: 5px 10px !important;
+            font-size: 0.9rem !important;
+            height: auto !important;
+            box-shadow: none !important;
         }
-        /* ★ タスク：太字(strong)や段落(p)など、中の要素"すべて"を強制的に黒に */
-        .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { 
-            color: #000000 !important; 
+        [data-testid="stSidebar"] .stButton button:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
         }
+        
+        /* 💡 メインエリアのボタンだけ本来の「ボタン」のデザインにする */
+        .main .stButton button { 
+            height: 1.8rem !important; 
+            background-color: #333333 !important; 
+            color: white !important; 
+            border: 1px solid #555555 !important; 
+            justify-content: center !important;
+        }
+        .main .stButton button:hover { background-color: #555555 !important; }
+
+        /* 💡 UI案通りの3色角丸カセット（カードデザイン） */
+        .cassette-orange { background-color: #fce8e6 !important; padding: 18px; border-radius: 8px; margin-bottom: 15px; font-size: 1.05rem; font-weight: bold; border-left: 5px solid #ea4335; }
+        .cassette-orange, .cassette-orange *, .cassette-orange strong, .cassette-orange p, .cassette-orange div { color: #a51d24 !important; }
+        
+        .cassette-green { background-color: #e6f4ea !important; padding: 18px; border-radius: 8px; margin-bottom: 15px; font-size: 1.05rem; font-weight: bold; border-left: 5px solid #34a853; }
+        .cassette-green, .cassette-green *, .cassette-green strong, .cassette-green p, .cassette-green div { color: #000000 !important; }
+
+        .cassette-blue { background-color: #e8f0fe !important; padding: 22px; border-radius: 8px; margin-bottom: 15px; font-size: 1.05rem; font-weight: bold; border-left: 5px solid #4285f4; line-height: 1.8rem; }
+        .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { color: #000000 !important; }
         
         /* 入力フォームの背景が見えなくなるのを防ぐ調整 */
         .stTextInput input, .stSelectbox div, .stMultiSelect div, .stTextArea textarea {
@@ -86,10 +96,6 @@ st.markdown("""
             color: #ffffff !important;
             border: 1px solid #555555 !important;
         }
-        
-        /* ボタンのデザイン微調整 */
-        .stButton button { height: 1.8rem !important; background-color: #333333 !important; color: white !important; border: 1px solid #555555 !important; }
-        .stButton button:hover { background-color: #555555 !important; }
         hr { border-top: 1px solid #333333 !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -374,25 +380,36 @@ def show_task_dialog(row_data):
                 get_all_data.clear(); st.rerun()
 
 # ==========================================
-# 🌟 左側：灰色サイドバーメニュー定義 🌟
+# 🌟 左側：階層化されたサイドバーメニュー 🌟
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
-    page_selection = st.radio(
-        "メニュー切替",
-        [
-            "🏠 ホーム (ダッシュボード)",
-            " 💻 パソコン", " 🚗 訪問車", " 📱 iPad", " 📞 携帯電話", " ⚙️ その他機器",
-            " 📧 Office365", " 🛡️ ウィルスバスター",
-            "🔐 電子証明書管理",
-            "👤 新規入職者管理",
-            "📋 タスク管理",
-            "📅 5年経過リスト (PC/iPad)"
-        ],
-        label_visibility="collapsed"
-    )
+    
+    # メインボタン
+    st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
+
+    # アコーディオン1: 備品管理
+    with st.expander("📦 備品管理", expanded=False):
+        st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
+        st.button("🚗 訪問車", on_click=change_page, args=(" 🚗 訪問車",), use_container_width=True)
+        st.button("📱 iPad", on_click=change_page, args=(" 📱 iPad",), use_container_width=True)
+        st.button("📞 携帯電話", on_click=change_page, args=(" 📞 携帯電話",), use_container_width=True)
+        st.button("⚙️ その他機器", on_click=change_page, args=(" ⚙️ その他機器",), use_container_width=True)
+
+    # アコーディオン2: ソフトウェア管理
+    with st.expander("💿 ソフトウェア管理", expanded=False):
+        st.button("📧 Office365", on_click=change_page, args=(" 📧 Office365",), use_container_width=True)
+        st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
+
+    # その他の独立メニュー
+    st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
+    st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
+    st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
+    st.button("📅 5年経過リスト", on_click=change_page, args=("📅 5年経過リスト (PC/iPad)",), use_container_width=True)
+
     st.markdown("---")
-    if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
+    if st.button("🔄 データを最新にする", use_container_width=True):
+        get_all_data.clear(); st.rerun()
 
 # 内部用カテゴリコードへのマッピング辞書
 MENU_TO_CAT = {
@@ -404,9 +421,10 @@ MENU_TO_CAT = {
 try:
     df = get_all_data()
     today = datetime.now().date()
+    page_selection = st.session_state['page_selection']
 
     # ==========================================
-    # 🏠 ページ：ホーム (画像UI案の動的ダッシュボード)
+    # 🏠 ページ：ホーム (動的ダッシュボード)
     # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
         head_col1, head_col2 = st.columns([4, 1])
@@ -416,7 +434,7 @@ try:
         
         st.subheader("期日アラート")
         
-        # 🚗 訪問車のアラート抽出
+        # 🚗 訪問車のアラート抽出（同じ車の複数アラートを1行にまとめる）
         alert_cars = []
         if not df.empty:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
