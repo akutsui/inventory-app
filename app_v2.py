@@ -50,20 +50,36 @@ st.markdown("""
             padding-left: 0px !important;
             font-size: 0.95rem !important;
             font-weight: bold !important;
+            padding-bottom: 5px !important;
         }
         [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
             color: #dddddd !important;
         }
 
+        /* 💡 【追加】サイドバー内の行間（隙間）を極限まで詰める */
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+            gap: 0.1rem !important; 
+        }
+        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] {
+            padding-top: 0 !important;
+            padding-bottom: 5px !important;
+        }
+
         /* 💡 サイドバー内のボタンを「テキストリンク風のメニュー」に偽装する */
+        [data-testid="stSidebar"] .stButton {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
         [data-testid="stSidebar"] .stButton button {
             background-color: transparent !important;
             border: none !important;
             text-align: left !important;
             justify-content: flex-start !important;
-            padding: 5px 10px !important;
+            padding: 2px 10px !important; /* 上下の余白を削る */
+            margin: 0 !important;
             font-size: 0.9rem !important;
             height: auto !important;
+            min-height: auto !important;
             box-shadow: none !important;
         }
         [data-testid="stSidebar"] .stButton button:hover {
@@ -389,7 +405,7 @@ with st.sidebar:
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
 
     # アコーディオン1: 備品管理
-    with st.expander("📦 備品管理", expanded=False):
+    with st.expander("📦 備品管理", expanded=True):
         st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
         st.button("🚗 訪問車", on_click=change_page, args=(" 🚗 訪問車",), use_container_width=True)
         st.button("📱 iPad", on_click=change_page, args=(" 📱 iPad",), use_container_width=True)
@@ -397,7 +413,7 @@ with st.sidebar:
         st.button("⚙️ その他機器", on_click=change_page, args=(" ⚙️ その他機器",), use_container_width=True)
 
     # アコーディオン2: ソフトウェア管理
-    with st.expander("💿 ソフトウェア管理", expanded=False):
+    with st.expander("💿 ソフトウェア管理", expanded=True):
         st.button("📧 Office365", on_click=change_page, args=(" 📧 Office365",), use_container_width=True)
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
 
