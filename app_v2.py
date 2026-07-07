@@ -47,7 +47,10 @@ st.markdown("""
             font-weight: bold;
             border-left: 5px solid #ea4335;
         }
-        .cassette-orange * { color: #a51d24 !important; }
+        /* オレンジカセット内の文字は濃い赤色に固定 */
+        .cassette-orange p, .cassette-orange span, .cassette-orange div { 
+            color: #a51d24 !important; 
+        }
         
         .cassette-green {
             background-color: #e6f4ea !important;
@@ -58,7 +61,10 @@ st.markdown("""
             font-weight: bold;
             border-left: 5px solid #34a853;
         }
-        .cassette-green * { color: #137333 !important; }
+        /* ★修正: 電子証明書カセット内の文字を黒に固定 */
+        .cassette-green p, .cassette-green span, .cassette-green div { 
+            color: #000000 !important; 
+        }
 
         .cassette-blue {
             background-color: #e8f0fe !important;
@@ -70,7 +76,10 @@ st.markdown("""
             border-left: 5px solid #4285f4;
             line-height: 1.8rem;
         }
-        .cassette-blue * { color: #1a73e8 !important; }
+        /* ★修正: タスクカセット内の文字を黒に固定 */
+        .cassette-blue p, .cassette-blue span, .cassette-blue div { 
+            color: #000000 !important; 
+        }
         
         /* 入力フォームの背景が見えなくなるのを防ぐ調整 */
         .stTextInput input, .stSelectbox div, .stMultiSelect div, .stTextArea textarea {
@@ -408,20 +417,16 @@ try:
         
         st.subheader("期日アラート")
         
-        # 🚗 訪問車のアラート抽出（★同じ車の複数アラートを1行にまとめる修正）
+        # 🚗 訪問車のアラート抽出（同じ車の複数アラートを1行にまとめる）
         alert_cars = []
         if not df.empty:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
                 if row['ステータス'] == '廃棄': continue
-                
-                # この車（1行）に関するアラートを一時的にリストに貯める
                 single_car_alerts = []
                 for col in ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]:
                     dt = parse_date(row.get(col))
                     if dt and (dt.date() - today).days <= 45:
                         single_car_alerts.append(f"{col}: あと{(dt.date()-today).days}日")
-                
-                # アラートが1つでもあれば、「・」で繋いで1行にして追加する
                 if single_car_alerts:
                     joined_alerts = " ・ ".join(single_car_alerts)
                     alert_cars.append(f"【{row.get('品名', '不明')}】 {joined_alerts}")
@@ -645,12 +650,12 @@ try:
                     if row.get('ステータス') != '完了':
                         if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                             if update_task_status(row.get('ID'), "完了"):
-                                get_all_data.clear() # キャッシュクリア
+                                get_all_data.clear()
                                 st.rerun()
                     else:
                         if c[8].button("↩️ 戻す", key=f"rev_{index}"):
                             if update_task_status(row.get('ID'), "未着手"):
-                                get_all_data.clear() # キャッシュクリア
+                                get_all_data.clear()
                                 st.rerun()
                     st.markdown("<hr style='border-top:1px dashed #333;'>", unsafe_allow_html=True)
         with task_tab2:
