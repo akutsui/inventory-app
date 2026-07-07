@@ -98,14 +98,14 @@ st.markdown("""
             margin: 0 !important;
             height: auto !important;
             min-height: auto !important;
-            box-shadow: none !important; /* ★追加：光り消し */
-            outline: none !important;    /* ★追加：光り消し */
+            box-shadow: none !important;
+            outline: none !important;
             width: 100% !important;
             text-align: left !important; 
         }
         [data-testid="stSidebar"] .stButton button:focus,
         [data-testid="stSidebar"] .stButton button:active {
-            box-shadow: none !important; /* ★追加：クリック時の光り消し */
+            box-shadow: none !important;
             outline: none !important;
             background-color: transparent !important;
             color: #ffffff !important;
@@ -133,14 +133,12 @@ st.markdown("""
             justify-content: center !important;
             display: flex !important;
             align-items: center !important;
-            box-shadow: none !important; /* ★追加：光り消し */
-            outline: none !important;    /* ★追加：光り消し */
+            box-shadow: none !important;
+            outline: none !important;
         }
-        .main .stButton button:hover { 
-            background-color: #555555 !important; 
-        }
+        .main .stButton button:hover { background-color: #555555 !important; }
         .main .stButton button:focus, .main .stButton button:active {
-            box-shadow: none !important; /* ★追加：クリック時の光り消し */
+            box-shadow: none !important;
             outline: none !important;
             border: 1px solid #777777 !important;
             color: white !important;
@@ -240,9 +238,8 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     url = f"https://www.worksapis.com/v1.0/users/{creator_id}/calendars/{calendar_id}/events"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
-    # 💡 トークルームの通知をOFFにする設定を適用
     payload = {
-        "sendNotification": False,
+        "sendNotification": False, # トークへの通知オフ設定
         "eventComponents": [{
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}",
@@ -277,10 +274,22 @@ def get_all_data():
             for record in records: record['カテゴリ'] = cat_name
             all_data.extend(records)
         except: pass
+    
     df = pd.DataFrame(all_data)
-    if not df.empty:
-        df['sort_order'] = df['ステータス'].apply(lambda x: 1 if x == '廃棄' else 0)
-        df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
+    
+    # 💡 【重要修正】データが0件（または通信エラー）の時でも絶対にKeyErrorを出さないように、ダミーの列を作成してあげる
+    if df.empty:
+        df = pd.DataFrame(columns=['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '購入日', '登録番号'])
+    else:
+        # 並び替え用処理
+        if 'ステータス' in df.columns:
+            df['sort_order'] = df['ステータス'].apply(lambda x: 1 if str(x) == '廃棄' else 0)
+        else:
+            df['sort_order'] = 0
+            
+        if 'ID' in df.columns:
+            df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
+            
     return df
 
 def generate_auto_id(df_target, prefix, id_col='ID'):
@@ -298,7 +307,12 @@ def generate_auto_id(df_target, prefix, id_col='ID'):
 
 def get_auto_id(category, current_df):
     prefix_dict = {"PC":"A","訪問車":"B","iPad":"C","携帯電話":"D","Office365":"E","ウイルスバスター":"F","その他機器":"G"}
-    return generate_auto_id(current_df[current_df['カテゴリ']==category] if not current_df.empty else None, prefix_dict.get(category, "Z"))
+    # カテゴリで絞り込む時も念のため列の存在チェック
+    if not current_df.empty and 'カテゴリ' in current_df.columns:
+        target_df = current_df[current_df['カテゴリ']==category]
+    else:
+        target_df = pd.DataFrame()
+    return generate_auto_id(target_df, prefix_dict.get(category, "Z"))
 
 def get_new_employee_data():
     try: return pd.DataFrame(client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE).get_all_records())
@@ -338,12 +352,13 @@ def submit_search():
 def show_detail_dialog(row_data):
     cat = row_data['カテゴリ']
     with st.form("edit_dialog_form"):
-        st.write(f"**ID:** {row_data['ID']} / **カテゴリ:** {cat}")
+        st.write(f"**ID:** {row_data.get('ID','')} / **カテゴリ:** {cat}")
         c1, c2 = st.columns(2)
         with c1: new_name = st.text_input("品名", value=row_data.get('品名', ''))
         with c2: new_user = st.text_input("利用者(代表)", value=row_data.get('利用者', ''))
         status_options = ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"]
-        new_status = st.selectbox("ステータス", status_options, index=status_options.index(row_data['ステータス']) if row_data['ステータス'] in status_options else 0)
+        curr_status = row_data.get('ステータス', '利用可能')
+        new_status = st.selectbox("ステータス", status_options, index=status_options.index(curr_status) if curr_status in status_options else 0)
         custom_values = {}
         if cat == "ウイルスバスター":
             v1, v2 = st.columns(2)
@@ -367,9 +382,9 @@ def show_detail_dialog(row_data):
                 else: custom_values[col] = st.text_input(col, value=val)
         if st.form_submit_button("✅ 更新する"):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(CATEGORY_MAP[cat])
-            cell = worksheet.find(str(row_data['ID']))
+            cell = worksheet.find(str(row_data.get('ID','')))
             if cell:
-                row_to_save = [row_data['ID'], cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
+                row_to_save = [row_data.get('ID',''), cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
                 cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
                 for col in cols: row_to_save.append(custom_values.get(col, ''))
                 worksheet.update(f"A{cell.row}", [row_to_save])
@@ -390,10 +405,10 @@ def show_onboarding_task_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
             headers = worksheet.row_values(1)
-            data_dict = {"ID":row_data['ID'], "氏名":new_name, "フリガナ":new_furi, "入職日":row_data['入職日'], "職種":row_data['職種'], "部署":row_data['部署'], "ステータス":new_status, "備考":new_note}
+            data_dict = {"ID":row_data.get('ID',''), "氏名":new_name, "フリガナ":new_furi, "入職日":row_data.get('入職日',''), "職種":row_data.get('職種',''), "部署":row_data.get('部署',''), "ステータス":new_status, "備考":new_note}
             for t in ONBOARDING_TASKS: data_dict[t] = task_status[t]
             row_to_save = [data_dict.get(h, "") for h in headers]
-            cell = worksheet.find(str(row_data['ID']))
+            cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
 
 @st.dialog("📝 電子証明書の編集")
@@ -406,9 +421,9 @@ def show_cert_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
             headers = worksheet.row_values(1)
-            data_dict = {"ID":row_data['ID'], "種類":new_type, "端末":new_dev, "有効期限":str(new_exp) if new_exp else '', "備考":new_note}
+            data_dict = {"ID":row_data.get('ID',''), "種類":new_type, "端末":new_dev, "有効期限":str(new_exp) if new_exp else '', "備考":new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
-            cell = worksheet.find(str(row_data['ID']))
+            cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
             st.rerun()
 
@@ -505,9 +520,9 @@ try:
         
         # 🚗 訪問車のアラート抽出
         alert_cars = []
-        if not df.empty:
+        if not df.empty and 'カテゴリ' in df.columns:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
-                if row['ステータス'] == '廃棄': continue
+                if row.get('ステータス') == '廃棄': continue
                 single_car_alerts = []
                 for col in ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]:
                     dt = parse_date(row.get(col))
@@ -525,7 +540,7 @@ try:
                 dt = parse_date(row.get('有効期限'))
                 if dt and (dt.date() - today).days <= 75:
                     msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
-                    alert_certs.append(f"<strong>【{row['端末']}】{row['種類']}</strong>: 期限切れまで{msg}")
+                    alert_certs.append(f"<strong>【{row.get('端末','')}】{row.get('種類','')}</strong>: 期限切れまで{msg}")
 
         # オレンジ色のカセット（訪問車）
         st.write("訪問車")
@@ -572,19 +587,28 @@ try:
         main_tab1, main_tab2, main_tab3 = st.tabs(["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"])
         with main_tab1:
             st.text_input("フリーワード検索", placeholder="Enterで検索", key="input_search_key", on_change=submit_search)
-            display_df = df[df['カテゴリ'] == cat]
-            if st.session_state.active_search_query:
+            
+            # 💡 空の時用の安全な絞り込み
+            if df.empty or 'カテゴリ' not in df.columns:
+                display_df = pd.DataFrame()
+            else:
+                display_df = df[df['カテゴリ'] == cat]
+                
+            if st.session_state.active_search_query and not display_df.empty:
                 display_df = display_df[display_df.astype(str).apply(lambda r: r.str.contains(st.session_state.active_search_query, case=False).any(), axis=1)]
             
-            for idx, row in display_df.head(50).iterrows():
-                c = st.columns([0.8, 1, 3, 2, 1.5, 1])
-                if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
-                c[1].write(row['ID'])
-                c[2].write(f"**{safe_text(row['品名'])}**")
-                c[3].write(row['利用者'])
-                c[4].write(row['ステータス'])
-                c[5].write(row.get('購入日', row.get('登録番号', '')))
-                st.markdown("<hr>", unsafe_allow_html=True)
+            if display_df.empty:
+                st.info("データがありません。")
+            else:
+                for idx, row in display_df.head(50).iterrows():
+                    c = st.columns([0.8, 1, 3, 2, 1.5, 1])
+                    if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
+                    c[1].write(row.get('ID', ''))
+                    c[2].write(f"**{safe_text(row.get('品名', ''))}**")
+                    c[3].write(row.get('利用者', ''))
+                    c[4].write(row.get('ステータス', ''))
+                    c[5].write(row.get('購入日', row.get('登録番号', '')))
+                    st.markdown("<hr>", unsafe_allow_html=True)
 
         with main_tab2:
             if st.session_state.zaiko_reg_success:
@@ -649,6 +673,8 @@ try:
                     else: c[4].write(row.get('有効期限', ''))
                     c[5].write(str(row.get('備考', '')))
                     st.markdown("<hr style='border-top:1px dashed #333;'>", unsafe_allow_html=True)
+            else:
+                st.info("データがありません。")
         with t2:
             with st.form("cert_reg"):
                 c_id = st.text_input("ID", value=generate_auto_id(df_cert, "I"))
@@ -671,12 +697,14 @@ try:
                 for idx, row in df_emp.iterrows():
                     c = st.columns([1, 1, 2, 2, 2, 2])
                     if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
-                    c[1].write(row['ID'])
-                    c[2].write(f"**{row['氏名']}**")
-                    c[3].write(row['フリガナ'])
-                    c[4].write(row['入職日'])
-                    c[5].write(row['ステータス'])
+                    c[1].write(row.get('ID',''))
+                    c[2].write(f"**{row.get('氏名','')}**")
+                    c[3].write(row.get('フリガナ',''))
+                    c[4].write(row.get('入職日',''))
+                    c[5].write(row.get('ステータス',''))
                     st.markdown("<hr>", unsafe_allow_html=True)
+            else:
+                st.info("データがありません。")
         with t2:
             if st.session_state.emp_reg_success:
                 st.success("✅ 登録しました"); st.button("次を登録", on_click=lambda: setattr(st.session_state, 'emp_reg_success', False))
@@ -725,9 +753,7 @@ try:
                     c[4].write(str(row.get('関係者', '')))
                     dt = parse_date(row.get('期限'))
                     
-                    # 💡 スプレッドシート側のステータスを確実に文字列判定するため strip() を追加
                     current_status = str(row.get('ステータス', '')).strip()
-                    
                     if dt and current_status != '完了':
                         diff = (dt.date() - datetime.now().date()).days
                         if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
@@ -737,7 +763,6 @@ try:
                     c[6].write(row.get('優先度', ''))
                     c[7].write(row.get('ステータス', ''))
                     
-                    # 💡 完了/未完了のボタン切り替えロジック
                     if current_status != '完了':
                         if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                             if update_task_status(row.get('ID'), "完了"):
@@ -749,6 +774,8 @@ try:
                                 get_all_data.clear() # キャッシュクリア
                                 st.rerun()
                     st.markdown("<hr style='border-top:1px dashed #333;'>", unsafe_allow_html=True)
+            else:
+                st.info("データがありません。")
         with task_tab2:
             if st.session_state.task_reg_success:
                 st.success("✅ 登録完了しました！ カレンダーへ自動反映されました。")
@@ -796,12 +823,17 @@ try:
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
         st.header("📅 5年経過リスト (PC/iPad)")
-        df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
-        if not df_old.empty:
-            five_years_ago = datetime.now() - timedelta(days=365*5)
-            df_old['dt'] = df_old['購入日'].apply(parse_date)
-            df_old = df_old[df_old['dt'] <= five_years_ago]
-            st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
+        if not df.empty and 'カテゴリ' in df.columns:
+            df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
+            if not df_old.empty:
+                five_years_ago = datetime.now() - timedelta(days=365*5)
+                df_old['dt'] = df_old['購入日'].apply(parse_date)
+                df_old = df_old[df_old['dt'] <= five_years_ago]
+                st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
+            else:
+                st.info("データがありません。")
+        else:
+            st.info("データがありません。")
 
 except Exception as e:
     st.error(f"エラー: {e}")
