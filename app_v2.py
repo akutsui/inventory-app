@@ -104,7 +104,8 @@ st.markdown("""
             text-align: left !important; 
         }
         [data-testid="stSidebar"] .stButton button:focus,
-        [data-testid="stSidebar"] .stButton button:active {
+        [data-testid="stSidebar"] .stButton button:active,
+        [data-testid="stSidebar"] .stButton button:focus-visible {
             box-shadow: none !important;
             outline: none !important;
             background-color: transparent !important;
@@ -124,7 +125,7 @@ st.markdown("""
             padding-left: 30px !important; 
         }
         
-        /* 💡 メインエリアのボタンの光りも完全に消す */
+        /* 💡 【最強修正】メインエリアのボタン（詳細ボタン等）の光りを完全に消滅させる */
         .main .stButton button { 
             height: 1.8rem !important; 
             background-color: #333333 !important; 
@@ -135,12 +136,20 @@ st.markdown("""
             align-items: center !important;
             box-shadow: none !important;
             outline: none !important;
+            transition: none !important; /* アニメーションも無効化 */
         }
-        .main .stButton button:hover { background-color: #555555 !important; }
-        .main .stButton button:focus, .main .stButton button:active {
+        .main .stButton button:hover { 
+            background-color: #555555 !important; 
+            border: 1px solid #777777 !important; 
+        }
+        /* フォーカス時（クリックした直後）の赤い/青い枠線を完全に無効化 */
+        .main .stButton button:focus, 
+        .main .stButton button:active, 
+        .main .stButton button:focus-visible {
             box-shadow: none !important;
             outline: none !important;
-            border: 1px solid #777777 !important;
+            background-color: #333333 !important; /* 色が変わるのを防ぐ */
+            border: 1px solid #555555 !important; /* 枠線を元に戻す */
             color: white !important;
         }
 
@@ -277,11 +286,9 @@ def get_all_data():
     
     df = pd.DataFrame(all_data)
     
-    # 💡 【重要修正】データが0件（または通信エラー）の時でも絶対にKeyErrorを出さないように、ダミーの列を作成してあげる
     if df.empty:
         df = pd.DataFrame(columns=['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '購入日', '登録番号'])
     else:
-        # 並び替え用処理
         if 'ステータス' in df.columns:
             df['sort_order'] = df['ステータス'].apply(lambda x: 1 if str(x) == '廃棄' else 0)
         else:
@@ -307,7 +314,6 @@ def generate_auto_id(df_target, prefix, id_col='ID'):
 
 def get_auto_id(category, current_df):
     prefix_dict = {"PC":"A","訪問車":"B","iPad":"C","携帯電話":"D","Office365":"E","ウイルスバスター":"F","その他機器":"G"}
-    # カテゴリで絞り込む時も念のため列の存在チェック
     if not current_df.empty and 'カテゴリ' in current_df.columns:
         target_df = current_df[current_df['カテゴリ']==category]
     else:
@@ -588,7 +594,6 @@ try:
         with main_tab1:
             st.text_input("フリーワード検索", placeholder="Enterで検索", key="input_search_key", on_change=submit_search)
             
-            # 💡 空の時用の安全な絞り込み
             if df.empty or 'カテゴリ' not in df.columns:
                 display_df = pd.DataFrame()
             else:
