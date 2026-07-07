@@ -109,7 +109,7 @@ st.markdown("""
             outline: none !important;
         }
         
-        /* 🚨【ボタン完全固定】メインエリア・ダイアログのボタンを「白地・黒文字」に🚨 */
+        /* メインエリア・ダイアログのボタンを「白地・黒文字」に完全固定 */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
@@ -127,7 +127,7 @@ st.markdown("""
             transition: none !important;           
         }
         
-        /* ボタンの中の文字を絶対に黒で太字にする */
+        /* ボタンの中の文字を絶対に黒で太字に */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button *,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *,
@@ -165,7 +165,9 @@ st.markdown("""
             outline: none !important;
         }
 
-        /* 🚨【入力フォーム完全固定】テキスト・日付・プルダウンを最強優先度でグレー地に🚨 */
+        /* 🚨【超修正】入力フォーム・プルダウンをグレー地（#222222）＋白文字に完全統一🚨 */
+        
+        /* 1. テキスト入力・テキストエリア・日付の背景をグレーに */
         html body .stApp div[data-testid="stTextInput"] input, 
         html body .stApp div[data-testid="stTextArea"] textarea,
         html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"],
@@ -176,22 +178,33 @@ st.markdown("""
             -webkit-text-fill-color: #ffffff !important;
         }
         
-        /* セレクトボックス・マルチセレクトの大枠 */
-        html body .stApp div[data-baseweb="select"] > div {
+        /* 2. セレクトボックス(単一)・マルチセレクト(複数)の大枠をグレーに */
+        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+        html body .stApp div[data-testid="stMultiSelect"] div[data-baseweb="select"] > div {
             background-color: #222222 !important;
             border: 1px solid #555555 !important;
         }
-        /* 中の文字を白にし、邪魔な白背景を透明化 */
+
+        /* 3. 【これが原因】セレクトボックスの内側にある「見えない白い箱」を強制的にグレーで塗りつぶす */
+        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div,
+        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div {
+            background-color: #222222 !important;
+            color: #ffffff !important;
+        }
+
+        /* 中の文字を白に、余計な背景を透明に */
         html body .stApp div[data-baseweb="select"] span,
-        html body .stApp div[data-baseweb="select"] div[aria-selected="true"],
-        html body .stApp div[data-baseweb="select"] * {
+        html body .stApp div[data-baseweb="select"] div[aria-selected="true"] {
             color: #ffffff !important;
             background-color: transparent !important;
         }
+        
         /* プレースホルダー（Choose options等） */
         html body .stApp div[data-baseweb="select"] div[aria-placeholder] {
             color: #aaaaaa !important;
+            background-color: transparent !important;
         }
+        
         /* プルダウンの▼アイコン */
         html body .stApp div[data-baseweb="select"] svg {
             fill: #ffffff !important;
@@ -204,9 +217,10 @@ st.markdown("""
         }
         html body .stApp span[data-baseweb="tag"] * {
             color: #ffffff !important;
+            background-color: transparent !important;
         }
 
-        /* プルダウンの選択肢リスト */
+        /* プルダウンを開いた時の選択肢リスト（ul/li）のダーク化 */
         html body .stApp ul[role="listbox"], 
         html body .stApp ul[data-baseweb="menu"] {
             background-color: #333333 !important;
