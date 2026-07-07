@@ -191,22 +191,34 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
         .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { color: #000000 !important; }
         
-        /* 🚨 入力フォームとプルダウンのダークテーマ対応 🚨 */
-        .stTextInput input, 
-        .stTextArea textarea {
+        /* 🚨【修正】入力フォーム・プルダウンをグレー地（#222222）に白文字に統一 🚨 */
+        div[data-testid="stTextInput"] input, 
+        div[data-testid="stTextArea"] textarea,
+        div[data-testid="stDateInput"] input {
             background-color: #222222 !important;
             color: #ffffff !important;
             border: 1px solid #555555 !important;
         }
         
-        /* プルダウンの枠 */
-        div[data-baseweb="select"] > div {
+        /* セレクトボックス、マルチセレクト、日付入力の枠と背景をすべてダークグレーに */
+        div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+        div[data-testid="stMultiSelect"] div[data-baseweb="select"] > div,
+        div[data-testid="stDateInput"] div[data-baseweb="input"] {
             background-color: #222222 !important;
             border: 1px solid #555555 !important;
-        }
-        /* プルダウンの中の文字を真っ白に強制固定 */
-        div[data-baseweb="select"] * {
             color: #ffffff !important;
+        }
+        
+        /* セレクトボックスや日付入力の中にある不要な白背景を透明化し、文字を白に固定 */
+        div[data-testid="stSelectbox"] div[data-baseweb="select"] *,
+        div[data-testid="stDateInput"] div[data-baseweb="input"] * {
+            background-color: transparent !important;
+            color: #ffffff !important;
+        }
+        
+        /* プレースホルダー（「Choose options」などの文字）を見やすい薄いグレーに */
+        div[data-baseweb="select"] div[aria-placeholder] {
+            color: #aaaaaa !important;
         }
         
         /* プルダウンを開いた時の選択肢リストもダーク化 */
@@ -238,7 +250,7 @@ SHEET_CERTIFICATE = "電子証明書"
 SHEET_TASK = "タスク管理"
 
 COLUMNS_DEF = {
-    "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
+    "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇 ঘাট", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
     "訪問車": ["登録番号", "洗車グループ", "駐車場", "タイヤサイズ", "スタッドレス有無", "タイヤ保管場所", "リース開始日", "リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日", "使用部署", "備考"],
     "iPad": ["購入日", "ラベル", "AppleID", "AppleIDパスワード", "シリアルNo", "ストレージ", "製造番号IMEI", "端末番号", "使用部署", "キャリア", "備考"],
     "携帯電話": ["購入日", "電話番号", "SIM", "メーカー", "製造番号", "使用部署", "保管場所", "キャリア", "備考"],
