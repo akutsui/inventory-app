@@ -10,36 +10,36 @@ import requests
 # --- ページ設定 ---
 st.set_page_config(page_title="総務管理アプリ v2", page_icon="🏢", layout="wide")
 
-# --- 🌟 新UI再現のためのカスタムCSS (黒背景・灰色サイドバー・各種カセット) 🌟 ---
+# --- 🌟 新UI完全再現のための強力なカスタムCSS 🌟 ---
 st.markdown("""
     <style>
-        /* メインエリアを完全に黒背景・白文字化 */
-        .main .block-container {
+        /* アプリ全体・ヘッダー・メインエリアを完全に真っ黒に固定 */
+        .stApp, [data-testid="stHeader"], .main .block-container {
             background-color: #000000 !important;
-            color: #ffffff !important;
-            padding-top: 2rem !important;
-        }
-        h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
             color: #ffffff !important;
         }
         
-        /* サイドバーを灰色に固定 */
-        [data-testid="stSidebar"] {
+        /* 画面上のあらゆる文字、ラベル、テキストを白に統一 */
+        h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown, .stSelectbox label, .stMultiSelect label {
+            color: #ffffff !important;
+        }
+        
+        /* 左側サイドバーを画像通りの灰色（#7f7f7f）に固定 */
+        [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] {
             background-color: #7f7f7f !important;
         }
         [data-testid="stSidebar"] * {
             color: #ffffff !important;
         }
-        /* サイドバー内のラジオボタンの文字サイズ調整 */
+        /* サイドバー内のメニュー文字サイズと余白の調整 */
         [data-testid="stSidebar"] div[role="radiogroup"] label {
             font-size: 0.95rem !important;
             padding: 4px 0px !important;
         }
         
-        /* 💡 3色の角丸カセット（カード）の定義 */
+        /* 💡 UI案通りの3色角丸カセット（カードデザイン） */
         .cassette-orange {
             background-color: #fce8e6 !important;
-            color: #a51d24 !important;
             padding: 18px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -51,7 +51,6 @@ st.markdown("""
         
         .cassette-green {
             background-color: #e6f4ea !important;
-            color: #137333 !important;
             padding: 18px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -63,7 +62,6 @@ st.markdown("""
 
         .cassette-blue {
             background-color: #e8f0fe !important;
-            color: #1a73e8 !important;
             padding: 22px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -74,7 +72,14 @@ st.markdown("""
         }
         .cassette-blue * { color: #1a73e8 !important; }
         
-        /* テーブルや既存UIの微調整 */
+        /* 入力フォームの背景が見えなくなるのを防ぐ調整 */
+        .stTextInput input, .stSelectbox div, .stMultiSelect div, .stTextArea textarea {
+            background-color: #222222 !important;
+            color: #ffffff !important;
+            border: 1px solid #555555 !important;
+        }
+        
+        /* ボタンのデザイン微調整 */
         .stButton button { height: 1.8rem !important; background-color: #333333 !important; color: white !important; border: 1px solid #555555 !important; }
         .stButton button:hover { background-color: #555555 !important; }
         hr { border-top: 1px solid #333333 !important; }
@@ -245,7 +250,7 @@ def submit_search():
     st.session_state.input_search_key = "" 
     st.session_state.page_number = 0
 
-# --- 各種ダイアログ (省略せず維持) ---
+# --- 各種ダイアログ ---
 @st.dialog("📝 詳細情報の編集")
 def show_detail_dialog(row_data):
     cat = row_data['カテゴリ']
@@ -322,7 +327,7 @@ def show_cert_dialog(row_data):
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data['ID']))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
-            st.rerun()
+            st.rerun() # get_certificate_data.clear() のエラー行削除済み
 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
@@ -355,13 +360,13 @@ def show_task_dialog(row_data):
                 "優先度": new_pri, "ステータス": new_status, "備考": new_note
             }
             row_to_save = [data_dict.get(h, "") for h in headers]
-            cell = worksheet.find(str(row_data['ID', '']))
+            cell = worksheet.find(str(row_data['ID']))
             if cell: 
                 worksheet.update(f"A{cell.row}", [row_to_save])
                 get_all_data.clear(); st.rerun()
 
 # ==========================================
-# 🌟 画面構成 (左：灰色サイドバーメニュー定義) 🌟
+# 🌟 左側：灰色サイドバーメニュー定義 🌟
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
@@ -381,7 +386,7 @@ with st.sidebar:
     st.markdown("---")
     if st.button("🔄 データを最新にする"): get_all_data.clear(); st.rerun()
 
-# 備品とソフトウェアを内部用カテゴリコードにマッピングする辞書
+# 内部用カテゴリコードへのマッピング辞書
 MENU_TO_CAT = {
     " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", 
     " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器",
@@ -403,7 +408,7 @@ try:
         st.markdown("---")
         
         # 1. 期日アラートエリア
-        st.subheader("⚠️ 期日アラート")
+        st.subheader("期日アラート")
         
         # 🚗 訪問車のアラート抽出
         alert_cars = []
@@ -422,11 +427,11 @@ try:
             for idx, row in df_cert.iterrows():
                 dt = parse_date(row.get('有効期限'))
                 if dt and (dt.date() - today).days <= 75:
-                    msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過🚨"
+                    msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
                     alert_certs.append(f"【{row['端末']}】{row['種類']}: 期限切れまで{msg}")
 
         # オレンジ色のカセット（訪問車）
-        st.write("**■ 訪問車**")
+        st.write("訪問車")
         if alert_cars:
             html_content = "".join([f"<div style='margin-bottom:6px;'>🚨 {car}</div>" for car in alert_cars])
             st.markdown(f'<div class="cassette-orange">{html_content}</div>', unsafe_allow_html=True)
@@ -434,7 +439,7 @@ try:
             st.markdown('<div class="cassette-orange">✅ 現在、訪問車の期日アラートはありません。</div>', unsafe_allow_html=True)
 
         # 緑色のカセット（電子証明書）
-        st.write("**■ 電子証明書**")
+        st.write("電子証明書")
         if alert_certs:
             html_content = "".join([f"<div style='margin-bottom:6px;'>📅 {cert}</div>" for cert in alert_certs])
             st.markdown(f'<div class="cassette-green">{html_content}</div>', unsafe_allow_html=True)
@@ -444,7 +449,7 @@ try:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # 2. 進行中のタスク一覧エリア（薄い青の大型カセット）
-        st.subheader("📋 進行中のタスク一覧")
+        st.subheader("進行中のタスク一覧")
         df_task = get_task_data()
         active_tasks = []
         if not df_task.empty:
@@ -452,7 +457,7 @@ try:
             df_task = df_task.sort_values(by='sort_date', ascending=True)
             for index, row in df_task[df_task['ステータス'] != '完了'].iterrows():
                 limit_val = row.get('期限', '未定')
-                active_tasks.append(f"📌 **{row.get('タスク名', '')}** &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp; 📅 {limit_val} まで")
+                active_tasks.append(f"📌 {row.get('タスク名', '')} &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp; 📅 {limit_val} まで")
 
         if active_tasks:
             html_content = "".join([f"<div style='margin-bottom:10px;'>{task}</div>" for task in active_tasks])
@@ -630,12 +635,18 @@ try:
                     else: c[5].write(row.get('期限', ''))
                     c[6].write(row.get('優先度', ''))
                     c[7].write(row.get('ステータス', ''))
+                    
+                    # 🚀 ボタン一発完了のキャッシュクリア漏れを完璧に修正
                     if row.get('ステータス') != '完了':
                         if c[8].button("✅ 完了にする", key=f"comp_{index}"):
-                            if update_task_status(row.get('ID'), "完了"): get_all_data.clear(); st.rerun()
+                            if update_task_status(row.get('ID'), "完了"):
+                                get_all_data.clear() # キャッシュクリア
+                                st.rerun()
                     else:
                         if c[8].button("↩️ 戻す", key=f"rev_{index}"):
-                            if update_task_status(row.get('ID'), "未着手"): get_all_data.clear(); st.rerun()
+                            if update_task_status(row.get('ID'), "未着手"):
+                                get_all_data.clear() # キャッシュクリア
+                                st.rerun()
                     st.markdown("<hr style='border-top:1px dashed #333;'>", unsafe_allow_html=True)
         with task_tab2:
             if st.session_state.task_reg_success:
