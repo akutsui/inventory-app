@@ -83,13 +83,13 @@ st.markdown("""
         }
 
         /* 💡 サイドバー内のボタンを絶対に左寄せにし、クリック時の光を消す */
-        [data-testid="stSidebar"] .stButton {
+        [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
         }
         
-        /* 🚨【神殺し・サイドバー編】すべての状態を網羅して強制透明化🚨 */
+        /* サイドバーボタンの強制透明化 */
         [data-testid="stSidebar"] .stButton > button,
         [data-testid="stSidebar"] .stButton > button:focus,
         [data-testid="stSidebar"] .stButton > button:active,
@@ -125,15 +125,15 @@ st.markdown("""
             padding-left: 30px !important; 
         }
         
-        /* 🚨【神殺し・メインエリア編】詳細ボタン等の光りを全方位からコンクリート詰め🚨 */
-        .main .stButton > button,
-        .main .stFormSubmitButton > button,
-        div[role="dialog"] .stButton > button,
-        div[role="dialog"] .stFormSubmitButton > button { 
+        /* 🚨【ユーザー提案反映】メインエリアのボタンを「白地に黒文字」に固定して光を完全に同化させる🚨 */
+        html body .stApp .main [data-testid="stButton"] button,
+        html body .stApp .main [data-testid="stFormSubmitButton"] button,
+        html body .stApp div[role="dialog"] [data-testid="stButton"] button,
+        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button { 
             height: 1.8rem !important; 
-            background-color: #333333 !important; 
-            color: #ffffff !important; 
-            border: 1px solid #555555 !important; 
+            background-color: #ffffff !important; /* 白背景 */
+            color: #000000 !important;            /* 黒文字 */
+            border: 1px solid #cccccc !important; /* 薄いグレーの枠線 */
             justify-content: center !important;
             display: flex !important;
             align-items: center !important;
@@ -141,30 +141,39 @@ st.markdown("""
             outline: none !important;
             transition: none !important;
         }
-        /* ホバー時は少し明るいグレーにするだけ */
-        .main .stButton > button:hover,
-        .main .stFormSubmitButton > button:hover,
-        div[role="dialog"] .stButton > button:hover,
-        div[role="dialog"] .stFormSubmitButton > button:hover { 
-            background-color: #555555 !important; 
-            border: 1px solid #777777 !important;
-            color: #ffffff !important;
+        /* 中の文字も絶対に黒で太字に */
+        html body .stApp .main [data-testid="stButton"] button p,
+        html body .stApp .main [data-testid="stFormSubmitButton"] button p,
+        html body .stApp div[role="dialog"] [data-testid="stButton"] button p,
+        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button p {
+            color: #000000 !important;
+            font-weight: bold !important;
         }
-        /* ここが最重要！クリック時、フォーカス時（ダイアログが開いた裏側でも）絶対に赤枠を出させない */
-        .main .stButton > button:focus,
-        .main .stButton > button:active,
-        .main .stButton > button:focus-visible,
-        .main .stButton > button:focus:not(:active),
-        .main .stFormSubmitButton > button:focus,
-        .main .stFormSubmitButton > button:active,
-        div[role="dialog"] .stButton > button:focus,
-        div[role="dialog"] .stButton > button:active,
-        div[role="dialog"] .stFormSubmitButton > button:focus,
-        div[role="dialog"] .stFormSubmitButton > button:active {
-            background-color: #333333 !important;
-            border: 1px solid #555555 !important;
-            border-color: #555555 !important;
-            color: #ffffff !important;
+        
+        /* ホバー時は少しだけグレーにして「押せる感」を出す */
+        html body .stApp .main [data-testid="stButton"] button:hover,
+        html body .stApp .main [data-testid="stFormSubmitButton"] button:hover,
+        html body .stApp div[role="dialog"] [data-testid="stButton"] button:hover,
+        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:hover { 
+            background-color: #eeeeee !important; 
+            border: 1px solid #999999 !important;
+            color: #000000 !important;
+        }
+        
+        /* クリック時も「白〜薄いグレー」を維持し、赤い枠線を絶対に出させない */
+        html body .stApp .main [data-testid="stButton"] button:focus,
+        html body .stApp .main [data-testid="stButton"] button:active,
+        html body .stApp .main [data-testid="stButton"] button:focus-visible,
+        html body .stApp .main [data-testid="stButton"] button:focus:not(:active),
+        html body .stApp .main [data-testid="stFormSubmitButton"] button:focus,
+        html body .stApp .main [data-testid="stFormSubmitButton"] button:active,
+        html body .stApp div[role="dialog"] [data-testid="stButton"] button:focus,
+        html body .stApp div[role="dialog"] [data-testid="stButton"] button:active,
+        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:focus,
+        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:active {
+            background-color: #dddddd !important;
+            border: 1px solid #999999 !important;
+            color: #000000 !important;
             box-shadow: none !important;
             outline: none !important;
         }
@@ -741,7 +750,7 @@ try:
     # ==========================================
     elif page_selection == "📋 タスク管理":
         st.header("📋 タスク管理")
-        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新タスク登録"])
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
         df_task = get_task_data()
         with task_tab1:
             if not df_task.empty:
