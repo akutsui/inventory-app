@@ -40,10 +40,14 @@ st.markdown("""
             color: #ffffff !important;
         }
 
-        /* 💡 サイドバーの折りたたみメニュー（エキスパンダー）の枠線を消して馴染ませる */
-        [data-testid="stSidebar"] [data-testid="stExpander"] {
+        /* 💡 【修正】エキスパンダー（折りたたみ）の白光りバグを完全に消す */
+        [data-testid="stSidebar"] [data-testid="stExpander"],
+        [data-testid="stSidebar"] [data-testid="stExpander"] details,
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary,
+        [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] {
             border: none !important;
             background-color: transparent !important;
+            background: none !important;
             box-shadow: none !important;
         }
         [data-testid="stSidebar"] [data-testid="stExpander"] summary {
@@ -65,7 +69,7 @@ st.markdown("""
             padding-bottom: 5px !important;
         }
 
-        /* 💡 サイドバー内のボタンを「テキストリンク風のメニュー」に偽装する */
+        /* 💡 【修正】サイドバー内のボタンを「テキストリンク風」かつ「絶対左寄せ」に固定 */
         [data-testid="stSidebar"] .stButton {
             margin: 0 !important;
             padding: 0 !important;
@@ -73,14 +77,21 @@ st.markdown("""
         [data-testid="stSidebar"] .stButton button {
             background-color: transparent !important;
             border: none !important;
-            text-align: left !important;
-            justify-content: flex-start !important;
-            padding: 2px 10px !important; /* 上下の余白を削る */
+            display: flex !important;                /* フレックスボックス強制 */
+            justify-content: flex-start !important;  /* 絶対に左寄せ */
+            text-align: left !important;             /* 絶対に左寄せ */
+            padding: 4px 10px !important;
             margin: 0 !important;
             font-size: 0.9rem !important;
             height: auto !important;
             min-height: auto !important;
             box-shadow: none !important;
+            width: 100% !important;
+        }
+        /* 中のテキスト要素（pタグ）も左寄せに固定 */
+        [data-testid="stSidebar"] .stButton button p {
+            text-align: left !important;
+            margin: 0 !important;
         }
         [data-testid="stSidebar"] .stButton button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
