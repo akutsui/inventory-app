@@ -327,7 +327,7 @@ def show_cert_dialog(row_data):
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data['ID']))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
-            st.rerun() # get_certificate_data.clear() のエラー行削除済み
+            st.rerun()
 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
@@ -360,7 +360,7 @@ def show_task_dialog(row_data):
                 "優先度": new_pri, "ステータス": new_status, "備考": new_note
             }
             row_to_save = [data_dict.get(h, "") for h in headers]
-            cell = worksheet.find(str(row_data['ID']))
+            cell = worksheet.find(str(row_data.get('ID', '')))
             if cell: 
                 worksheet.update(f"A{cell.row}", [row_to_save])
                 get_all_data.clear(); st.rerun()
@@ -401,24 +401,30 @@ try:
     # 🏠 ページ：ホーム (画像UI案の動的ダッシュボード)
     # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
-        # タイトルと右側の日付表示
         head_col1, head_col2 = st.columns([4, 1])
         with head_col1: st.title("🏢 総務管理アプリ")
         with head_col2: st.markdown(f"<div style='text-align:right; font-size:1.1rem; padding-top:1.5rem;'>📅 {datetime.now().strftime('%Y年%m月%d日')}</div>", unsafe_allow_html=True)
         st.markdown("---")
         
-        # 1. 期日アラートエリア
         st.subheader("期日アラート")
         
-        # 🚗 訪問車のアラート抽出
+        # 🚗 訪問車のアラート抽出（★同じ車の複数アラートを1行にまとめる修正）
         alert_cars = []
         if not df.empty:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
                 if row['ステータス'] == '廃棄': continue
+                
+                # この車（1行）に関するアラートを一時的にリストに貯める
+                single_car_alerts = []
                 for col in ["リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日"]:
                     dt = parse_date(row.get(col))
                     if dt and (dt.date() - today).days <= 45:
-                        alert_cars.append(f"【{row['品名']}】{col}: あと{(dt.date()-today).days}日")
+                        single_car_alerts.append(f"{col}: あと{(dt.date()-today).days}日")
+                
+                # アラートが1つでもあれば、「・」で繋いで1行にして追加する
+                if single_car_alerts:
+                    joined_alerts = " ・ ".join(single_car_alerts)
+                    alert_cars.append(f"【{row.get('品名', '不明')}】 {joined_alerts}")
         
         # 🔐 電子証明書のアラート抽出
         df_cert = get_certificate_data()
@@ -636,7 +642,6 @@ try:
                     c[6].write(row.get('優先度', ''))
                     c[7].write(row.get('ステータス', ''))
                     
-                    # 🚀 ボタン一発完了のキャッシュクリア漏れを完璧に修正
                     if row.get('ステータス') != '完了':
                         if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                             if update_task_status(row.get('ID'), "完了"):
