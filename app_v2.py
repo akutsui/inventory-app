@@ -217,13 +217,17 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
         
     url = f"https://www.worksapis.com/v1.0/users/{creator_id}/calendars/{calendar_id}/events"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    
+    # 👇 ここを修正しています 👇
     payload = {
+        "sendNotification": False,  # 💡 トークルームへの通知を「なし」にする魔法の1行！
         "eventComponents": [{
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}",
             "start": {"date": deadline_date}, "end": {"date": deadline_date}
         }]
     }
+    
     res = requests.post(url, headers=headers, json=payload)
     return res.status_code in [200, 201]
 
