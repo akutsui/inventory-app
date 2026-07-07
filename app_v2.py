@@ -31,7 +31,6 @@ st.markdown("""
         [data-testid="stSidebar"] * {
             color: #ffffff !important;
         }
-        /* サイドバー内のメニュー文字サイズと余白の調整 */
         [data-testid="stSidebar"] div[role="radiogroup"] label {
             font-size: 0.95rem !important;
             padding: 4px 0px !important;
@@ -47,8 +46,8 @@ st.markdown("""
             font-weight: bold;
             border-left: 5px solid #ea4335;
         }
-        /* オレンジカセット内の文字は濃い赤色に固定 */
-        .cassette-orange p, .cassette-orange span, .cassette-orange div { 
+        /* ★ 訪問車：太字(strong)や段落(p)など、中の要素"すべて"を強制的に濃い赤に */
+        .cassette-orange, .cassette-orange *, .cassette-orange strong, .cassette-orange p, .cassette-orange div { 
             color: #a51d24 !important; 
         }
         
@@ -61,8 +60,8 @@ st.markdown("""
             font-weight: bold;
             border-left: 5px solid #34a853;
         }
-        /* ★修正: 電子証明書カセット内の文字を黒に固定 */
-        .cassette-green p, .cassette-green span, .cassette-green div { 
+        /* ★ 電子証明書：太字(strong)や段落(p)など、中の要素"すべて"を強制的に黒に */
+        .cassette-green, .cassette-green *, .cassette-green strong, .cassette-green p, .cassette-green div { 
             color: #000000 !important; 
         }
 
@@ -76,8 +75,8 @@ st.markdown("""
             border-left: 5px solid #4285f4;
             line-height: 1.8rem;
         }
-        /* ★修正: タスクカセット内の文字を黒に固定 */
-        .cassette-blue p, .cassette-blue span, .cassette-blue div { 
+        /* ★ タスク：太字(strong)や段落(p)など、中の要素"すべて"を強制的に黒に */
+        .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { 
             color: #000000 !important; 
         }
         
@@ -417,7 +416,7 @@ try:
         
         st.subheader("期日アラート")
         
-        # 🚗 訪問車のアラート抽出（同じ車の複数アラートを1行にまとめる）
+        # 🚗 訪問車のアラート抽出
         alert_cars = []
         if not df.empty:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
@@ -429,7 +428,7 @@ try:
                         single_car_alerts.append(f"{col}: あと{(dt.date()-today).days}日")
                 if single_car_alerts:
                     joined_alerts = " ・ ".join(single_car_alerts)
-                    alert_cars.append(f"【{row.get('品名', '不明')}】 {joined_alerts}")
+                    alert_cars.append(f"**【{row.get('品名', '不明')}】** {joined_alerts}")
         
         # 🔐 電子証明書のアラート抽出
         df_cert = get_certificate_data()
@@ -439,7 +438,7 @@ try:
                 dt = parse_date(row.get('有効期限'))
                 if dt and (dt.date() - today).days <= 75:
                     msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
-                    alert_certs.append(f"【{row['端末']}】{row['種類']}: 期限切れまで{msg}")
+                    alert_certs.append(f"**【{row['端末']}】{row['種類']}**: 期限切れまで{msg}")
 
         # オレンジ色のカセット（訪問車）
         st.write("訪問車")
@@ -468,7 +467,7 @@ try:
             df_task = df_task.sort_values(by='sort_date', ascending=True)
             for index, row in df_task[df_task['ステータス'] != '完了'].iterrows():
                 limit_val = row.get('期限', '未定')
-                active_tasks.append(f"📌 {row.get('タスク名', '')} &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp; 📅 {limit_val} まで")
+                active_tasks.append(f"📌 **{row.get('タスク名', '')}** &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp; 📅 {limit_val} まで")
 
         if active_tasks:
             html_content = "".join([f"<div style='margin-bottom:10px;'>{task}</div>" for task in active_tasks])
@@ -650,12 +649,12 @@ try:
                     if row.get('ステータス') != '完了':
                         if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                             if update_task_status(row.get('ID'), "完了"):
-                                get_all_data.clear()
+                                get_all_data.clear() # キャッシュクリア
                                 st.rerun()
                     else:
                         if c[8].button("↩️ 戻す", key=f"rev_{index}"):
                             if update_task_status(row.get('ID'), "未着手"):
-                                get_all_data.clear()
+                                get_all_data.clear() # キャッシュクリア
                                 st.rerun()
                     st.markdown("<hr style='border-top:1px dashed #333;'>", unsafe_allow_html=True)
         with task_tab2:
