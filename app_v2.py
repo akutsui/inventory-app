@@ -32,6 +32,15 @@ st.markdown("""
             color: #ffffff !important;
         }
         
+        /* メインエリアの全体的な文字サイズを少し小さく調整 */
+        .main .block-container p, .main .block-container div {
+            font-size: 0.9rem !important;
+        }
+        .main h3 {
+            font-size: 1.3rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+
         /* 左側サイドバーを画像通りの灰色（#7f7f7f）に固定 */
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] {
             background-color: #7f7f7f !important;
@@ -40,7 +49,7 @@ st.markdown("""
             color: #ffffff !important;
         }
 
-        /* 💡 【修正】エキスパンダー（折りたたみ）の白光りバグを完全に消す */
+        /* 💡 エキスパンダー（折りたたみ）の白光りバグを完全に消す */
         [data-testid="stSidebar"] [data-testid="stExpander"],
         [data-testid="stSidebar"] [data-testid="stExpander"] details,
         [data-testid="stSidebar"] [data-testid="stExpander"] summary,
@@ -60,7 +69,7 @@ st.markdown("""
             color: #dddddd !important;
         }
 
-        /* 💡 【追加】サイドバー内の行間（隙間）を極限まで詰める */
+        /* 💡 サイドバー内の行間（隙間）を極限まで詰める */
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
             gap: 0.1rem !important; 
         }
@@ -69,29 +78,31 @@ st.markdown("""
             padding-bottom: 5px !important;
         }
 
-        /* 💡 【修正】サイドバー内のボタンを「テキストリンク風」かつ「絶対左寄せ」に固定 */
+        /* 💡 サイドバー内のボタンを「絶対左寄せ」に固定 */
         [data-testid="stSidebar"] .stButton {
             margin: 0 !important;
             padding: 0 !important;
+            width: 100% !important;
         }
         [data-testid="stSidebar"] .stButton button {
             background-color: transparent !important;
             border: none !important;
-            display: flex !important;                /* フレックスボックス強制 */
-            justify-content: flex-start !important;  /* 絶対に左寄せ */
-            text-align: left !important;             /* 絶対に左寄せ */
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
             padding: 4px 10px !important;
             margin: 0 !important;
-            font-size: 0.9rem !important;
             height: auto !important;
             min-height: auto !important;
             box-shadow: none !important;
             width: 100% !important;
         }
-        /* 中のテキスト要素（pタグ）も左寄せに固定 */
+        /* 中のテキスト要素（pタグ）も左寄せ＆幅100%に強制固定 */
         [data-testid="stSidebar"] .stButton button p {
             text-align: left !important;
             margin: 0 !important;
+            width: 100% !important;
+            font-size: 0.9rem !important;
         }
         [data-testid="stSidebar"] .stButton button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
@@ -107,14 +118,14 @@ st.markdown("""
         }
         .main .stButton button:hover { background-color: #555555 !important; }
 
-        /* 💡 UI案通りの3色角丸カセット（カードデザイン） */
-        .cassette-orange { background-color: #fce8e6 !important; padding: 18px; border-radius: 8px; margin-bottom: 15px; font-size: 1.05rem; font-weight: bold; border-left: 5px solid #ea4335; }
+        /* 💡 3色角丸カセット（カードデザイン）の文字サイズを0.9remに縮小 */
+        .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #ea4335; }
         .cassette-orange, .cassette-orange *, .cassette-orange strong, .cassette-orange p, .cassette-orange div { color: #a51d24 !important; }
         
-        .cassette-green { background-color: #e6f4ea !important; padding: 18px; border-radius: 8px; margin-bottom: 15px; font-size: 1.05rem; font-weight: bold; border-left: 5px solid #34a853; }
+        .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #34a853; }
         .cassette-green, .cassette-green *, .cassette-green strong, .cassette-green p, .cassette-green div { color: #000000 !important; }
 
-        .cassette-blue { background-color: #e8f0fe !important; padding: 22px; border-radius: 8px; margin-bottom: 15px; font-size: 1.05rem; font-weight: bold; border-left: 5px solid #4285f4; line-height: 1.8rem; }
+        .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
         .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { color: #000000 !important; }
         
         /* 入力フォームの背景が見えなくなるのを防ぐ調整 */
@@ -428,7 +439,7 @@ with st.sidebar:
         st.button("📧 Office365", on_click=change_page, args=(" 📧 Office365",), use_container_width=True)
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
 
-    # その他の独立メニュー
+    # その他の独立メニュー (★ CSS修正で確実に左寄せになります)
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
@@ -461,7 +472,7 @@ try:
         
         st.subheader("期日アラート")
         
-        # 🚗 訪問車のアラート抽出（同じ車の複数アラートを1行にまとめる）
+        # 🚗 訪問車のアラート抽出（★太字をHTMLタグに変更）
         alert_cars = []
         if not df.empty:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
@@ -473,9 +484,9 @@ try:
                         single_car_alerts.append(f"{col}: あと{(dt.date()-today).days}日")
                 if single_car_alerts:
                     joined_alerts = " ・ ".join(single_car_alerts)
-                    alert_cars.append(f"**【{row.get('品名', '不明')}】** {joined_alerts}")
+                    alert_cars.append(f"<strong>【{row.get('品名', '不明')}】</strong> {joined_alerts}")
         
-        # 🔐 電子証明書のアラート抽出
+        # 🔐 電子証明書のアラート抽出（★太字をHTMLタグに変更）
         df_cert = get_certificate_data()
         alert_certs = []
         if not df_cert.empty:
@@ -483,7 +494,7 @@ try:
                 dt = parse_date(row.get('有効期限'))
                 if dt and (dt.date() - today).days <= 75:
                     msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
-                    alert_certs.append(f"**【{row['端末']}】{row['種類']}**: 期限切れまで{msg}")
+                    alert_certs.append(f"<strong>【{row['端末']}】{row['種類']}</strong>: 期限切れまで{msg}")
 
         # オレンジ色のカセット（訪問車）
         st.write("訪問車")
@@ -512,7 +523,8 @@ try:
             df_task = df_task.sort_values(by='sort_date', ascending=True)
             for index, row in df_task[df_task['ステータス'] != '完了'].iterrows():
                 limit_val = row.get('期限', '未定')
-                active_tasks.append(f"📌 **{row.get('タスク名', '')}** &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp; 📅 {limit_val} まで")
+                # ★太字をHTMLタグに変更
+                active_tasks.append(f"📌 <strong>{row.get('タスク名', '')}</strong> &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp; 📅 {limit_val} まで")
 
         if active_tasks:
             html_content = "".join([f"<div style='margin-bottom:10px;'>{task}</div>" for task in active_tasks])
