@@ -28,7 +28,7 @@ st.markdown("""
         }
         
         /* 画面上のあらゆる文字、ラベル、テキストを白に統一 */
-        h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown, .stSelectbox label, .stMultiSelect label {
+        h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
             color: #ffffff !important;
         }
         
@@ -41,7 +41,7 @@ st.markdown("""
             margin-bottom: 0.5rem !important;
         }
 
-        /* 左側サイドバーを画像通りの灰色（#7f7f7f）に固定 */
+        /* --- 左側サイドバー --- */
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] {
             background-color: #7f7f7f !important;
         }
@@ -72,8 +72,6 @@ st.markdown("""
             outline: none !important;
             box-shadow: none !important;
         }
-
-        /* サイドバー内の行間（隙間）を極限まで詰める */
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
             gap: 0.1rem !important; 
         }
@@ -82,104 +80,100 @@ st.markdown("""
             padding-bottom: 5px !important;
         }
 
-        /* サイドバー内のボタンを絶対に左寄せにし、クリック時の光を消す */
+        /* 🚨【超重要】すべてのボタンのベースを「白背景・黒文字・光なし」に強制固定 🚨 */
+        .stButton > button, 
+        .stFormSubmitButton > button,
+        div[data-testid="stButton"] > button,
+        div[data-testid="stFormSubmitButton"] > button {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #cccccc !important;
+            height: 1.8rem !important;
+            box-shadow: none !important;
+            outline: none !important;
+            transition: none !important;
+            justify-content: center !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        
+        /* ボタンの中の文字を絶対に黒にする */
+        .stButton > button *, 
+        .stFormSubmitButton > button *,
+        div[data-testid="stButton"] > button *,
+        div[data-testid="stFormSubmitButton"] > button * {
+            color: #000000 !important;
+            font-weight: bold !important;
+        }
+
+        /* ボタンホバー時 */
+        .stButton > button:hover, 
+        .stFormSubmitButton > button:hover,
+        div[data-testid="stButton"] > button:hover,
+        div[data-testid="stFormSubmitButton"] > button:hover {
+            background-color: #eeeeee !important;
+            border-color: #999999 !important;
+            color: #000000 !important;
+        }
+
+        /* ボタンクリック時・フォーカス時（光を殺す） */
+        .stButton > button:focus, 
+        .stButton > button:active, 
+        .stButton > button:focus-visible,
+        .stFormSubmitButton > button:focus, 
+        .stFormSubmitButton > button:active,
+        div[data-testid="stButton"] > button:focus,
+        div[data-testid="stButton"] > button:active,
+        div[data-testid="stFormSubmitButton"] > button:focus,
+        div[data-testid="stFormSubmitButton"] > button:active {
+            background-color: #dddddd !important;
+            border-color: #999999 !important;
+            box-shadow: none !important;
+            outline: none !important;
+            color: #000000 !important;
+        }
+
+        /* 🚨 サイドバー内のボタンだけを「透明・白文字・左寄せ」に上書き 🚨 */
         [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
         }
-        
         [data-testid="stSidebar"] .stButton > button,
-        [data-testid="stSidebar"] .stButton > button:focus,
-        [data-testid="stSidebar"] .stButton > button:active,
-        [data-testid="stSidebar"] .stButton > button:focus-visible,
-        [data-testid="stSidebar"] .stButton > button:focus:not(:active) {
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button {
             background-color: transparent !important;
             border: none !important;
-            display: flex !important;
             justify-content: flex-start !important;
-            align-items: center !important;
             padding: 4px 0px 4px 10px !important; 
             margin: 0 !important;
             height: auto !important;
             min-height: auto !important;
-            box-shadow: none !important;
-            outline: none !important;
             width: 100% !important;
-            text-align: left !important; 
-            color: #ffffff !important;
         }
-        [data-testid="stSidebar"] .stButton > button p {
+        [data-testid="stSidebar"] .stButton > button *,
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button * {
             text-align: left !important;
-            margin: 0 !important;
-            width: 100% !important;
-            font-size: 0.9rem !important;
             color: #ffffff !important;
+            font-size: 0.9rem !important;
+            font-weight: normal !important;
+            width: 100% !important;
         }
-        [data-testid="stSidebar"] .stButton > button:hover {
+        [data-testid="stSidebar"] .stButton > button:hover,
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
             border: none !important;
         }
+        [data-testid="stSidebar"] .stButton > button:focus,
+        [data-testid="stSidebar"] .stButton > button:active,
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button:focus,
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button:active {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] .stButton > button {
             padding-left: 30px !important; 
-        }
-        
-        /* メインエリアとダイアログのボタン（白背景・黒文字） */
-        html body .stApp .main [data-testid="stButton"] button,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button { 
-            height: 1.8rem !important; 
-            background-color: #ffffff !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-            border: 1px solid #cccccc !important;
-            justify-content: center !important;
-            display: flex !important;
-            align-items: center !important;
-            box-shadow: none !important;
-            outline: none !important;
-            transition: none !important;
-        }
-        html body .stApp .main [data-testid="stButton"] button *,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button *,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button *,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button * {
-            color: #000000 !important;
-            font-weight: bold !important;
-        }
-        html body .stApp .main [data-testid="stButton"] button:hover,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:hover,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button:hover,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:hover { 
-            background-color: #eeeeee !important; 
-            background: #eeeeee !important;
-            border: 1px solid #999999 !important;
-            color: #000000 !important;
-        }
-        html body .stApp .main [data-testid="stButton"] button:focus,
-        html body .stApp .main [data-testid="stButton"] button:active,
-        html body .stApp .main [data-testid="stButton"] button:focus-visible,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:focus,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:active,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button:focus,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button:active,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:focus,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:active {
-            background-color: #dddddd !important;
-            background: #dddddd !important;
-            border: 1px solid #999999 !important;
-            color: #000000 !important;
-            box-shadow: none !important;
-            outline: none !important;
-        }
-        html body .stApp .main [data-testid="stButton"] button:focus *,
-        html body .stApp .main [data-testid="stButton"] button:active *,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:focus *,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:active *,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button:focus *,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:focus * {
-            color: #000000 !important;
         }
 
         /* スマホ・タブレットのタップ時の全体チカチカも消滅させる */
@@ -197,7 +191,7 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
         .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { color: #000000 !important; }
         
-        /* 🚨【修正】入力フォームとプルダウンのダークテーマ対応🚨 */
+        /* 🚨 入力フォームとプルダウンのダークテーマ対応 🚨 */
         .stTextInput input, 
         .stTextArea textarea {
             background-color: #222222 !important;
@@ -210,12 +204,12 @@ st.markdown("""
             background-color: #222222 !important;
             border: 1px solid #555555 !important;
         }
-        /* ★ プルダウンの中の文字を真っ白に強制固定 */
+        /* プルダウンの中の文字を真っ白に強制固定 */
         div[data-baseweb="select"] * {
             color: #ffffff !important;
         }
         
-        /* ★ プルダウンを開いた時の選択肢リストもダーク化 */
+        /* プルダウンを開いた時の選択肢リストもダーク化 */
         ul[data-baseweb="menu"] {
             background-color: #333333 !important;
         }
