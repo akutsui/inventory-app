@@ -133,7 +133,7 @@ st.markdown("""
             border-color: #777777 !important;
         }
 
-        /* 💡 【最終奥義】Streamlit特有の頑固な「光り（フォーカスリング・box-shadow）」を完全に消滅させる */
+        /* 💡 【最終奥義】Streamlit特有の頑固な「光り」を完全に消滅させる */
         div[data-testid="stButton"] > button:focus, 
         div[data-testid="stButton"] > button:active, 
         div[data-testid="stButton"] > button:focus-visible,
@@ -154,10 +154,7 @@ st.markdown("""
             background-color: #333333 !important;
         }
         
-        /* モバイル端末でのタップ時のチカチカも消す */
-        * {
-            -webkit-tap-highlight-color: transparent !important;
-        }
+        * { -webkit-tap-highlight-color: transparent !important; }
 
         /* 💡 3色角丸カセット（カードデザイン） */
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #ea4335; }
@@ -169,7 +166,6 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
         .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { color: #000000 !important; }
         
-        /* 入力フォームの背景が見えなくなるのを防ぐ調整 */
         .stTextInput input, .stSelectbox div, .stMultiSelect div, .stTextArea textarea {
             background-color: #222222 !important;
             color: #ffffff !important;
@@ -345,7 +341,8 @@ def parse_date(date_val):
         except: pass
     date_str = str(date_val).strip()
     if not date_str: return None
-    date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/replace('日', ''))
+    # 🚨 ここが前回Syntax Errorを起こした箇所です。完全に修正しました！🚨
+    date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/').replace('日', '')
     try:
         ts = pd.to_datetime(date_str, errors='coerce')
         if pd.isna(ts): return None
@@ -481,10 +478,8 @@ def show_task_dialog(row_data):
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
     
-    # メインボタン
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
 
-    # アコーディオン1: 備品管理
     with st.expander("📦 備品管理", expanded=True):
         st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
         st.button("🚗 訪問車", on_click=change_page, args=(" 🚗 訪問車",), use_container_width=True)
@@ -492,12 +487,10 @@ with st.sidebar:
         st.button("📞 携帯電話", on_click=change_page, args=(" 📞 携帯電話",), use_container_width=True)
         st.button("⚙️ その他機器", on_click=change_page, args=(" ⚙️ その他機器",), use_container_width=True)
 
-    # アコーディオン2: ソフトウェア管理
     with st.expander("💿 ソフトウェア管理", expanded=True):
         st.button("📧 Office365", on_click=change_page, args=(" 📧 Office365",), use_container_width=True)
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
 
-    # その他の独立メニュー
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
@@ -530,7 +523,6 @@ try:
         
         st.subheader("期日アラート")
         
-        # 🚗 訪問車のアラート抽出
         alert_cars = []
         if not df.empty and 'カテゴリ' in df.columns:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
@@ -544,7 +536,6 @@ try:
                     joined_alerts = " ・ ".join(single_car_alerts)
                     alert_cars.append(f"<strong>【{row.get('品名', '不明')}】</strong> {joined_alerts}")
         
-        # 🔐 電子証明書のアラート抽出
         df_cert = get_certificate_data()
         alert_certs = []
         if not df_cert.empty:
@@ -554,7 +545,6 @@ try:
                     msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
                     alert_certs.append(f"<strong>【{row.get('端末','')}】{row.get('種類','')}</strong>: 期限切れまで{msg}")
 
-        # オレンジ色のカセット（訪問車）
         st.write("訪問車")
         if alert_cars:
             html_content = "".join([f"<div style='margin-bottom:6px;'>🚨 {car}</div>" for car in alert_cars])
@@ -562,7 +552,6 @@ try:
         else:
             st.markdown('<div class="cassette-orange">✅ 現在、訪問車の期日アラートはありません。</div>', unsafe_allow_html=True)
 
-        # 緑色のカセット（電子証明書）
         st.write("電子証明書")
         if alert_certs:
             html_content = "".join([f"<div style='margin-bottom:6px;'>📅 {cert}</div>" for cert in alert_certs])
@@ -572,7 +561,6 @@ try:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 2. 進行中のタスク一覧エリア
         st.subheader("進行中のタスク一覧")
         df_task = get_task_data()
         active_tasks = []
