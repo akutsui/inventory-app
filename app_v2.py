@@ -103,14 +103,6 @@ st.markdown("""
             width: 100% !important;
             text-align: left !important; 
         }
-        [data-testid="stSidebar"] .stButton button:focus,
-        [data-testid="stSidebar"] .stButton button:active,
-        [data-testid="stSidebar"] .stButton button:focus-visible {
-            box-shadow: none !important;
-            outline: none !important;
-            background-color: transparent !important;
-            color: #ffffff !important;
-        }
         [data-testid="stSidebar"] .stButton button p {
             text-align: left !important;
             margin: 0 !important;
@@ -125,7 +117,7 @@ st.markdown("""
             padding-left: 30px !important; 
         }
         
-        /* 💡 【最強修正】メインエリアのボタン（詳細ボタン等）の光りを完全に消滅させる */
+        /* 💡 メインエリアのボタンデザイン */
         .main .stButton button { 
             height: 1.8rem !important; 
             background-color: #333333 !important; 
@@ -136,21 +128,25 @@ st.markdown("""
             align-items: center !important;
             box-shadow: none !important;
             outline: none !important;
-            transition: none !important; /* アニメーションも無効化 */
         }
         .main .stButton button:hover { 
             background-color: #555555 !important; 
-            border: 1px solid #777777 !important; 
+            border-color: #777777 !important;
         }
-        /* フォーカス時（クリックした直後）の赤い/青い枠線を完全に無効化 */
-        .main .stButton button:focus, 
-        .main .stButton button:active, 
-        .main .stButton button:focus-visible {
+
+        /* 💡 【最強修正】Streamlitの頑固な「ボタンの光り（枠線の色変化や影）」を全方位から封殺 */
+        button:focus, 
+        button:active, 
+        button:focus-visible, 
+        .stButton button:focus:not(:active) {
             box-shadow: none !important;
             outline: none !important;
-            background-color: #333333 !important; /* 色が変わるのを防ぐ */
-            border: 1px solid #555555 !important; /* 枠線を元に戻す */
-            color: white !important;
+            border-color: #555555 !important; /* 枠線が赤や青になるのを防ぐ */
+            color: inherit !important;
+        }
+        /* モバイル端末でのタップ時のチカチカも消す */
+        * {
+            -webkit-tap-highlight-color: transparent !important;
         }
 
         /* 💡 3色角丸カセット（カードデザイン） */
