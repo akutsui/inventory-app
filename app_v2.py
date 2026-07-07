@@ -58,6 +58,7 @@ st.markdown("""
             background-color: transparent !important;
             background: none !important;
             box-shadow: none !important;
+            outline: none !important;
         }
         [data-testid="stSidebar"] [data-testid="stExpander"] summary {
             padding-left: 0px !important;
@@ -65,8 +66,11 @@ st.markdown("""
             font-weight: bold !important;
             padding-bottom: 5px !important;
         }
-        [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover,
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary:focus {
             color: #dddddd !important;
+            outline: none !important;
+            box-shadow: none !important;
         }
 
         /* 💡 サイドバー内の行間（隙間）を極限まで詰める */
@@ -78,7 +82,7 @@ st.markdown("""
             padding-bottom: 5px !important;
         }
 
-        /* 💡 【最強修正】サイドバー内のボタンを絶対に左寄せにする（Streamlitの見えない中央揃えを破壊） */
+        /* 💡 サイドバー内のボタンを絶対に左寄せにし、クリック時の光を消す */
         [data-testid="stSidebar"] .stButton {
             margin: 0 !important;
             padding: 0 !important;
@@ -87,32 +91,40 @@ st.markdown("""
         [data-testid="stSidebar"] .stButton button {
             background-color: transparent !important;
             border: none !important;
-            padding: 4px 0px 4px 10px !important; /* 全体は左に10pxの余白 */
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            padding: 4px 0px 4px 10px !important; 
             margin: 0 !important;
             height: auto !important;
-            box-shadow: none !important;
+            min-height: auto !important;
+            box-shadow: none !important; /* ★追加：光り消し */
+            outline: none !important;    /* ★追加：光り消し */
             width: 100% !important;
-            display: block !important; /* 見えない中央揃えの力を無効化 */
-            text-align: left !important; /* 絶対に左寄せ */
+            text-align: left !important; 
         }
-        /* ボタンの中のコンテナとテキストも強制的に左寄せ */
-        [data-testid="stSidebar"] .stButton button div,
+        [data-testid="stSidebar"] .stButton button:focus,
+        [data-testid="stSidebar"] .stButton button:active {
+            box-shadow: none !important; /* ★追加：クリック時の光り消し */
+            outline: none !important;
+            background-color: transparent !important;
+            color: #ffffff !important;
+        }
         [data-testid="stSidebar"] .stButton button p {
-            display: block !important;
             text-align: left !important;
-            width: 100% !important;
             margin: 0 !important;
+            width: 100% !important;
+            font-size: 0.9rem !important;
         }
         [data-testid="stSidebar"] .stButton button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
         
-        /* 💡 【追加】エキスパンダー（折りたたみ）の中身だけ、字下げして階層っぽく見せる */
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] .stButton button {
-            padding-left: 30px !important; /* 下の階層はさらに右へズラす */
+            padding-left: 30px !important; 
         }
         
-        /* 💡 メインエリアのボタンだけ本来の「ボタン」のデザインにする */
+        /* 💡 メインエリアのボタンの光りも完全に消す */
         .main .stButton button { 
             height: 1.8rem !important; 
             background-color: #333333 !important; 
@@ -121,10 +133,20 @@ st.markdown("""
             justify-content: center !important;
             display: flex !important;
             align-items: center !important;
+            box-shadow: none !important; /* ★追加：光り消し */
+            outline: none !important;    /* ★追加：光り消し */
         }
-        .main .stButton button:hover { background-color: #555555 !important; }
+        .main .stButton button:hover { 
+            background-color: #555555 !important; 
+        }
+        .main .stButton button:focus, .main .stButton button:active {
+            box-shadow: none !important; /* ★追加：クリック時の光り消し */
+            outline: none !important;
+            border: 1px solid #777777 !important;
+            color: white !important;
+        }
 
-        /* 💡 3色角丸カセット（カードデザイン）の文字サイズを0.9remに縮小 */
+        /* 💡 3色角丸カセット（カードデザイン） */
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #ea4335; }
         .cassette-orange, .cassette-orange *, .cassette-orange strong, .cassette-orange p, .cassette-orange div { color: #a51d24 !important; }
         
@@ -218,16 +240,15 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     url = f"https://www.worksapis.com/v1.0/users/{creator_id}/calendars/{calendar_id}/events"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
-    # 👇 ここを修正しています 👇
+    # 💡 トークルームの通知をOFFにする設定を適用
     payload = {
-        "sendNotification": False,  # 💡 トークルームへの通知を「なし」にする魔法の1行！
+        "sendNotification": False,
         "eventComponents": [{
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}",
             "start": {"date": deadline_date}, "end": {"date": deadline_date}
         }]
     }
-    
     res = requests.post(url, headers=headers, json=payload)
     return res.status_code in [200, 201]
 
@@ -524,7 +545,7 @@ try:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 2. 進行中のタスク一覧エリア（薄い青の大型カセット）
+        # 2. 進行中のタスク一覧エリア
         st.subheader("進行中のタスク一覧")
         df_task = get_task_data()
         active_tasks = []
@@ -703,7 +724,11 @@ try:
                     c[3].write(str(row.get('担当者', '')))
                     c[4].write(str(row.get('関係者', '')))
                     dt = parse_date(row.get('期限'))
-                    if dt and row.get('ステータス') != '完了':
+                    
+                    # 💡 スプレッドシート側のステータスを確実に文字列判定するため strip() を追加
+                    current_status = str(row.get('ステータス', '')).strip()
+                    
+                    if dt and current_status != '完了':
                         diff = (dt.date() - datetime.now().date()).days
                         if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
                         elif diff <= 3: c[5].warning(f"{row.get('期限')} (あと{diff}日)")
@@ -712,13 +737,14 @@ try:
                     c[6].write(row.get('優先度', ''))
                     c[7].write(row.get('ステータス', ''))
                     
-                    if row.get('ステータス') != '完了':
+                    # 💡 完了/未完了のボタン切り替えロジック
+                    if current_status != '完了':
                         if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                             if update_task_status(row.get('ID'), "完了"):
                                 get_all_data.clear() # キャッシュクリア
                                 st.rerun()
                     else:
-                        if c[8].button("↩️ 戻す", key=f"rev_{index}"):
+                        if c[8].button("↩️ 未完了に戻す", key=f"rev_{index}"):
                             if update_task_status(row.get('ID'), "未着手"):
                                 get_all_data.clear() # キャッシュクリア
                                 st.rerun()
