@@ -41,7 +41,7 @@ st.markdown("""
             margin-bottom: 0.5rem !important;
         }
 
-        /* 左側サイドバーを画像通りの灰色（#7f7f7f）に固定 */
+        /* --- 左側サイドバー --- */
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] {
             background-color: #7f7f7f !important;
         }
@@ -49,7 +49,7 @@ st.markdown("""
             color: #ffffff !important;
         }
 
-        /* 💡 エキスパンダー（折りたたみ）の白光りバグを完全に消す */
+        /* エキスパンダー（折りたたみ）の白光りバグを完全に消す */
         [data-testid="stSidebar"] [data-testid="stExpander"],
         [data-testid="stSidebar"] [data-testid="stExpander"] details,
         [data-testid="stSidebar"] [data-testid="stExpander"] summary,
@@ -72,8 +72,6 @@ st.markdown("""
             outline: none !important;
             box-shadow: none !important;
         }
-
-        /* 💡 サイドバー内の行間（隙間）を極限まで詰める */
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
             gap: 0.1rem !important; 
         }
@@ -82,19 +80,16 @@ st.markdown("""
             padding-bottom: 5px !important;
         }
 
-        /* 💡 サイドバー内のボタンを絶対に左寄せにし、クリック時の光を消す */
+        /* サイドバー内のボタン（絶対左寄せ・透明） */
         [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
         }
-        
-        /* サイドバーボタンの強制透明化 */
         [data-testid="stSidebar"] .stButton > button,
         [data-testid="stSidebar"] .stButton > button:focus,
         [data-testid="stSidebar"] .stButton > button:active,
-        [data-testid="stSidebar"] .stButton > button:focus-visible,
-        [data-testid="stSidebar"] .stButton > button:focus:not(:active) {
+        [data-testid="stSidebar"] .stButton > button:focus-visible {
             background-color: transparent !important;
             border: none !important;
             display: flex !important;
@@ -108,9 +103,8 @@ st.markdown("""
             outline: none !important;
             width: 100% !important;
             text-align: left !important; 
-            color: #ffffff !important;
         }
-        [data-testid="stSidebar"] .stButton > button p {
+        [data-testid="stSidebar"] .stButton > button * {
             text-align: left !important;
             margin: 0 !important;
             width: 100% !important;
@@ -125,57 +119,69 @@ st.markdown("""
             padding-left: 30px !important; 
         }
         
-        /* 🚨【ユーザー提案反映】メインエリアのボタンを「白地に黒文字」に固定して光を完全に同化させる🚨 */
-        html body .stApp .main [data-testid="stButton"] button,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button { 
+        /* 🚨【超重要】メインエリアとダイアログのボタン（白背景・黒文字）🚨 */
+        section[data-testid="stMain"] .stButton button,
+        section[data-testid="stMain"] .stFormSubmitButton button,
+        div[role="dialog"] .stButton button,
+        div[role="dialog"] .stFormSubmitButton button {
+            background-color: #ffffff !important; /* 絶対に白背景 */
+            background: #ffffff !important;
+            border: 1px solid #cccccc !important; /* 薄いグレーの枠 */
+            box-shadow: none !important;
+            outline: none !important;
             height: 1.8rem !important; 
-            background-color: #ffffff !important; /* 白背景 */
-            color: #000000 !important;            /* 黒文字 */
-            border: 1px solid #cccccc !important; /* 薄いグレーの枠線 */
             justify-content: center !important;
             display: flex !important;
             align-items: center !important;
-            box-shadow: none !important;
-            outline: none !important;
             transition: none !important;
         }
-        /* 中の文字も絶対に黒で太字に */
-        html body .stApp .main [data-testid="stButton"] button p,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button p,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button p,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button p {
-            color: #000000 !important;
+
+        /* 🚨 ボタンの中の文字を「絶対に黒」に固定 🚨 */
+        section[data-testid="stMain"] .stButton button *,
+        section[data-testid="stMain"] .stFormSubmitButton button *,
+        div[role="dialog"] .stButton button *,
+        div[role="dialog"] .stFormSubmitButton button * {
+            color: #000000 !important; /* 絶対に黒文字 */
             font-weight: bold !important;
         }
-        
-        /* ホバー時は少しだけグレーにして「押せる感」を出す */
-        html body .stApp .main [data-testid="stButton"] button:hover,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:hover,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button:hover,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:hover { 
-            background-color: #eeeeee !important; 
+
+        /* ホバー時（カーソルを合わせた時） */
+        section[data-testid="stMain"] .stButton button:hover,
+        section[data-testid="stMain"] .stFormSubmitButton button:hover,
+        div[role="dialog"] .stButton button:hover,
+        div[role="dialog"] .stFormSubmitButton button:hover {
+            background-color: #f0f0f0 !important; /* 少しだけグレー */
+            background: #f0f0f0 !important;
             border: 1px solid #999999 !important;
-            color: #000000 !important;
-        }
-        
-        /* クリック時も「白〜薄いグレー」を維持し、赤い枠線を絶対に出させない */
-        html body .stApp .main [data-testid="stButton"] button:focus,
-        html body .stApp .main [data-testid="stButton"] button:active,
-        html body .stApp .main [data-testid="stButton"] button:focus-visible,
-        html body .stApp .main [data-testid="stButton"] button:focus:not(:active),
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:focus,
-        html body .stApp .main [data-testid="stFormSubmitButton"] button:active,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button:focus,
-        html body .stApp div[role="dialog"] [data-testid="stButton"] button:active,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:focus,
-        html body .stApp div[role="dialog"] [data-testid="stFormSubmitButton"] button:active {
-            background-color: #dddddd !important;
-            border: 1px solid #999999 !important;
-            color: #000000 !important;
             box-shadow: none !important;
             outline: none !important;
+        }
+
+        /* フォーカス時・クリック時（赤い光を殺して少し濃いグレーにするだけ） */
+        section[data-testid="stMain"] .stButton button:focus,
+        section[data-testid="stMain"] .stButton button:active,
+        section[data-testid="stMain"] .stButton button:focus-visible,
+        section[data-testid="stMain"] .stFormSubmitButton button:focus,
+        section[data-testid="stMain"] .stFormSubmitButton button:active,
+        div[role="dialog"] .stButton button:focus,
+        div[role="dialog"] .stButton button:active,
+        div[role="dialog"] .stFormSubmitButton button:focus,
+        div[role="dialog"] .stFormSubmitButton button:active {
+            background-color: #e0e0e0 !important; /* 濃いめのグレー */
+            background: #e0e0e0 !important;
+            border: 1px solid #666666 !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        /* フォーカス時も中の文字は絶対に黒！ */
+        section[data-testid="stMain"] .stButton button:focus *,
+        section[data-testid="stMain"] .stButton button:active *,
+        section[data-testid="stMain"] .stFormSubmitButton button:focus *,
+        section[data-testid="stMain"] .stFormSubmitButton button:active *,
+        div[role="dialog"] .stButton button:focus *,
+        div[role="dialog"] .stFormSubmitButton button:focus * {
+            color: #000000 !important;
         }
 
         /* スマホ・タブレットのタップ時の全体チカチカも消滅させる */
