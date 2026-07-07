@@ -78,7 +78,7 @@ st.markdown("""
             padding-bottom: 5px !important;
         }
 
-        /* 💡 サイドバー内のボタンを「絶対左寄せ」に固定 */
+        /* 💡 【最強修正】サイドバー内のボタンを絶対に左寄せにする（Streamlitの見えない中央揃えを破壊） */
         [data-testid="stSidebar"] .stButton {
             margin: 0 !important;
             padding: 0 !important;
@@ -87,25 +87,29 @@ st.markdown("""
         [data-testid="stSidebar"] .stButton button {
             background-color: transparent !important;
             border: none !important;
-            display: flex !important;
-            justify-content: flex-start !important;
-            align-items: center !important;
-            padding: 4px 10px !important;
+            padding: 4px 0px 4px 10px !important; /* 全体は左に10pxの余白 */
             margin: 0 !important;
             height: auto !important;
-            min-height: auto !important;
             box-shadow: none !important;
             width: 100% !important;
+            display: block !important; /* 見えない中央揃えの力を無効化 */
+            text-align: left !important; /* 絶対に左寄せ */
         }
-        /* 中のテキスト要素（pタグ）も左寄せ＆幅100%に強制固定 */
+        /* ボタンの中のコンテナとテキストも強制的に左寄せ */
+        [data-testid="stSidebar"] .stButton button div,
         [data-testid="stSidebar"] .stButton button p {
+            display: block !important;
             text-align: left !important;
-            margin: 0 !important;
             width: 100% !important;
-            font-size: 0.9rem !important;
+            margin: 0 !important;
         }
         [data-testid="stSidebar"] .stButton button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* 💡 【追加】エキスパンダー（折りたたみ）の中身だけ、字下げして階層っぽく見せる */
+        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] .stButton button {
+            padding-left: 30px !important; /* 下の階層はさらに右へズラす */
         }
         
         /* 💡 メインエリアのボタンだけ本来の「ボタン」のデザインにする */
@@ -115,6 +119,8 @@ st.markdown("""
             color: white !important; 
             border: 1px solid #555555 !important; 
             justify-content: center !important;
+            display: flex !important;
+            align-items: center !important;
         }
         .main .stButton button:hover { background-color: #555555 !important; }
 
@@ -439,7 +445,7 @@ with st.sidebar:
         st.button("📧 Office365", on_click=change_page, args=(" 📧 Office365",), use_container_width=True)
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
 
-    # その他の独立メニュー (★ CSS修正で確実に左寄せになります)
+    # その他の独立メニュー
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
@@ -472,7 +478,7 @@ try:
         
         st.subheader("期日アラート")
         
-        # 🚗 訪問車のアラート抽出（★太字をHTMLタグに変更）
+        # 🚗 訪問車のアラート抽出
         alert_cars = []
         if not df.empty:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
@@ -486,7 +492,7 @@ try:
                     joined_alerts = " ・ ".join(single_car_alerts)
                     alert_cars.append(f"<strong>【{row.get('品名', '不明')}】</strong> {joined_alerts}")
         
-        # 🔐 電子証明書のアラート抽出（★太字をHTMLタグに変更）
+        # 🔐 電子証明書のアラート抽出
         df_cert = get_certificate_data()
         alert_certs = []
         if not df_cert.empty:
@@ -523,7 +529,6 @@ try:
             df_task = df_task.sort_values(by='sort_date', ascending=True)
             for index, row in df_task[df_task['ステータス'] != '完了'].iterrows():
                 limit_val = row.get('期限', '未定')
-                # ★太字をHTMLタグに変更
                 active_tasks.append(f"📌 <strong>{row.get('タスク名', '')}</strong> &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp; 📅 {limit_val} まで")
 
         if active_tasks:
