@@ -83,12 +83,18 @@ st.markdown("""
         }
 
         /* 💡 サイドバー内のボタンを絶対に左寄せにし、クリック時の光を消す */
-        [data-testid="stSidebar"] div[data-testid="stButton"] {
+        [data-testid="stSidebar"] .stButton {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
         }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button {
+        
+        /* 🚨【神殺し・サイドバー編】すべての状態を網羅して強制透明化🚨 */
+        [data-testid="stSidebar"] .stButton > button,
+        [data-testid="stSidebar"] .stButton > button:focus,
+        [data-testid="stSidebar"] .stButton > button:active,
+        [data-testid="stSidebar"] .stButton > button:focus-visible,
+        [data-testid="stSidebar"] .stButton > button:focus:not(:active) {
             background-color: transparent !important;
             border: none !important;
             display: flex !important;
@@ -102,64 +108,68 @@ st.markdown("""
             outline: none !important;
             width: 100% !important;
             text-align: left !important; 
+            color: #ffffff !important;
         }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button p {
+        [data-testid="stSidebar"] .stButton > button p {
             text-align: left !important;
             margin: 0 !important;
             width: 100% !important;
             font-size: 0.9rem !important;
+            color: #ffffff !important;
         }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
+        [data-testid="stSidebar"] .stButton > button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
+            border: none !important;
         }
-        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button {
+        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] .stButton > button {
             padding-left: 30px !important; 
         }
-
-        /* 💡 【神殺しの最終奥義】Streamlit特有の頑固な「光り（フォーカス時の赤/青枠や影）」を最強優先度で完全に破壊 */
-        html body .stApp [data-testid="stButton"] button,
-        html body .stApp [data-testid="stButton"] button:focus,
-        html body .stApp [data-testid="stButton"] button:active,
-        html body .stApp [data-testid="stButton"] button:focus-visible,
-        html body .stApp [data-testid="stButton"] button:focus:not(:active) {
-            box-shadow: none !important;
-            outline: none !important;
-        }
-        /* 中身の要素の光りも絶対許さない */
-        html body .stApp [data-testid="stButton"] button *,
-        html body .stApp [data-testid="stButton"] button:focus * {
-            box-shadow: none !important;
-            outline: none !important;
-        }
         
-        /* 💡 メインエリアの詳細ボタンなどのデザインと光り消しを最強優先度で上書き */
-        html body .stApp .main [data-testid="stButton"] button { 
+        /* 🚨【神殺し・メインエリア編】詳細ボタン等の光りを全方位からコンクリート詰め🚨 */
+        .main .stButton > button,
+        .main .stFormSubmitButton > button,
+        div[role="dialog"] .stButton > button,
+        div[role="dialog"] .stFormSubmitButton > button { 
             height: 1.8rem !important; 
             background-color: #333333 !important; 
-            color: white !important; 
+            color: #ffffff !important; 
             border: 1px solid #555555 !important; 
             justify-content: center !important;
             display: flex !important;
             align-items: center !important;
-            transition: none !important; /* アニメーションも無効化 */
+            box-shadow: none !important;
+            outline: none !important;
+            transition: none !important;
         }
-        html body .stApp .main [data-testid="stButton"] button:hover { 
+        /* ホバー時は少し明るいグレーにするだけ */
+        .main .stButton > button:hover,
+        .main .stFormSubmitButton > button:hover,
+        div[role="dialog"] .stButton > button:hover,
+        div[role="dialog"] .stFormSubmitButton > button:hover { 
             background-color: #555555 !important; 
-            border-color: #777777 !important;
+            border: 1px solid #777777 !important;
+            color: #ffffff !important;
         }
-        /* クリック直後の残像（赤いボーダー等）を元に戻す */
-        html body .stApp .main [data-testid="stButton"] button:focus,
-        html body .stApp .main [data-testid="stButton"] button:active,
-        html body .stApp .main [data-testid="stButton"] button:focus-visible,
-        html body .stApp .main [data-testid="stButton"] button:focus:not(:active) {
-            border: 1px solid #555555 !important;
+        /* ここが最重要！クリック時、フォーカス時（ダイアログが開いた裏側でも）絶対に赤枠を出させない */
+        .main .stButton > button:focus,
+        .main .stButton > button:active,
+        .main .stButton > button:focus-visible,
+        .main .stButton > button:focus:not(:active),
+        .main .stFormSubmitButton > button:focus,
+        .main .stFormSubmitButton > button:active,
+        div[role="dialog"] .stButton > button:focus,
+        div[role="dialog"] .stButton > button:active,
+        div[role="dialog"] .stFormSubmitButton > button:focus,
+        div[role="dialog"] .stFormSubmitButton > button:active {
             background-color: #333333 !important;
-            color: white !important;
+            border: 1px solid #555555 !important;
+            border-color: #555555 !important;
+            color: #ffffff !important;
             box-shadow: none !important;
             outline: none !important;
         }
 
-        /* モバイル端末でのタップ時のチカチカも消す */
+        /* スマホ・タブレットのタップ時の全体チカチカも消滅させる */
         * {
             -webkit-tap-highlight-color: transparent !important;
         }
@@ -259,7 +269,7 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
     payload = {
-        "sendNotification": False,
+        "sendNotification": False, # トークへの通知オフ設定
         "eventComponents": [{
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}",
@@ -731,7 +741,7 @@ try:
     # ==========================================
     elif page_selection == "📋 タスク管理":
         st.header("📋 タスク管理")
-        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新タスク登録"])
         df_task = get_task_data()
         with task_tab1:
             if not df_task.empty:
