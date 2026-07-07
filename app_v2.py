@@ -83,12 +83,12 @@ st.markdown("""
         }
 
         /* 💡 サイドバー内のボタンを絶対に左寄せにし、クリック時の光を消す */
-        [data-testid="stSidebar"] .stButton {
+        [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
         }
-        [data-testid="stSidebar"] .stButton button {
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button {
             background-color: transparent !important;
             border: none !important;
             display: flex !important;
@@ -103,22 +103,21 @@ st.markdown("""
             width: 100% !important;
             text-align: left !important; 
         }
-        [data-testid="stSidebar"] .stButton button p {
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button p {
             text-align: left !important;
             margin: 0 !important;
             width: 100% !important;
             font-size: 0.9rem !important;
         }
-        [data-testid="stSidebar"] .stButton button:hover {
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
-        
-        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] .stButton button {
+        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button {
             padding-left: 30px !important; 
         }
         
         /* 💡 メインエリアのボタンデザイン */
-        .main .stButton button { 
+        .main div[data-testid="stButton"] > button { 
             height: 1.8rem !important; 
             background-color: #333333 !important; 
             color: white !important; 
@@ -129,21 +128,32 @@ st.markdown("""
             box-shadow: none !important;
             outline: none !important;
         }
-        .main .stButton button:hover { 
+        .main div[data-testid="stButton"] > button:hover { 
             background-color: #555555 !important; 
             border-color: #777777 !important;
         }
 
-        /* 💡 【最強修正】Streamlitの頑固な「ボタンの光り（枠線の色変化や影）」を全方位から封殺 */
-        button:focus, 
-        button:active, 
-        button:focus-visible, 
-        .stButton button:focus:not(:active) {
+        /* 💡 【最終奥義】Streamlit特有の頑固な「光り（フォーカスリング・box-shadow）」を完全に消滅させる */
+        div[data-testid="stButton"] > button:focus, 
+        div[data-testid="stButton"] > button:active, 
+        div[data-testid="stButton"] > button:focus-visible,
+        div[data-testid="stButton"] > button:focus:not(:active),
+        button[kind="secondary"]:focus,
+        button[kind="primary"]:focus,
+        .stButton button:focus {
             box-shadow: none !important;
             outline: none !important;
-            border-color: #555555 !important; /* 枠線が赤や青になるのを防ぐ */
-            color: inherit !important;
+            border-color: #555555 !important;
+            background-color: #333333 !important;
+            color: white !important;
         }
+        
+        .main div[data-testid="stButton"] > button:focus, 
+        .main div[data-testid="stButton"] > button:active {
+            border-color: #555555 !important;
+            background-color: #333333 !important;
+        }
+        
         /* モバイル端末でのタップ時のチカチカも消す */
         * {
             -webkit-tap-highlight-color: transparent !important;
@@ -335,7 +345,7 @@ def parse_date(date_val):
         except: pass
     date_str = str(date_val).strip()
     if not date_str: return None
-    date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/').replace('日', '')
+    date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/replace('日', ''))
     try:
         ts = pd.to_datetime(date_str, errors='coerce')
         if pd.isna(ts): return None
