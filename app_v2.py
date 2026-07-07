@@ -115,9 +115,25 @@ st.markdown("""
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button {
             padding-left: 30px !important; 
         }
+
+        /* 💡 【神殺しの最終奥義】Streamlit特有の頑固な「光り（フォーカス時の赤/青枠や影）」を最強優先度で完全に破壊 */
+        html body .stApp [data-testid="stButton"] button,
+        html body .stApp [data-testid="stButton"] button:focus,
+        html body .stApp [data-testid="stButton"] button:active,
+        html body .stApp [data-testid="stButton"] button:focus-visible,
+        html body .stApp [data-testid="stButton"] button:focus:not(:active) {
+            box-shadow: none !important;
+            outline: none !important;
+        }
+        /* 中身の要素の光りも絶対許さない */
+        html body .stApp [data-testid="stButton"] button *,
+        html body .stApp [data-testid="stButton"] button:focus * {
+            box-shadow: none !important;
+            outline: none !important;
+        }
         
-        /* 💡 メインエリアのボタンデザイン */
-        .main div[data-testid="stButton"] > button { 
+        /* 💡 メインエリアの詳細ボタンなどのデザインと光り消しを最強優先度で上書き */
+        html body .stApp .main [data-testid="stButton"] button { 
             height: 1.8rem !important; 
             background-color: #333333 !important; 
             color: white !important; 
@@ -125,36 +141,28 @@ st.markdown("""
             justify-content: center !important;
             display: flex !important;
             align-items: center !important;
-            box-shadow: none !important;
-            outline: none !important;
+            transition: none !important; /* アニメーションも無効化 */
         }
-        .main div[data-testid="stButton"] > button:hover { 
+        html body .stApp .main [data-testid="stButton"] button:hover { 
             background-color: #555555 !important; 
             border-color: #777777 !important;
         }
-
-        /* 💡 【最終奥義】Streamlit特有の頑固な「光り」を完全に消滅させる */
-        div[data-testid="stButton"] > button:focus, 
-        div[data-testid="stButton"] > button:active, 
-        div[data-testid="stButton"] > button:focus-visible,
-        div[data-testid="stButton"] > button:focus:not(:active),
-        button[kind="secondary"]:focus,
-        button[kind="primary"]:focus,
-        .stButton button:focus {
-            box-shadow: none !important;
-            outline: none !important;
-            border-color: #555555 !important;
+        /* クリック直後の残像（赤いボーダー等）を元に戻す */
+        html body .stApp .main [data-testid="stButton"] button:focus,
+        html body .stApp .main [data-testid="stButton"] button:active,
+        html body .stApp .main [data-testid="stButton"] button:focus-visible,
+        html body .stApp .main [data-testid="stButton"] button:focus:not(:active) {
+            border: 1px solid #555555 !important;
             background-color: #333333 !important;
             color: white !important;
+            box-shadow: none !important;
+            outline: none !important;
         }
-        
-        .main div[data-testid="stButton"] > button:focus, 
-        .main div[data-testid="stButton"] > button:active {
-            border-color: #555555 !important;
-            background-color: #333333 !important;
+
+        /* モバイル端末でのタップ時のチカチカも消す */
+        * {
+            -webkit-tap-highlight-color: transparent !important;
         }
-        
-        * { -webkit-tap-highlight-color: transparent !important; }
 
         /* 💡 3色角丸カセット（カードデザイン） */
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #ea4335; }
@@ -166,6 +174,7 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
         .cassette-blue, .cassette-blue *, .cassette-blue strong, .cassette-blue p, .cassette-blue div { color: #000000 !important; }
         
+        /* 入力フォームの背景が見えなくなるのを防ぐ調整 */
         .stTextInput input, .stSelectbox div, .stMultiSelect div, .stTextArea textarea {
             background-color: #222222 !important;
             color: #ffffff !important;
@@ -250,7 +259,7 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
     payload = {
-        "sendNotification": False, # トークへの通知オフ設定
+        "sendNotification": False,
         "eventComponents": [{
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text}" if note_text else f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}",
@@ -341,7 +350,6 @@ def parse_date(date_val):
         except: pass
     date_str = str(date_val).strip()
     if not date_str: return None
-    # 🚨 ここが前回Syntax Errorを起こした箇所です。完全に修正しました！🚨
     date_str = date_str.replace('.', '/').replace('-', '/').replace('年', '/').replace('月', '/').replace('日', '')
     try:
         ts = pd.to_datetime(date_str, errors='coerce')
