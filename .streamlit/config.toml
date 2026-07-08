@@ -1,0 +1,15 @@
+[theme]
+# ベースをダークモードに強制設定
+base="dark"
+
+# サイトのメイン背景色（真っ黒）
+backgroundColor="#000000"
+
+# 入力フォームやサイドバーの背景色（ダークグレー）
+secondaryBackgroundColor="#222222"
+
+# 文字色（真っ白）
+textColor="#ffffff"
+
+# アクセントカラー（青）
+primaryColor="#4285f4"
