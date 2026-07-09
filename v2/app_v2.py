@@ -32,7 +32,7 @@ st.markdown("""
             color: #ffffff !important;
         }
         
-        /* メインエリアの全体的な文字サイズを調整 */
+        /* メインエリアの全体的な文字サイズを調整(0.82rem) */
         .main .block-container p, .main .block-container div, .main .block-container span {
             font-size: 0.82rem !important;
         }
@@ -62,20 +62,33 @@ st.markdown("""
             box-shadow: transparent 0px 0px 0px 0px !important;
             outline: none !important;
         }
+        
+        /* 🚨【サイドバー圧縮】エキスパンダー見出しの上下余白を削る */
         [data-testid="stSidebar"] [data-testid="stExpander"] summary {
             padding-left: 0px !important;
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
             font-size: 0.95rem !important;
             font-weight: bold !important;
-            padding-bottom: 5px !important;
+            min-height: 2rem !important;
         }
         [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
             color: #dddddd !important;
         }
+        
+        /* 🚨【サイドバー圧縮】エキスパンダーの中身やブロック間の隙間をゼロに */
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-            gap: 0.1rem !important; 
+            gap: 0rem !important; 
+        }
+        [data-testid="stSidebar"] .element-container {
+            margin-bottom: 0px !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] {
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
         }
 
-        /* 🚨 サイドバー内のボタン（絶対左寄せ・透明・光り無し）🚨 */
+        /* 🚨【サイドバー圧縮】ボタンの高さと余白を極限まで削る */
         [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important; padding: 0 !important; width: 100% !important;
         }
@@ -83,27 +96,33 @@ st.markdown("""
             background-color: transparent !important;
             border: none !important;
             display: flex !important;
-            justify-content: flex-start !important; /* ボタン全体を左寄せ */
-            padding: 4px 0px 4px 10px !important; 
+            justify-content: flex-start !important;
+            padding: 0px 0px 0px 10px !important; /* 上下のpaddingを0に */
             margin: 0 !important;
             box-shadow: transparent 0px 0px 0px 0px !important;
             outline: none !important;
             width: 100% !important;
+            height: 1.6rem !important;     /* 高さをギリギリまで低く */
+            min-height: 1.6rem !important;
         }
         
-        /* 🚨【超修正】ボタンの中にある透明な箱も強制的に横幅100%にして左寄せにする 🚨 */
+        /* ボタンの中にある透明な箱も強制的に横幅100%にして左寄せ＆余白ゼロ */
         [data-testid="stSidebar"] div[data-testid="stButton"] > button > div,
         [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div {
             width: 100% !important;
             display: flex !important;
-            justify-content: flex-start !important; /* テキストの箱を左寄せ */
+            justify-content: flex-start !important;
             align-items: center !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button p {
-            text-align: left !important; /* 文字自体を左寄せ */
+            text-align: left !important;
             color: #ffffff !important;
             margin: 0 !important;
+            padding: 0 !important;
             width: 100% !important;
+            line-height: 1 !important; /* 行高を極小に */
         }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
