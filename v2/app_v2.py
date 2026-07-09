@@ -32,7 +32,7 @@ st.markdown("""
             color: #ffffff !important;
         }
         
-        /* 🚨 メインエリアの全体的な文字サイズをもう一回り小さく調整(0.82rem) 🚨 */
+        /* メインエリアの全体的な文字サイズを調整 */
         .main .block-container p, .main .block-container div, .main .block-container span {
             font-size: 0.82rem !important;
         }
@@ -75,7 +75,7 @@ st.markdown("""
             gap: 0.1rem !important; 
         }
 
-        /* サイドバー内のボタン（絶対左寄せ・透明・光り無し） */
+        /* 🚨 サイドバー内のボタン（絶対左寄せ・透明・光り無し）🚨 */
         [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important; padding: 0 !important; width: 100% !important;
         }
@@ -83,17 +83,27 @@ st.markdown("""
             background-color: transparent !important;
             border: none !important;
             display: flex !important;
-            justify-content: flex-start !important;
+            justify-content: flex-start !important; /* ボタン全体を左寄せ */
             padding: 4px 0px 4px 10px !important; 
             margin: 0 !important;
             box-shadow: transparent 0px 0px 0px 0px !important;
             outline: none !important;
             width: 100% !important;
         }
+        
+        /* 🚨【超修正】ボタンの中にある透明な箱も強制的に横幅100%にして左寄せにする 🚨 */
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div,
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div {
+            width: 100% !important;
+            display: flex !important;
+            justify-content: flex-start !important; /* テキストの箱を左寄せ */
+            align-items: center !important;
+        }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button p {
-            text-align: left !important;
+            text-align: left !important; /* 文字自体を左寄せ */
             color: #ffffff !important;
             margin: 0 !important;
+            width: 100% !important;
         }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
@@ -205,31 +215,28 @@ st.markdown("""
             margin-bottom: 15px !important;
         }
 
-        /* 🚨【限界圧縮】テーブル内のパーツ間の隙間（行間）を極限まで狭くする指定 🚨 */
+        /* テーブル内のパーツ間の隙間（行間）を極限まで狭くする指定 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] {
             gap: 0rem !important; 
         }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] {
-            margin-bottom: -10px !important;  /* さっきよりさらにマイナスを大きくして圧縮 */
+            margin-bottom: -10px !important;  
             margin-top: -10px !important;
-            align-items: center !important;   /* 縦ズレ防止 */
+            align-items: center !important;   
         }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div.element-container {
             margin-bottom: 0px !important;
         }
-        /* 行内の文字の行高も削る */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) p {
             margin-bottom: 0px !important;
             padding-bottom: 0px !important;
             line-height: 1.1 !important;
         }
-        /* ボタンが行を押し広げないようにさらに小さく */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button {
             height: 1.4rem !important;
             min-height: 1.4rem !important;
             padding: 0px 5px !important;
         }
-        /* 破線の余白をほぼゼロに */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr {
             margin-top: 2px !important;
             margin-bottom: 2px !important;
