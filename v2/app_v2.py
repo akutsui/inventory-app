@@ -32,13 +32,15 @@ st.markdown("""
             color: #ffffff !important;
         }
         
-        /* メインエリアの全体的な文字サイズを少し小さく調整 */
-        .main .block-container p, .main .block-container div {
-            font-size: 0.9rem !important;
+        /* 🚨【修正】メインエリアの全体的な文字サイズをもう一回り小さく調整(0.9rem -> 0.82rem) 🚨 */
+        .main .block-container p, .main .block-container div, .main .block-container span {
+            font-size: 0.82rem !important;
         }
+        .main h1 { font-size: 1.8rem !important; }
+        .main h2 { font-size: 1.3rem !important; }
         .main h3 {
-            font-size: 1.3rem !important;
-            margin-bottom: 0.5rem !important;
+            font-size: 1.15rem !important;
+            margin-bottom: 0.4rem !important;
         }
 
         /* --- 左側サイドバー --- */
@@ -112,7 +114,7 @@ st.markdown("""
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
         html body .stApp div[role="dialog"] div[data-testid="stFormSubmitButton"] > button { 
-            height: 1.8rem !important; 
+            height: 1.6rem !important;  /* 画面全体のサイズ縮小に合わせて少し低く調整 */
             background-color: #ffffff !important;  
             background: #ffffff !important;
             color: #000000 !important;             
@@ -130,6 +132,7 @@ st.markdown("""
         html body .stApp div[role="dialog"] div[data-testid="stFormSubmitButton"] > button * {
             color: #000000 !important;
             font-weight: bold !important;
+            font-size: 0.8rem !important;
         }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button:hover,
@@ -157,7 +160,7 @@ st.markdown("""
             outline: none !important;
         }
 
-        /* 🚨 入力フォーム・プルダウンをグレー地（#222222）＋白文字に完全統一 🚨 */
+        /* 入力フォーム・プルダウンをグレー地（#222222）＋白文字に完全統一 */
         html body .stApp div[data-testid="stTextInput"] input, 
         html body .stApp div[data-testid="stTextArea"] textarea,
         html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"],
@@ -179,7 +182,7 @@ st.markdown("""
         html body .stApp ul[role="listbox"] li, html body .stApp ul[data-baseweb="menu"] li { background-color: #333333 !important; color: #ffffff !important; }
         html body .stApp ul[role="listbox"] li:hover, html body .stApp ul[data-baseweb="menu"] li:hover { background-color: #555555 !important; }
 
-        /* 🚨【検索ワード入力欄だけ白地に黒文字にする特例】🚨 */
+        /* 検索ワード入力欄だけ白地に黒文字にする特例 */
         html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"] {
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -193,25 +196,40 @@ st.markdown("""
             font-weight: normal !important;
         }
 
-        /* 🚨【一覧テーブルの背景をサイドバーと同じグレー(#7f7f7f)にする魔法】🚨 */
+        /* 一覧テーブルの背景をサイドバーと同じグレー(#7f7f7f)にする魔法 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) {
             background-color: #7f7f7f !important;
-            padding: 20px 25px !important;
-            border-radius: 10px !important;
-            margin-top: 10px !important;
-            margin-bottom: 20px !important;
-            box-shadow: 0 4px 6px rgba(255,255,255,0.05) !important;
+            padding: 10px 15px !important;  /* 🚨【修正】全体の行間を狭めるため内側の余白を圧縮 */
+            border-radius: 8px !important;
+            margin-top: 8px !important;
+            margin-bottom: 15px !important;
+        }
+
+        /* 🚨【超重要・修正】テーブル内のパーツ間の隙間（行間）を極限まで狭くする指定 🚨 */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] {
+            gap: 0rem !important;  /* ブロック間の隙間をゼロに */
+        }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] {
+            margin-bottom: -4px !important;  /* 🚨 1行ずつの高さをギリギリまで上に詰める */
+            margin-top: -4px !important;
+        }
+        
+        /* 🚨 行を区切る波線の上下余白を無くしてさらに詰め詰めに */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr {
+            margin-top: 2px !important;
+            margin-bottom: 4px !important;
+            border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; /* 視認性を上げるため線を少し細く調整 */
         }
 
         /* スマホ等のタップハイライト除去 */
         * { -webkit-tap-highlight-color: transparent !important; }
 
         /* 💡 3色角丸カセット（カードデザイン） */
-        .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #ea4335; }
+        .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #ea4335; }
         html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
-        .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #34a853; }
+        .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #34a853; }
         html body .stApp .cassette-green, html body .stApp .cassette-green * { color: #a51d24 !important; }
-        .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
+        .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
 
         hr { border-top: 1px solid #333333 !important; }
@@ -651,7 +669,7 @@ try:
                         c[3].write(row.get('利用者', ''))
                         c[4].write(row.get('ステータス', ''))
                         c[5].write(row.get('購入日', row.get('登録番号', '')))
-                        st.markdown("<hr style='border-top:1px dashed #eeeeee;'>", unsafe_allow_html=True)
+                        st.markdown("<hr>", unsafe_allow_html=True)
 
         with main_tab2:
             if st.session_state.zaiko_reg_success:
@@ -702,7 +720,7 @@ try:
                     hc[3].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>端末</span>", unsafe_allow_html=True)
                     hc[4].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>有効期限</span>", unsafe_allow_html=True)
                     hc[5].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>備考</span>", unsafe_allow_html=True)
-                    st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #eeeeee;'>", unsafe_allow_html=True)
+                    st.markdown("<hr>", unsafe_allow_html=True)
                     for index, row in df_cert.iterrows():
                         c = st.columns([0.8, 1, 2, 2, 2, 3])
                         if c[0].button("詳細", key=f"cert_btn_{index}"): show_cert_dialog(row)
@@ -717,7 +735,7 @@ try:
                             else: c[4].write(row.get('有効期限'))
                         else: c[4].write(row.get('有効期限', ''))
                         c[5].write(str(row.get('備考', '')))
-                        st.markdown("<hr style='border-top:1px dashed #cccccc;'>", unsafe_allow_html=True)
+                        st.markdown("<hr>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。")
         with t2:
@@ -749,7 +767,7 @@ try:
                         c[3].write(row.get('フリガナ',''))
                         c[4].write(row.get('入職日',''))
                         c[5].write(row.get('ステータス',''))
-                        st.markdown("<hr style='border-top:1px dashed #eeeeee;'>", unsafe_allow_html=True)
+                        st.markdown("<hr>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。")
         with t2:
@@ -791,7 +809,7 @@ try:
                     hc[6].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>優先度</span>", unsafe_allow_html=True)
                     hc[7].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>状態</span>", unsafe_allow_html=True)
                     hc[8].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>クイック更新</span>", unsafe_allow_html=True)
-                    st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #eeeeee;'>", unsafe_allow_html=True)
+                    st.markdown("<hr>", unsafe_allow_html=True)
 
                     for index, row in df_task.iterrows():
                         c = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
@@ -822,7 +840,7 @@ try:
                                 if update_task_status(row.get('ID'), "未着手"):
                                     get_all_data.clear() # キャッシュクリア
                                     st.rerun()
-                        st.markdown("<hr style='border-top:1px dashed #cccccc;'>", unsafe_allow_html=True)
+                        st.markdown("<hr>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。")
         with task_tab2:
