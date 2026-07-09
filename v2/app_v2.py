@@ -209,9 +209,7 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
     }
     res = requests.post(url, headers=headers, json=payload)
     if res.status_code in [200, 201]:
-        try:
-            # 発行されたイベントID(カレンダー側の固有識別子)を返す
-            return res.json().get("eventComponents", [{}])[0].get("eventId")
+        try: return res.json().get("eventComponents", [{}])[0].get("eventId")
         except: return "SUCCESS_BUT_NO_ID"
     return None
 
@@ -237,6 +235,20 @@ def update_lineworks_calendar_event(event_id, task_name, assignee_str, deadline_
     res = requests.put(url, headers=headers, json=payload)
     return res.status_code in [200, 204]
 
+# 👑 🌟【新機能】予定の削除 (DELETE)
+def delete_lineworks_calendar_event(event_id):
+    if not event_id or event_id in ["", "SUCCESS_BUT_NO_ID"]: return False
+    token = get_lineworks_token()
+    if not token: return False
+    calendar_id = st.secrets["lineworks"].get("calendar_id")
+    
+    url = f"https://www.worksapis.com/v1.0/users/{st.secrets['lineworks']['service_account']}/calendars/{calendar_id}/events/{event_id}"
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    res = requests.delete(url, headers=headers)
+    return res.status_code in [200, 204]
+
+# 👑 🌟【超修正】タスクのステータス更新＆カレンダー削除連動
 def update_task_status(task_id, new_status):
     if not task_id or pd.isna(task_id): return False
     try:
@@ -244,8 +256,20 @@ def update_task_status(task_id, new_status):
         headers = worksheet.row_values(1)
         id_col_idx = headers.index("ID") + 1
         status_col_idx = headers.index("ステータス") + 1
+        
         cell = worksheet.find(str(task_id), in_column=id_col_idx)
         if cell:
+            # タスクが「完了」になったらカレンダーから削除する処理を挟む
+            if new_status == "完了" and "イベントID" in headers:
+                event_col_idx = headers.index("イベントID") + 1
+                event_id = worksheet.cell(cell.row, event_col_idx).value
+                if event_id:
+                    # LINE WORKSのカレンダーから予定を消去
+                    delete_lineworks_calendar_event(event_id)
+                    # カレンダーから消したため、スプシ側のイベントIDも空欄（ブランク）に更新
+                    worksheet.update_cell(cell.row, event_col_idx, "")
+            
+            # ステータスの更新を実行
             worksheet.update_cell(cell.row, status_col_idx, new_status)
             return True
     except: pass
@@ -403,13 +427,12 @@ def show_cert_dialog(row_data):
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
             st.rerun()
 
-# 🚨【超修正】タスクの編集ポップアップ 🚨
+# 👑 タスクの編集ポップアップ 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
         new_name = st.text_input("タスク名", value=row_data.get('タスク名', ''))
         
-        # 💡【機能拡張】作成者もセレクトボックスから変更可能に！
         curr_creator = row_data.get('作成者', '')
         new_creator = st.selectbox("作成者", options=USER_OPTIONS, index=USER_OPTIONS.index(curr_creator) if curr_creator in USER_OPTIONS else 0)
         
@@ -435,7 +458,6 @@ def show_task_dialog(row_data):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
             headers = worksheet.row_values(1)
             
-            # もしスプシに「イベントID」を記録する列（例: J列）がなければ自動で作るためのインデックス確認
             if "イベントID" not in headers:
                 worksheet.update_cell(1, len(headers) + 1, "イベントID")
                 headers.append("イベントID")
@@ -444,7 +466,6 @@ def show_task_dialog(row_data):
             cell = worksheet.find(str(row_data.get('ID', '')), in_column=id_col_idx)
             
             if cell:
-                # 既存の行データを取得し、辞書化
                 existing_row = worksheet.row_values(cell.row)
                 while len(existing_row) < len(headers): existing_row.append("")
                 row_dict = dict(zip(headers, existing_row))
@@ -453,20 +474,20 @@ def show_task_dialog(row_data):
                 new_watchers_str = ", ".join(sel_watchers)
                 new_limit_str = str(new_limit) if new_limit else ""
                 
-                # 💡【機能拡張】LINE WORKSカレンダーへ予定の更新(PUT)または新規登録(POST)を送る
                 event_id = row_dict.get("イベントID", "").strip()
                 
-                if new_limit_str: # 期限がある場合のみカレンダー処理を行う
+                # 詳細ポップアップから「完了」に変更された場合もカレンダーから予定を消去する
+                if new_status == "完了" and event_id:
+                    delete_lineworks_calendar_event(event_id)
+                    event_id = "" # カレンダーから削除したのでIDを空にする
+                elif new_limit_str: # 完了以外で期限がある場合のみカレンダー処理を行う
                     if event_id and event_id != "SUCCESS_BUT_NO_ID":
-                        # ① 既存の予定があれば、日付や担当者を上書き変更(PUT)
                         update_lineworks_calendar_event(event_id, new_name, new_assignee_str, new_limit_str, new_pri, new_note, new_creator)
                     else:
-                        # ② カレンダー登録がまだ無かった場合は、新規登録してイベントIDを採番(POST)
                         creator_id = LINEWORKS_USER_MAP.get(new_creator)
                         new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
                         if new_event_id: event_id = new_event_id
                 
-                # スプシ保存用データ更新
                 row_dict["タスク名"] = new_name
                 row_dict["作成者"] = new_creator
                 row_dict["担当者"] = new_assignee_str
@@ -722,6 +743,8 @@ try:
                         else: c[5].write(row.get('期限', ''))
                         c[6].write(row.get('優先度', ''))
                         c[7].write(row.get('ステータス', ''))
+                        
+                        # 💡 クイック完了/未完了ボタンを押した時もカレンダー連動の関数（update_task_status）を通過させます
                         if current_status != '完了':
                             if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                                 if update_task_status(row.get('ID'), "完了"): get_all_data.clear(); st.rerun()
@@ -761,7 +784,6 @@ try:
                                 hidden_task_id = generate_auto_id(df_task, "T")
                                 creator_id = LINEWORKS_USER_MAP.get(task_creator)
                                 
-                                # 💡 カレンダー登録を行い、イベントIDを確保する
                                 event_id = ""
                                 if task_limit:
                                     res_id = register_lineworks_calendar_event(task_name, task_assignee, str(task_limit), task_pri, task_note, creator_id, task_creator)
