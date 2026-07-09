@@ -109,7 +109,7 @@ st.markdown("""
             outline: none !important;
         }
         
-        /* メインエリア・ダイアログのボタンを「白地・黒文字」に完全固定 */
+        /* 🚨【ボタン完全固定】メインエリア・ダイアログのボタンを「白地・黒文字」に🚨 */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
@@ -127,7 +127,7 @@ st.markdown("""
             transition: none !important;           
         }
         
-        /* ボタンの中の文字を絶対に黒で太字に */
+        /* ボタンの中の文字を絶対に黒で太字にする */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button *,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *,
@@ -165,9 +165,7 @@ st.markdown("""
             outline: none !important;
         }
 
-        /* 🚨【超修正】入力フォーム・プルダウンをグレー地（#222222）＋白文字に完全統一🚨 */
-        
-        /* 1. テキスト入力・テキストエリア・日付の背景をグレーに */
+        /* 🚨【入力フォーム完全固定】テキスト・日付・プルダウンを最強優先度でグレー地に🚨 */
         html body .stApp div[data-testid="stTextInput"] input, 
         html body .stApp div[data-testid="stTextArea"] textarea,
         html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"],
@@ -178,33 +176,22 @@ st.markdown("""
             -webkit-text-fill-color: #ffffff !important;
         }
         
-        /* 2. セレクトボックス(単一)・マルチセレクト(複数)の大枠をグレーに */
-        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-        html body .stApp div[data-testid="stMultiSelect"] div[data-baseweb="select"] > div {
+        /* セレクトボックス・マルチセレクトの大枠 */
+        html body .stApp div[data-baseweb="select"] > div {
             background-color: #222222 !important;
             border: 1px solid #555555 !important;
         }
-
-        /* 3. 【これが原因】セレクトボックスの内側にある「見えない白い箱」を強制的にグレーで塗りつぶす */
-        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div,
-        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div {
-            background-color: #222222 !important;
-            color: #ffffff !important;
-        }
-
-        /* 中の文字を白に、余計な背景を透明に */
+        /* 中の文字を白にし、邪魔な白背景を透明化 */
         html body .stApp div[data-baseweb="select"] span,
-        html body .stApp div[data-baseweb="select"] div[aria-selected="true"] {
+        html body .stApp div[data-baseweb="select"] div[aria-selected="true"],
+        html body .stApp div[data-baseweb="select"] * {
             color: #ffffff !important;
             background-color: transparent !important;
         }
-        
         /* プレースホルダー（Choose options等） */
         html body .stApp div[data-baseweb="select"] div[aria-placeholder] {
             color: #aaaaaa !important;
-            background-color: transparent !important;
         }
-        
         /* プルダウンの▼アイコン */
         html body .stApp div[data-baseweb="select"] svg {
             fill: #ffffff !important;
@@ -217,10 +204,9 @@ st.markdown("""
         }
         html body .stApp span[data-baseweb="tag"] * {
             color: #ffffff !important;
-            background-color: transparent !important;
         }
 
-        /* プルダウンを開いた時の選択肢リスト（ul/li）のダーク化 */
+        /* プルダウンの選択肢リスト */
         html body .stApp ul[role="listbox"], 
         html body .stApp ul[data-baseweb="menu"] {
             background-color: #333333 !important;
@@ -242,13 +228,13 @@ st.markdown("""
 
         /* 💡 3色角丸カセット（カードデザイン） */
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #ea4335; }
-        .cassette-orange * { color: #a51d24 !important; }
+        html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
         
         .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #34a853; }
-        .cassette-green * { color: #000000 !important; }
+        html body .stApp .cassette-green, html body .stApp .cassette-green * { color: #a51d24 !important; } /* ← ご要望通り赤色（濃い赤）に固定！ */
 
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
-        .cassette-blue * { color: #000000 !important; }
+        html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; } /* ← 白に負けないように黒文字に固定！ */
 
         hr { border-top: 1px solid #333333 !important; }
     </style>
