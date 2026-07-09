@@ -659,13 +659,20 @@ try:
                         c[1].write(str(row.get('ID', '')))
                         c[2].write(f"**{safe_text(row.get('種類', ''))}**")
                         c[3].write(str(row.get('端末', '')))
+                        
+                        # 💡 枠を使わずに文字色だけを変えるように修正（電子証明書）
                         dt = parse_date(row.get('有効期限'))
                         if dt:
                             diff = (dt.date() - datetime.now().date()).days
-                            if diff < 0: c[4].error(f"{row.get('有効期限')} (超過)")
-                            elif diff <= 75: c[4].warning(f"{row.get('有効期限')} (あと{diff}日)")
-                            else: c[4].write(row.get('有効期限'))
-                        else: c[4].write(row.get('有効期限', ''))
+                            if diff < 0:
+                                c[4].markdown(f"<span style='color:#ff4b4b; font-weight:bold;'>{row.get('有効期限')} (超過)</span>", unsafe_allow_html=True)
+                            elif diff <= 75:
+                                c[4].markdown(f"<span style='color:#faca2b; font-weight:bold;'>{row.get('有効期限')} (あと{diff}日)</span>", unsafe_allow_html=True)
+                            else:
+                                c[4].write(row.get('有効期限'))
+                        else:
+                            c[4].write(row.get('有効期限', ''))
+                            
                         c[5].write(str(row.get('備考', '')))
                         st.markdown("<hr>", unsafe_allow_html=True)
             else: st.info("データがありません。")
@@ -715,7 +722,7 @@ try:
     # ==========================================
     elif page_selection == "📋 タスク管理":
         st.header("📋 タスク管理")
-        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新タスク登録"])
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
         df_task = get_task_data()
         with task_tab1:
             if not df_task.empty:
@@ -740,14 +747,19 @@ try:
                             c[3].write(str(row.get('担当者', '')))
                             c[4].write(str(row.get('関係者', '')))
                             
+                            # 💡 枠を使わずに文字色だけを変えるように修正（タスク管理）
                             dt = parse_date(row.get('期限'))
                             current_status = str(row.get('ステータス', '')).strip()
                             if dt and current_status != '完了':
                                 diff = (dt.date() - datetime.now().date()).days
-                                if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
-                                elif diff <= 3: c[5].warning(f"{row.get('期限')} (あと{diff}日)")
-                                else: c[5].write(row.get('期限'))
-                            else: c[5].write(row.get('期限', ''))
+                                if diff < 0:
+                                    c[5].markdown(f"<span style='color:#ff4b4b; font-weight:bold;'>{row.get('期限')} (超過)</span>", unsafe_allow_html=True)
+                                elif diff <= 3:
+                                    c[5].markdown(f"<span style='color:#faca2b; font-weight:bold;'>{row.get('期限')} (あと{diff}日)</span>", unsafe_allow_html=True)
+                                else:
+                                    c[5].write(row.get('期限'))
+                            else:
+                                c[5].write(row.get('期限', ''))
                             
                             c[6].write(row.get('優先度', ''))
                             c[7].write(row.get('ステータス', ''))
