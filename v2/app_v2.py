@@ -63,7 +63,7 @@ st.markdown("""
             outline: none !important;
         }
         
-        /* 🚨【サイドバー圧縮】エキスパンダー見出しの上下余白を削る */
+        /* サイドバー圧縮：エキスパンダー見出しの上下余白を削る */
         [data-testid="stSidebar"] [data-testid="stExpander"] summary {
             padding-left: 0px !important;
             padding-top: 0px !important;
@@ -76,7 +76,7 @@ st.markdown("""
             color: #dddddd !important;
         }
         
-        /* 🚨【サイドバー圧縮】エキスパンダーの中身やブロック間の隙間をゼロに */
+        /* サイドバー圧縮：エキスパンダーの中身やブロック間の隙間をゼロに */
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
             gap: 0rem !important; 
         }
@@ -88,7 +88,7 @@ st.markdown("""
             padding-bottom: 0px !important;
         }
 
-        /* 🚨【サイドバー圧縮】ボタンの高さと余白を極限まで削る */
+        /* サイドバー圧縮：ボタンの高さと余白を極限まで削る */
         [data-testid="stSidebar"] div[data-testid="stButton"] {
             margin: 0 !important; padding: 0 !important; width: 100% !important;
         }
@@ -97,12 +97,12 @@ st.markdown("""
             border: none !important;
             display: flex !important;
             justify-content: flex-start !important;
-            padding: 0px 0px 0px 10px !important; /* 上下のpaddingを0に */
+            padding: 0px 0px 0px 10px !important; 
             margin: 0 !important;
             box-shadow: transparent 0px 0px 0px 0px !important;
             outline: none !important;
             width: 100% !important;
-            height: 1.6rem !important;     /* 高さをギリギリまで低く */
+            height: 1.6rem !important;     
             min-height: 1.6rem !important;
         }
         
@@ -122,7 +122,7 @@ st.markdown("""
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
-            line-height: 1 !important; /* 行高を極小に */
+            line-height: 1 !important; 
         }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
@@ -234,7 +234,7 @@ st.markdown("""
             margin-bottom: 15px !important;
         }
 
-        /* テーブル内のパーツ間の隙間（行間）を極限まで狭くする指定 */
+        /* 🚨【追加】テーブル内のパーツ間の隙間（行間）を極限まで狭くする指定 🚨 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] {
             gap: 0rem !important; 
         }
@@ -246,11 +246,24 @@ st.markdown("""
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div.element-container {
             margin-bottom: 0px !important;
         }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) p {
+        
+        /* 🚨【重要・追加】テキストの折り返し（改行）を絶対に禁止する 🚨 */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) p,
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stMarkdownContainer"] {
             margin-bottom: 0px !important;
             padding-bottom: 0px !important;
             line-height: 1.1 !important;
+            white-space: nowrap !important;       /* ← ここで改行を禁止！ */
+            overflow: hidden !important;          /* ← はみ出た部分は隠す！ */
+            text-overflow: ellipsis !important;   /* ← 隠れた部分は「...」で省略！ */
         }
+        
+        /* 🚨【重要・追加】ボタン内の文字の折り返しも絶対に禁止する 🚨 */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button p,
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button * {
+            white-space: nowrap !important;
+        }
+
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button {
             height: 1.4rem !important;
             min-height: 1.4rem !important;
