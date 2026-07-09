@@ -213,29 +213,7 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
         except: return "SUCCESS_BUT_NO_ID"
     return None
 
-# 👑 予定の修正・日付変更 (PUT)
-def update_lineworks_calendar_event(event_id, task_name, assignee_str, deadline_date, task_pri, note_text, creator_name):
-    if not event_id or event_id == "SUCCESS_BUT_NO_ID": return False
-    token = get_lineworks_token()
-    if not token: return False
-    calendar_id = st.secrets["lineworks"].get("calendar_id")
-    
-    url = f"https://www.worksapis.com/v1.0/users/{st.secrets['lineworks']['service_account']}/calendars/{calendar_id}/events/{event_id}"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    
-    payload = {
-        "sendNotification": False,
-        "eventComponents": [{
-            "eventId": event_id,
-            "summary": f"【タスク】{task_name}",
-            "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text or ''}",
-            "start": {"date": deadline_date}, "end": {"date": deadline_date}
-        }]
-    }
-    res = requests.put(url, headers=headers, json=payload)
-    return res.status_code in [200, 204]
-
-# 👑 🌟【新機能】予定の削除 (DELETE)
+# 👑 予定の削除 (DELETE)
 def delete_lineworks_calendar_event(event_id):
     if not event_id or event_id in ["", "SUCCESS_BUT_NO_ID"]: return False
     token = get_lineworks_token()
@@ -259,17 +237,13 @@ def update_task_status(task_id, new_status):
         
         cell = worksheet.find(str(task_id), in_column=id_col_idx)
         if cell:
-            # タスクが「完了」になったらカレンダーから削除する処理を挟む
             if new_status == "完了" and "イベントID" in headers:
                 event_col_idx = headers.index("イベントID") + 1
                 event_id = worksheet.cell(cell.row, event_col_idx).value
                 if event_id:
-                    # LINE WORKSのカレンダーから予定を消去
                     delete_lineworks_calendar_event(event_id)
-                    # カレンダーから消したため、スプシ側のイベントIDも空欄（ブランク）に更新
                     worksheet.update_cell(cell.row, event_col_idx, "")
             
-            # ステータスの更新を実行
             worksheet.update_cell(cell.row, status_col_idx, new_status)
             return True
     except: pass
@@ -297,7 +271,7 @@ def get_all_data():
 
 def generate_auto_id(df_target, prefix, id_col='ID'):
     if df_target is None or df_target.empty: return f"{prefix}0001"
-    max_num = 0
+max_num = 0
     if id_col in df_target.columns:
         for val in df_target[id_col].astype(str):
             val = val.strip()
@@ -427,7 +401,7 @@ def show_cert_dialog(row_data):
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
             st.rerun()
 
-# 👑 タスクの編集ポップアップ 
+# 👑 🌟【超重要・修正】タスクの編集ポップアップ 🌟
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
@@ -476,17 +450,20 @@ def show_task_dialog(row_data):
                 
                 event_id = row_dict.get("イベントID", "").strip()
                 
-                # 詳細ポップアップから「完了」に変更された場合もカレンダーから予定を消去する
-                if new_status == "完了" and event_id:
-                    delete_lineworks_calendar_event(event_id)
-                    event_id = "" # カレンダーから削除したのでIDを空にする
-                elif new_limit_str: # 完了以外で期限がある場合のみカレンダー処理を行う
-                    if event_id and event_id != "SUCCESS_BUT_NO_ID":
-                        update_lineworks_calendar_event(event_id, new_name, new_assignee_str, new_limit_str, new_pri, new_note, new_creator)
-                    else:
-                        creator_id = LINEWORKS_USER_MAP.get(new_creator)
-                        new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
-                        if new_event_id: event_id = new_event_id
+                if new_status == "完了":
+                    # ステータスが完了の場合、既存の予定を消去
+                    if event_id: delete_lineworks_calendar_event(event_id)
+                    event_id = ""
+                elif new_limit_str:
+                    # 💡【重要・日付移動バグ修正】：スクラップ＆ビルド方式を採用
+                    # 日付変更による複製バグを防ぐため、古い日付の予定（既存event_id）を一度「削除」してから新規でカレンダーに再登録します
+                    if event_id:
+                        delete_lineworks_calendar_event(event_id)
+                        event_id = ""
+                    
+                    creator_id = LINEWORKS_USER_MAP.get(new_creator)
+                    new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
+                    if new_event_id: event_id = new_event_id
                 
                 row_dict["タスク名"] = new_name
                 row_dict["作成者"] = new_creator
@@ -501,7 +478,7 @@ def show_task_dialog(row_data):
                 row_to_save = [row_dict.get(h, "") for h in headers]
                 worksheet.update(f"A{cell.row}", [row_to_save])
                 
-                st.toast("スプレッドシートとLINE WORKSカレンダーを更新しました！", icon="📅")
+                st.toast("スプレッドシートとLINE WORKSカレンダーを完全に同期しました！", icon="📅")
                 get_all_data.clear(); st.rerun()
 
 # ==========================================
@@ -744,7 +721,6 @@ try:
                         c[6].write(row.get('優先度', ''))
                         c[7].write(row.get('ステータス', ''))
                         
-                        # 💡 クイック完了/未完了ボタンを押した時もカレンダー連動の関数（update_task_status）を通過させます
                         if current_status != '完了':
                             if c[8].button("✅ 完了にする", key=f"comp_{index}"):
                                 if update_task_status(row.get('ID'), "完了"): get_all_data.clear(); st.rerun()
