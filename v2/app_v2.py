@@ -87,10 +87,10 @@ st.markdown("""
             box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; transition: none !important;           
         }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *,
-        html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button *,
+        html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *,
-        html body .stApp div[role="dialog"] div[data-testid="stFormSubmitButton"] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stFormSubmitButton"] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
+        html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
+        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
         
         html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; -webkit-text-fill-color: #ffffff !important; }
         html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
@@ -226,7 +226,7 @@ def delete_lineworks_calendar_event(event_id):
     res = requests.delete(url, headers=headers)
     return res.status_code in [200, 204]
 
-# 👑 🌟【超修正】タスクのステータス更新＆カレンダー削除連動
+# 👑 タスクのステータス更新＆カレンダー削除連動
 def update_task_status(task_id, new_status):
     if not task_id or pd.isna(task_id): return False
     try:
@@ -269,9 +269,10 @@ def get_all_data():
         if 'ID' in df.columns: df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
     return df
 
+# 💡【インデント修正箇所】きれいに整えました！
 def generate_auto_id(df_target, prefix, id_col='ID'):
     if df_target is None or df_target.empty: return f"{prefix}0001"
-max_num = 0
+    max_num = 0
     if id_col in df_target.columns:
         for val in df_target[id_col].astype(str):
             val = val.strip()
@@ -401,7 +402,7 @@ def show_cert_dialog(row_data):
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
             st.rerun()
 
-# 👑 🌟【超重要・修正】タスクの編集ポップアップ 🌟
+# 👑 タスクの編集ポップアップ 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
@@ -451,12 +452,9 @@ def show_task_dialog(row_data):
                 event_id = row_dict.get("イベントID", "").strip()
                 
                 if new_status == "完了":
-                    # ステータスが完了の場合、既存の予定を消去
                     if event_id: delete_lineworks_calendar_event(event_id)
                     event_id = ""
                 elif new_limit_str:
-                    # 💡【重要・日付移動バグ修正】：スクラップ＆ビルド方式を採用
-                    # 日付変更による複製バグを防ぐため、古い日付の予定（既存event_id）を一度「削除」してから新規でカレンダーに再登録します
                     if event_id:
                         delete_lineworks_calendar_event(event_id)
                         event_id = ""
