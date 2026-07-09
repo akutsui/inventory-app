@@ -188,7 +188,7 @@ def get_lineworks_token():
         else: return None
     except Exception as e: return None
 
-# 👑 予定の新規登録 (POST)
+# 👑 予定の新規登録 (POST) - 🚨 アラート通知を「なし」にする設定を追加
 def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, task_pri, note_text, creator_id, creator_name):
     token = get_lineworks_token()
     if not token: return None
@@ -204,7 +204,8 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
         "eventComponents": [{
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text or ''}",
-            "start": {"date": deadline_date}, "end": {"date": deadline_date}
+            "start": {"date": deadline_date}, "end": {"date": deadline_date},
+            "reminders": [] # 💡 ここを空欄にすることで、自動追加されるアラート通知を「なし」に強制固定します
         }]
     }
     res = requests.post(url, headers=headers, json=payload)
@@ -216,7 +217,7 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
         return event_id or "SUCCESS_BUT_NO_ID"
     return None
 
-# 👑 予定の修正・日付変更 (PUT)
+# 👑 予定の修正・日付変更 (PUT) - 🚨 アラート通知を「なし」にする設定を追加
 def update_lineworks_calendar_event(event_id, task_name, assignee_str, deadline_date, task_pri, note_text, creator_name):
     if not event_id or event_id == "SUCCESS_BUT_NO_ID": return False
     token = get_lineworks_token()
@@ -232,7 +233,8 @@ def update_lineworks_calendar_event(event_id, task_name, assignee_str, deadline_
             "eventId": event_id,
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text or ''}",
-            "start": {"date": deadline_date}, "end": {"date": deadline_date}
+            "start": {"date": deadline_date}, "end": {"date": deadline_date},
+            "reminders": [] # 💡 更新・修正時もアラート通知を「なし」にリセットします
         }]
     }
     res = requests.put(url, headers=headers, json=payload)
@@ -289,7 +291,7 @@ def get_all_data():
     if df.empty:
         df = pd.DataFrame(columns=['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '購入日', '登録番号'])
     else:
-        if 'ステータス' in df.columns: df['sort_order'] = df['ステータス'].apply(lambda x: 1 if str(x) == '廃棄' else 0)
+        if 'ステータス' in df.columns: df['sort_order'] = df['ステータas'].apply(lambda x: 1 if str(x) == '廃棄' else 0)
         else: df['sort_order'] = 0
         if 'ID' in df.columns: df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
     return df
@@ -426,7 +428,6 @@ def show_cert_dialog(row_data):
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
             st.rerun()
 
-# 👑 🌟【超進化】タスクの編集ポップアップ 🌟
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
@@ -481,18 +482,14 @@ def show_task_dialog(row_data):
                     event_id = ""
                 elif new_limit_str:
                     if event_id and event_id != "SUCCESS_BUT_NO_ID":
-                        # 💡【機能改善】日付そのものが変わったかどうかを判定
                         if new_limit_str != old_limit:
-                            # ① 日付が変わった場合は、古い日付の予定を消して新規登録（増殖防止）
                             delete_lineworks_calendar_event(event_id)
                             creator_id = LINEWORKS_USER_MAP.get(new_creator)
                             new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
                             if new_event_id: event_id = new_event_id
                         else:
-                            # ② 日付はそのままで、優先度・備考・担当者など「中身」だけが変わった場合はサッと上書き更新(PUT)
                             update_lineworks_calendar_event(event_id, new_name, new_assignee_str, new_limit_str, new_pri, new_note, new_creator)
                     else:
-                        # まだカレンダーにIDが無いものは新規登録
                         creator_id = LINEWORKS_USER_MAP.get(new_creator)
                         new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
                         if new_event_id: event_id = new_event_id
@@ -762,7 +759,7 @@ try:
                             if current_status != '完了':
                                 if c[8].button("✅ 完了にする", key=f"comp_{task_id_str}"):
                                     if update_task_status(task_id_str, "完了"): get_all_data.clear(); st.rerun()
-                            else:
+                        else:
                                 if c[8].button("↩️ 未完了に戻す", key=f"rev_{task_id_str}"):
                                     if update_task_status(task_id_str, "未着手"): get_all_data.clear(); st.rerun()
                             st.markdown("<hr>", unsafe_allow_html=True)
