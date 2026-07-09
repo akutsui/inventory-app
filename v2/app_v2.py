@@ -32,7 +32,7 @@ st.markdown("""
             color: #ffffff !important;
         }
         
-        /* 🚨【修正】メインエリアの全体的な文字サイズをもう一回り小さく調整(0.9rem -> 0.82rem) 🚨 */
+        /* 🚨 メインエリアの全体的な文字サイズをもう一回り小さく調整(0.82rem) 🚨 */
         .main .block-container p, .main .block-container div, .main .block-container span {
             font-size: 0.82rem !important;
         }
@@ -114,7 +114,7 @@ st.markdown("""
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
         html body .stApp div[role="dialog"] div[data-testid="stFormSubmitButton"] > button { 
-            height: 1.6rem !important;  /* 画面全体のサイズ縮小に合わせて少し低く調整 */
+            height: 1.6rem !important; 
             background-color: #ffffff !important;  
             background: #ffffff !important;
             color: #000000 !important;             
@@ -199,26 +199,41 @@ st.markdown("""
         /* 一覧テーブルの背景をサイドバーと同じグレー(#7f7f7f)にする魔法 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) {
             background-color: #7f7f7f !important;
-            padding: 10px 15px !important;  /* 🚨【修正】全体の行間を狭めるため内側の余白を圧縮 */
+            padding: 10px 15px !important;
             border-radius: 8px !important;
             margin-top: 8px !important;
             margin-bottom: 15px !important;
         }
 
-        /* 🚨【超重要・修正】テーブル内のパーツ間の隙間（行間）を極限まで狭くする指定 🚨 */
+        /* 🚨【限界圧縮】テーブル内のパーツ間の隙間（行間）を極限まで狭くする指定 🚨 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] {
-            gap: 0rem !important;  /* ブロック間の隙間をゼロに */
+            gap: 0rem !important; 
         }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] {
-            margin-bottom: -4px !important;  /* 🚨 1行ずつの高さをギリギリまで上に詰める */
-            margin-top: -4px !important;
+            margin-bottom: -10px !important;  /* さっきよりさらにマイナスを大きくして圧縮 */
+            margin-top: -10px !important;
+            align-items: center !important;   /* 縦ズレ防止 */
         }
-        
-        /* 🚨 行を区切る波線の上下余白を無くしてさらに詰め詰めに */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div.element-container {
+            margin-bottom: 0px !important;
+        }
+        /* 行内の文字の行高も削る */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) p {
+            margin-bottom: 0px !important;
+            padding-bottom: 0px !important;
+            line-height: 1.1 !important;
+        }
+        /* ボタンが行を押し広げないようにさらに小さく */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button {
+            height: 1.4rem !important;
+            min-height: 1.4rem !important;
+            padding: 0px 5px !important;
+        }
+        /* 破線の余白をほぼゼロに */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr {
             margin-top: 2px !important;
-            margin-bottom: 4px !important;
-            border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; /* 視認性を上げるため線を少し細く調整 */
+            margin-bottom: 2px !important;
+            border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; 
         }
 
         /* スマホ等のタップハイライト除去 */
