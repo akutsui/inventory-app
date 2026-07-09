@@ -188,7 +188,6 @@ def get_lineworks_token():
         else: return None
     except Exception as e: return None
 
-# 👑 予定の新規登録 (POST) - 🚨 アラート通知を「なし」にする設定を追加
 def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, task_pri, note_text, creator_id, creator_name):
     token = get_lineworks_token()
     if not token: return None
@@ -205,7 +204,7 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text or ''}",
             "start": {"date": deadline_date}, "end": {"date": deadline_date},
-            "reminders": [] # 💡 ここを空欄にすることで、自動追加されるアラート通知を「なし」に強制固定します
+            "reminders": []
         }]
     }
     res = requests.post(url, headers=headers, json=payload)
@@ -217,7 +216,6 @@ def register_lineworks_calendar_event(task_name, assignee_str, deadline_date, ta
         return event_id or "SUCCESS_BUT_NO_ID"
     return None
 
-# 👑 予定の修正・日付変更 (PUT) - 🚨 アラート通知を「なし」にする設定を追加
 def update_lineworks_calendar_event(event_id, task_name, assignee_str, deadline_date, task_pri, note_text, creator_name):
     if not event_id or event_id == "SUCCESS_BUT_NO_ID": return False
     token = get_lineworks_token()
@@ -234,13 +232,12 @@ def update_lineworks_calendar_event(event_id, task_name, assignee_str, deadline_
             "summary": f"【タスク】{task_name}",
             "description": f"作成者: {creator_name}\n担当者: {assignee_str}\n優先度: {task_pri}\n備考: {note_text or ''}",
             "start": {"date": deadline_date}, "end": {"date": deadline_date},
-            "reminders": [] # 💡 更新・修正時もアラート通知を「なし」にリセットします
+            "reminders": []
         }]
     }
     res = requests.put(url, headers=headers, json=payload)
     return res.status_code in [200, 204]
 
-# 👑 予定の削除 (DELETE)
 def delete_lineworks_calendar_event(event_id):
     if not event_id or event_id in ["", "SUCCESS_BUT_NO_ID"]: return False
     token = get_lineworks_token()
@@ -253,7 +250,6 @@ def delete_lineworks_calendar_event(event_id):
     res = requests.delete(url, headers=headers)
     return res.status_code in [200, 204]
 
-# 👑 タスクのステータス更新＆カレンダー削除連動
 def update_task_status(task_id, new_status):
     if not task_id or pd.isna(task_id): return False
     try:
@@ -291,7 +287,7 @@ def get_all_data():
     if df.empty:
         df = pd.DataFrame(columns=['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '購入日', '登録番号'])
     else:
-        if 'ステータス' in df.columns: df['sort_order'] = df['ステータas'].apply(lambda x: 1 if str(x) == '廃棄' else 0)
+        if 'ステータス' in df.columns: df['sort_order'] = df['ステータス'].apply(lambda x: 1 if str(x) == '廃棄' else 0)
         else: df['sort_order'] = 0
         if 'ID' in df.columns: df = df.sort_values(by=['sort_order', 'ID'], ascending=[True, True])
     return df
@@ -719,7 +715,7 @@ try:
     # ==========================================
     elif page_selection == "📋 タスク管理":
         st.header("📋 タスク管理")
-        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新タスク登録"])
         df_task = get_task_data()
         with task_tab1:
             if not df_task.empty:
@@ -759,7 +755,7 @@ try:
                             if current_status != '完了':
                                 if c[8].button("✅ 完了にする", key=f"comp_{task_id_str}"):
                                     if update_task_status(task_id_str, "完了"): get_all_data.clear(); st.rerun()
-                        else:
+                            else:
                                 if c[8].button("↩️ 未完了に戻す", key=f"rev_{task_id_str}"):
                                     if update_task_status(task_id_str, "未着手"): get_all_data.clear(); st.rerun()
                             st.markdown("<hr>", unsafe_allow_html=True)
