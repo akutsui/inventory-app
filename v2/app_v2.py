@@ -100,16 +100,14 @@ st.markdown("""
             padding-left: 30px !important; 
         }
         
-        /* 🚨【ボタン光り全滅】ページ上の全ボタンのフォーカスリング（光）を強制破壊🚨 */
-        button:focus, 
-        button:active, 
-        button:focus-visible {
+        /* ボタン光り全滅 */
+        button:focus, button:active, button:focus-visible {
             box-shadow: transparent 0px 0px 0px 0px !important;
             -webkit-box-shadow: transparent 0px 0px 0px 0px !important;
             outline: none !important;
         }
         
-        /* 🚨【ボタン完全固定】メインエリア・ダイアログのボタンを「白地・黒文字」に🚨 */
+        /* メインエリア・ダイアログのボタンを「白地・黒文字」に完全固定 */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
@@ -126,8 +124,6 @@ st.markdown("""
             outline: none !important;
             transition: none !important;           
         }
-        
-        /* ボタンの中の文字を絶対に黒で太字にする */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button *,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *,
@@ -135,8 +131,6 @@ st.markdown("""
             color: #000000 !important;
             font-weight: bold !important;
         }
-        
-        /* ホバー時：少しだけグレーに */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover,
         html body .stApp [data-testid="stMain"] div[data-testid="stFormSubmitButton"] > button:hover,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover,
@@ -146,8 +140,6 @@ st.markdown("""
             border: 1px solid #999999 !important;
             color: #000000 !important;
         }
-
-        /* フォーカス・クリック時：赤い光を完全に消し去り、濃いグレーにするだけ */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:focus,
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:active,
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:focus-visible,
@@ -165,7 +157,7 @@ st.markdown("""
             outline: none !important;
         }
 
-        /* 🚨【入力フォーム完全固定】テキスト・日付・プルダウンを最強優先度でグレー地に🚨 */
+        /* 🚨 入力フォーム・プルダウンをグレー地（#222222）＋白文字に完全統一 🚨 */
         html body .stApp div[data-testid="stTextInput"] input, 
         html body .stApp div[data-testid="stTextArea"] textarea,
         html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"],
@@ -175,66 +167,52 @@ st.markdown("""
             border: 1px solid #555555 !important;
             -webkit-text-fill-color: #ffffff !important;
         }
-        
-        /* セレクトボックス・マルチセレクトの大枠 */
-        html body .stApp div[data-baseweb="select"] > div {
-            background-color: #222222 !important;
-            border: 1px solid #555555 !important;
+        html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
+        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div,
+        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div { background-color: #222222 !important; color: #ffffff !important; }
+        html body .stApp div[data-baseweb="select"] span, html body .stApp div[data-baseweb="select"] div[aria-selected="true"] { color: #ffffff !important; background-color: transparent !important; }
+        html body .stApp div[data-baseweb="select"] div[aria-placeholder] { color: #aaaaaa !important; background-color: transparent !important; }
+        html body .stApp div[data-baseweb="select"] svg { fill: #ffffff !important; }
+        html body .stApp span[data-baseweb="tag"] { background-color: #ea4335 !important; border: none !important; }
+        html body .stApp span[data-baseweb="tag"] * { color: #ffffff !important; background-color: transparent !important; }
+        html body .stApp ul[role="listbox"], html body .stApp ul[data-baseweb="menu"] { background-color: #333333 !important; }
+        html body .stApp ul[role="listbox"] li, html body .stApp ul[data-baseweb="menu"] li { background-color: #333333 !important; color: #ffffff !important; }
+        html body .stApp ul[role="listbox"] li:hover, html body .stApp ul[data-baseweb="menu"] li:hover { background-color: #555555 !important; }
+
+        /* 🚨【検索ワード入力欄だけ白地に黒文字にする特例】🚨 */
+        html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"] {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            border: 2px solid #cccccc !important;
+            font-weight: bold !important;
         }
-        /* 中の文字を白にし、邪魔な白背景を透明化 */
-        html body .stApp div[data-baseweb="select"] span,
-        html body .stApp div[data-baseweb="select"] div[aria-selected="true"],
-        html body .stApp div[data-baseweb="select"] * {
-            color: #ffffff !important;
-            background-color: transparent !important;
-        }
-        /* プレースホルダー（Choose options等） */
-        html body .stApp div[data-baseweb="select"] div[aria-placeholder] {
-            color: #aaaaaa !important;
-        }
-        /* プルダウンの▼アイコン */
-        html body .stApp div[data-baseweb="select"] svg {
-            fill: #ffffff !important;
-        }
-        
-        /* マルチセレクトで選ばれたタグ（赤背景・白文字） */
-        html body .stApp span[data-baseweb="tag"] {
-            background-color: #ea4335 !important;
-            border: none !important;
-        }
-        html body .stApp span[data-baseweb="tag"] * {
-            color: #ffffff !important;
+        html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"]::placeholder {
+            color: #888888 !important;
+            -webkit-text-fill-color: #888888 !important;
+            font-weight: normal !important;
         }
 
-        /* プルダウンの選択肢リスト */
-        html body .stApp ul[role="listbox"], 
-        html body .stApp ul[data-baseweb="menu"] {
-            background-color: #333333 !important;
-        }
-        html body .stApp ul[role="listbox"] li, 
-        html body .stApp ul[data-baseweb="menu"] li {
-            background-color: #333333 !important;
-            color: #ffffff !important;
-        }
-        html body .stApp ul[role="listbox"] li:hover, 
-        html body .stApp ul[data-baseweb="menu"] li:hover {
-            background-color: #555555 !important;
+        /* 🚨【一覧テーブルの背景をサイドバーと同じグレー(#7f7f7f)にする魔法】🚨 */
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) {
+            background-color: #7f7f7f !important;
+            padding: 20px 25px !important;
+            border-radius: 10px !important;
+            margin-top: 10px !important;
+            margin-bottom: 20px !important;
+            box-shadow: 0 4px 6px rgba(255,255,255,0.05) !important;
         }
 
         /* スマホ等のタップハイライト除去 */
-        * {
-            -webkit-tap-highlight-color: transparent !important;
-        }
+        * { -webkit-tap-highlight-color: transparent !important; }
 
         /* 💡 3色角丸カセット（カードデザイン） */
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #ea4335; }
         html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
-        
         .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #34a853; }
-        html body .stApp .cassette-green, html body .stApp .cassette-green * { color: #a51d24 !important; } /* ← ご要望通り赤色（濃い赤）に固定！ */
-
+        html body .stApp .cassette-green, html body .stApp .cassette-green * { color: #a51d24 !important; }
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem !important; border-left: 5px solid #4285f4; line-height: 1.6rem; }
-        html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; } /* ← 白に負けないように黒文字に固定！ */
+        html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
 
         hr { border-top: 1px solid #333333 !important; }
     </style>
@@ -663,15 +641,17 @@ try:
             if display_df.empty:
                 st.info("データがありません。")
             else:
-                for idx, row in display_df.head(50).iterrows():
-                    c = st.columns([0.8, 1, 3, 2, 1.5, 1])
-                    if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
-                    c[1].write(row.get('ID', ''))
-                    c[2].write(f"**{safe_text(row.get('品名', ''))}**")
-                    c[3].write(row.get('利用者', ''))
-                    c[4].write(row.get('ステータス', ''))
-                    c[5].write(row.get('購入日', row.get('登録番号', '')))
-                    st.markdown("<hr>", unsafe_allow_html=True)
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    for idx, row in display_df.head(50).iterrows():
+                        c = st.columns([0.8, 1, 3, 2, 1.5, 1])
+                        if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
+                        c[1].write(row.get('ID', ''))
+                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
+                        c[3].write(row.get('利用者', ''))
+                        c[4].write(row.get('ステータス', ''))
+                        c[5].write(row.get('購入日', row.get('登録番号', '')))
+                        st.markdown("<hr style='border-top:1px dashed #eeeeee;'>", unsafe_allow_html=True)
 
         with main_tab2:
             if st.session_state.zaiko_reg_success:
@@ -713,29 +693,31 @@ try:
         df_cert = get_certificate_data()
         with t1:
             if not df_cert.empty:
-                hc = st.columns([0.8, 1, 2, 2, 2, 3])
-                hc[0].markdown("<span style='color:gray; font-size:0.85rem;'>操作</span>", unsafe_allow_html=True)
-                hc[1].markdown("<span style='color:gray; font-size:0.85rem;'>ID</span>", unsafe_allow_html=True)
-                hc[2].markdown("<span style='color:gray; font-size:0.85rem;'>種類</span>", unsafe_allow_html=True)
-                hc[3].markdown("<span style='color:gray; font-size:0.85rem;'>端末</span>", unsafe_allow_html=True)
-                hc[4].markdown("<span style='color:gray; font-size:0.85rem;'>有効期限</span>", unsafe_allow_html=True)
-                hc[5].markdown("<span style='color:gray; font-size:0.85rem;'>備考</span>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #555;'>", unsafe_allow_html=True)
-                for index, row in df_cert.iterrows():
-                    c = st.columns([0.8, 1, 2, 2, 2, 3])
-                    if c[0].button("詳細", key=f"cert_btn_{index}"): show_cert_dialog(row)
-                    c[1].write(str(row.get('ID', '')))
-                    c[2].write(f"**{safe_text(row.get('種類', ''))}**")
-                    c[3].write(str(row.get('端末', '')))
-                    dt = parse_date(row.get('有効期限'))
-                    if dt:
-                        diff = (dt.date() - datetime.now().date()).days
-                        if diff < 0: c[4].error(f"{row.get('有効期限')} (超過)")
-                        elif diff <= 75: c[4].warning(f"{row.get('有効期限')} (あと{diff}日)")
-                        else: c[4].write(row.get('有効期限'))
-                    else: c[4].write(row.get('有効期限', ''))
-                    c[5].write(str(row.get('備考', '')))
-                    st.markdown("<hr style='border-top:1px dashed #333;'>", unsafe_allow_html=True)
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    hc = st.columns([0.8, 1, 2, 2, 2, 3])
+                    hc[0].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>操作</span>", unsafe_allow_html=True)
+                    hc[1].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>ID</span>", unsafe_allow_html=True)
+                    hc[2].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>種類</span>", unsafe_allow_html=True)
+                    hc[3].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>端末</span>", unsafe_allow_html=True)
+                    hc[4].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>有効期限</span>", unsafe_allow_html=True)
+                    hc[5].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>備考</span>", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #eeeeee;'>", unsafe_allow_html=True)
+                    for index, row in df_cert.iterrows():
+                        c = st.columns([0.8, 1, 2, 2, 2, 3])
+                        if c[0].button("詳細", key=f"cert_btn_{index}"): show_cert_dialog(row)
+                        c[1].write(str(row.get('ID', '')))
+                        c[2].write(f"**{safe_text(row.get('種類', ''))}**")
+                        c[3].write(str(row.get('端末', '')))
+                        dt = parse_date(row.get('有効期限'))
+                        if dt:
+                            diff = (dt.date() - datetime.now().date()).days
+                            if diff < 0: c[4].error(f"{row.get('有効期限')} (超過)")
+                            elif diff <= 75: c[4].warning(f"{row.get('有効期限')} (あと{diff}日)")
+                            else: c[4].write(row.get('有効期限'))
+                        else: c[4].write(row.get('有効期限', ''))
+                        c[5].write(str(row.get('備考', '')))
+                        st.markdown("<hr style='border-top:1px dashed #cccccc;'>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。")
         with t2:
@@ -757,15 +739,17 @@ try:
         df_emp = get_new_employee_data()
         with t1:
             if not df_emp.empty:
-                for idx, row in df_emp.iterrows():
-                    c = st.columns([1, 1, 2, 2, 2, 2])
-                    if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
-                    c[1].write(row.get('ID',''))
-                    c[2].write(f"**{row.get('氏名','')}**")
-                    c[3].write(row.get('フリガナ',''))
-                    c[4].write(row.get('入職日',''))
-                    c[5].write(row.get('ステータス',''))
-                    st.markdown("<hr>", unsafe_allow_html=True)
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    for idx, row in df_emp.iterrows():
+                        c = st.columns([1, 1, 2, 2, 2, 2])
+                        if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
+                        c[1].write(row.get('ID',''))
+                        c[2].write(f"**{row.get('氏名','')}**")
+                        c[3].write(row.get('フリガナ',''))
+                        c[4].write(row.get('入職日',''))
+                        c[5].write(row.get('ステータス',''))
+                        st.markdown("<hr style='border-top:1px dashed #eeeeee;'>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。")
         with t2:
@@ -795,48 +779,50 @@ try:
                 df_task['sort_date'] = pd.to_datetime(df_task['期限'], errors='coerce')
                 df_task = df_task.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
 
-                hc = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
-                hc[0].markdown("<span style='color:gray; font-size:0.85rem;'>操作</span>", unsafe_allow_html=True)
-                hc[1].markdown("<span style='color:gray; font-size:0.85rem;'>タスク名</span>", unsafe_allow_html=True)
-                hc[2].markdown("<span style='color:gray; font-size:0.85rem;'>作成者</span>", unsafe_allow_html=True)
-                hc[3].markdown("<span style='color:gray; font-size:0.85rem;'>担当者</span>", unsafe_allow_html=True)
-                hc[4].markdown("<span style='color:gray; font-size:0.85rem;'>関係者</span>", unsafe_allow_html=True)
-                hc[5].markdown("<span style='color:gray; font-size:0.85rem;'>期限</span>", unsafe_allow_html=True)
-                hc[6].markdown("<span style='color:gray; font-size:0.85rem;'>優先度</span>", unsafe_allow_html=True)
-                hc[7].markdown("<span style='color:gray; font-size:0.85rem;'>状態</span>", unsafe_allow_html=True)
-                hc[8].markdown("<span style='color:gray; font-size:0.85rem;'>クイック更新</span>", unsafe_allow_html=True)
-                st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #555;'>", unsafe_allow_html=True)
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    hc = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
+                    hc[0].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>操作</span>", unsafe_allow_html=True)
+                    hc[1].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>タスク名</span>", unsafe_allow_html=True)
+                    hc[2].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>作成者</span>", unsafe_allow_html=True)
+                    hc[3].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>担当者</span>", unsafe_allow_html=True)
+                    hc[4].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>関係者</span>", unsafe_allow_html=True)
+                    hc[5].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>期限</span>", unsafe_allow_html=True)
+                    hc[6].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>優先度</span>", unsafe_allow_html=True)
+                    hc[7].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>状態</span>", unsafe_allow_html=True)
+                    hc[8].markdown("<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>クイック更新</span>", unsafe_allow_html=True)
+                    st.markdown("<hr style='margin: 0 0 10px 0; border-top: 2px solid #eeeeee;'>", unsafe_allow_html=True)
 
-                for index, row in df_task.iterrows():
-                    c = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
-                    if c[0].button("詳細", key=f"task_btn_{index}"): show_task_dialog(row)
-                    c[1].write(f"**{safe_text(row.get('タスク名', ''))}**")
-                    c[2].write(f"👤 {row.get('作成者', '')}")
-                    c[3].write(str(row.get('担当者', '')))
-                    c[4].write(str(row.get('関係者', '')))
-                    dt = parse_date(row.get('期限'))
-                    
-                    current_status = str(row.get('ステータス', '')).strip()
-                    if dt and current_status != '完了':
-                        diff = (dt.date() - datetime.now().date()).days
-                        if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
-                        elif diff <= 3: c[5].warning(f"{row.get('期限')} (あと{diff}日)")
-                        else: c[5].write(row.get('期限'))
-                    else: c[5].write(row.get('期限', ''))
-                    c[6].write(row.get('優先度', ''))
-                    c[7].write(row.get('ステータス', ''))
-                    
-                    if current_status != '完了':
-                        if c[8].button("✅ 完了にする", key=f"comp_{index}"):
-                            if update_task_status(row.get('ID'), "完了"):
-                                get_all_data.clear() # キャッシュクリア
-                                st.rerun()
-                    else:
-                        if c[8].button("↩️ 未完了に戻す", key=f"rev_{index}"):
-                            if update_task_status(row.get('ID'), "未着手"):
-                                get_all_data.clear() # キャッシュクリア
-                                st.rerun()
-                    st.markdown("<hr style='border-top:1px dashed #333;'>", unsafe_allow_html=True)
+                    for index, row in df_task.iterrows():
+                        c = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
+                        if c[0].button("詳細", key=f"task_btn_{index}"): show_task_dialog(row)
+                        c[1].write(f"**{safe_text(row.get('タスク名', ''))}**")
+                        c[2].write(f"👤 {row.get('作成者', '')}")
+                        c[3].write(str(row.get('担当者', '')))
+                        c[4].write(str(row.get('関係者', '')))
+                        dt = parse_date(row.get('期限'))
+                        
+                        current_status = str(row.get('ステータス', '')).strip()
+                        if dt and current_status != '完了':
+                            diff = (dt.date() - datetime.now().date()).days
+                            if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
+                            elif diff <= 3: c[5].warning(f"{row.get('期限')} (あと{diff}日)")
+                            else: c[5].write(row.get('期限'))
+                        else: c[5].write(row.get('期限', ''))
+                        c[6].write(row.get('優先度', ''))
+                        c[7].write(row.get('ステータス', ''))
+                        
+                        if current_status != '完了':
+                            if c[8].button("✅ 完了にする", key=f"comp_{index}"):
+                                if update_task_status(row.get('ID'), "完了"):
+                                    get_all_data.clear() # キャッシュクリア
+                                    st.rerun()
+                        else:
+                            if c[8].button("↩️ 未完了に戻す", key=f"rev_{index}"):
+                                if update_task_status(row.get('ID'), "未着手"):
+                                    get_all_data.clear() # キャッシュクリア
+                                    st.rerun()
+                        st.markdown("<hr style='border-top:1px dashed #cccccc;'>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。")
         with task_tab2:
@@ -892,7 +878,9 @@ try:
                 five_years_ago = datetime.now() - timedelta(days=365*5)
                 df_old['dt'] = df_old['購入日'].apply(parse_date)
                 df_old = df_old[df_old['dt'] <= five_years_ago]
-                st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
             else:
                 st.info("データがありません。")
         else:
