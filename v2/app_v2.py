@@ -698,4 +698,135 @@ try:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     for idx, row in df_emp.iterrows():
-                        c
+                        c = st.columns([1, 1, 2, 2, 2, 2])
+                        if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
+                        c[1].write(row.get('ID',''))
+                        c[2].write(f"**{row.get('氏名','')}**")
+                        c[3].write(row.get('フリガナ',''))
+                        c[4].write(row.get('入職日',''))
+                        c[5].write(row.get('ステータス',''))
+                        st.markdown("<hr>", unsafe_allow_html=True)
+            else: st.info("データがありません。")
+        with t2:
+            with st.form("emp_reg"):
+                e_id = st.text_input("ID", value=generate_auto_id(df_emp, "H"))
+                e_name = st.text_input("氏名")
+                e_furi = st.text_input("フリガナ")
+                e_date = st.date_input("入職日")
+                if st.form_submit_button("登録"):
+                    ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+                    ws.append_row([e_id, e_name, e_furi, str(e_date), "", "", "準備中"] + [""]*13 + [""]); st.success("登録しました"); st.rerun()
+
+    # ==========================================
+    # 📋 ページ：タスク管理
+    # ==========================================
+    elif page_selection == "📋 タスク管理":
+        st.header("📋 タスク管理")
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
+        df_task = get_task_data()
+        with task_tab1:
+            if not df_task.empty:
+                df_task['is_completed'] = df_task.get('ステータス', pd.Series()).apply(lambda x: 1 if str(x) == '完了' else 0)
+                df_task['sort_date'] = pd.to_datetime(df_task.get('期限', pd.Series()), errors='coerce')
+                df_task = df_task.sort_values(by=['is_completed', 'sort_date'], ascending=[True, True])
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    hc = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
+                    for i, h_text in enumerate(["操作", "タスク名", "作成者", "担当者", "関係者", "期限", "優先度", "状態", "クイック更新"]):
+                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    
+                    for index, row in df_task.iterrows():
+                        try:
+                            c = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
+                            task_id_str = str(row.get('ID', f"row_{index}"))
+                            
+                            if c[0].button("詳細", key=f"task_btn_{task_id_str}"): show_task_dialog(row)
+                            c[1].write(f"**{safe_text(row.get('タスク名', ''))}**")
+                            c[2].write(f"👤 {row.get('作成者', '')}")
+                            c[3].write(str(row.get('担当者', '')))
+                            c[4].write(str(row.get('関係者', '')))
+                            
+                            dt = parse_date(row.get('期限'))
+                            current_status = str(row.get('ステータス', '')).strip()
+                            if dt and current_status != '完了':
+                                diff = (dt.date() - datetime.now().date()).days
+                                if diff < 0: c[5].error(f"{row.get('期限')} (超過)")
+                                elif diff <= 3: c[5].warning(f"{row.get('期限')} (あと{diff}日)")
+                                else: c[5].write(row.get('期限'))
+                            else: c[5].write(row.get('期限', ''))
+                            
+                            c[6].write(row.get('優先度', ''))
+                            c[7].write(row.get('ステータス', ''))
+                            
+                            if current_status != '完了':
+                                if c[8].button("✅ 完了にする", key=f"comp_{task_id_str}"):
+                                    if update_task_status(task_id_str, "完了"): get_all_data.clear(); st.rerun()
+                            else:
+                                if c[8].button("↩️ 未完了に戻す", key=f"rev_{task_id_str}"):
+                                    if update_task_status(task_id_str, "未着手"): get_all_data.clear(); st.rerun()
+                            st.markdown("<hr>", unsafe_allow_html=True)
+                        except Exception as inner_e:
+                            st.warning(f"1件のタスクを描画できませんでした。")
+            else: st.info("データがありません。")
+        with task_tab2:
+            if st.session_state.task_reg_success:
+                st.success("✅ 登録完了しました！ カレンダーへ自動反映されました。")
+                st.button("続けてタスクを登録する", on_click=lambda: setattr(st.session_state, 'task_reg_success', False))
+            else:
+                with st.form("add_task_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        task_name = st.text_input("タスク名")
+                        task_creator = st.selectbox("作成者 (あなた)", options=USER_OPTIONS)
+                        sel_assignees = st.multiselect("担当者", options=USER_OPTIONS)
+                        task_assignee = ", ".join(sel_assignees)
+                    with col2:
+                        sel_watchers = st.multiselect("関係者/共有者", options=USER_OPTIONS)
+                        task_watchers = ", ".join(sel_watchers)
+                        task_limit = st.date_input("期限", value=None)
+                        task_pri = st.selectbox("優先度", ["高", "中", "低"], index=1)
+                    task_status = st.selectbox("ステータス", ["未着手", "進行中", "完了", "保留"], index=0)
+                    task_note = st.text_area("備考", placeholder="補足事項があれば入力してください")
+                    if st.form_submit_button("登録してカレンダーに反映する"):
+                        if not task_name: st.error("タスク名は必須です。")
+                        else:
+                            try:
+                                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+                                headers = worksheet.row_values(1)
+                                if "イベントID" not in headers:
+                                    worksheet.update_cell(1, len(headers) + 1, "イベントID")
+                                    headers.append("イベントID")
+                                hidden_task_id = generate_auto_id(df_task, "T")
+                                creator_id = LINEWORKS_USER_MAP.get(task_creator)
+                                
+                                event_id = ""
+                                if task_limit:
+                                    res_id = register_lineworks_calendar_event(task_name, task_assignee, str(task_limit), task_pri, task_note, creator_id, task_creator)
+                                    if res_id: event_id = res_id
+                                
+                                data_dict = { "ID": hidden_task_id, "タスク名": task_name, "作成者": task_creator, "担当者": task_assignee, "関係者": task_watchers, "期限": str(task_limit) if task_limit else '', "優先度": task_pri, "ステータス": task_status, "備考": task_note, "イベントID": event_id }
+                                row_to_save = [data_dict.get(h, "") for h in headers]
+                                worksheet.append_row(row_to_save)
+                                st.toast("カレンダー連携 成功!", icon="✅")
+                                st.session_state.task_reg_success = True; get_all_data.clear(); st.rerun()
+                            except Exception as e: st.error(f"登録エラー: {e}")
+
+    # ==========================================
+    # 📅 ページ：5年経過リスト
+    # ==========================================
+    elif page_selection == "📅 5年経過リスト (PC/iPad)":
+        st.header("📅 5年経過リスト (PC/iPad)")
+        if not df.empty and 'カテゴリ' in df.columns:
+            df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
+            if not df_old.empty:
+                five_years_ago = datetime.now() - timedelta(days=365*5)
+                df_old['dt'] = df_old['購入日'].apply(parse_date)
+                df_old = df_old[df_old['dt'] <= five_years_ago]
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    st.dataframe(df_old.drop(columns=['dt']), use_container_width=True)
+            else: st.info("データがありません。")
+        else: st.info("データがありません。")
+
+except Exception as e: st.error(f"エラー: {e}")
