@@ -660,7 +660,6 @@ try:
                         c[2].write(f"**{safe_text(row.get('種類', ''))}**")
                         c[3].write(str(row.get('端末', '')))
                         
-                        # 💡 枠を使わずに文字色だけを変えるように修正（電子証明書）
                         dt = parse_date(row.get('有効期限'))
                         if dt:
                             diff = (dt.date() - datetime.now().date()).days
@@ -747,13 +746,15 @@ try:
                             c[3].write(str(row.get('担当者', '')))
                             c[4].write(str(row.get('関係者', '')))
                             
-                            # 💡 枠を使わずに文字色だけを変えるように修正（タスク管理）
+                            # 💡 今日が期限のもの、超過したものを赤字にする処理
                             dt = parse_date(row.get('期限'))
                             current_status = str(row.get('ステータス', '')).strip()
                             if dt and current_status != '完了':
                                 diff = (dt.date() - datetime.now().date()).days
                                 if diff < 0:
                                     c[5].markdown(f"<span style='color:#ff4b4b; font-weight:bold;'>{row.get('期限')} (超過)</span>", unsafe_allow_html=True)
+                                elif diff == 0:
+                                    c[5].markdown(f"<span style='color:#ff4b4b; font-weight:bold;'>{row.get('期限')} (本日)</span>", unsafe_allow_html=True)
                                 elif diff <= 3:
                                     c[5].markdown(f"<span style='color:#faca2b; font-weight:bold;'>{row.get('期限')} (あと{diff}日)</span>", unsafe_allow_html=True)
                                 else:
