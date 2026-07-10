@@ -36,38 +36,11 @@ st.markdown("""
             margin: 0px !important;
         }
         
-        /* コンテンツエリア全体の最上部パディングをゼロに */
+        /* コンテンツエリア全体の最上部パディングを限界までゼロに */
         .main .block-container {
-            padding-top: 0rem !important;
+            padding-top: 0.5rem !important;
             margin-top: 0rem !important;
             padding-bottom: 1rem !important;
-        }
-        
-        /* 🚨 2. 「総務管理アプリ」タイトル(h1)のサイズ縮小＆上部の空白を完全にゼロ化 */
-        .main h1, 
-        .main h1 span, 
-        .main [data-testid="stMarkdownContainer"] h1 {
-            font-size: 1.15rem !important; /* 「期日アラート」(h3)と同等サイズに固定 */
-            margin-top: 0px !important;
-            padding-top: 0px !important;
-            margin-bottom: 0.2rem !important;
-            line-height: 1.2 !important;
-        }
-        
-        /* タイトルが入っている親ブロックの隙間も排除 */
-        .main [data-testid="element-container"]:has(h1) {
-            margin-top: 0px !important;
-            padding-top: 0px !important;
-        }
-        
-        /* 🚨 3. 右側の日付の位置調整 */
-        /* タイトルが小さく・高くなったのに合わせて、日付の上部隙間もゼロにして綺麗に揃えます */
-        .date-display-box {
-            text-align: right; 
-            font-size: 1.1rem; 
-            padding-top: 0px !important; 
-            margin-top: 0px !important;
-            line-height: 1.2 !important;
         }
 
         h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
@@ -549,7 +522,7 @@ def show_task_dialog(row_data):
                             update_lineworks_calendar_event(event_id, new_name, new_assignee_str, new_limit_str, new_pri, new_note, new_creator)
                     else:
                         creator_id = LINEWORKS_USER_MAP.get(new_creator)
-                        new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
+                        new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, note_text, creator_id, new_creator)
                         if new_event_id: event_id = new_event_id
                 
                 row_dict["タスク名"] = new_name
@@ -605,9 +578,13 @@ try:
     # 🏠 ページ：ホーム (動的ダッシュボード)
     # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
-        head_col1, head_col2 = st.columns([4, 1])
-        with head_col1: st.title("🏢 総務管理アプリ")
-        with head_col2: st.markdown(f"<div class='date-display-box'>📅 {datetime.now().strftime('%Y年%m月%d日')}</div>", unsafe_allow_html=True)
+        # 🚨 【完全解決】st.titleを完全に廃止し、パディングもマージンも完全にゼロにしたHTMLでタイトルを1列に結合して出力
+        st.markdown(f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -15px !important; padding: 0px; width: 100%;">
+                <h3 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🏢 総務管理アプリ</h3>
+                <div style="font-size: 1.1rem; color: #ffffff !important; font-weight: bold;">📅 {datetime.now().strftime('%Y年%m月%d日')}</div>
+            </div>
+        """, unsafe_allow_html=True)
         st.markdown("---")
         st.subheader("期日アラート")
         
