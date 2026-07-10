@@ -128,6 +128,14 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
         hr { border-top: 1px solid #333333 !important; }
+        
+        /* 💡 外部マニュアルリンク用のサイドバースタイル調整 */
+        .sidebar-link {
+            display: flex !important; align-items: center !important; justify-content: flex-start !important;
+            padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important;
+            color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important;
+        }
+        .sidebar-link:hover { background-color: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; text-decoration: none !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -515,6 +523,11 @@ def show_task_dialog(row_data):
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
+    
+    # 💡 外部への総務マニュアルリンク (NotebookLM)
+    # ※実際のNotebookLM共有URLがある場合は、下記の「https://notebooklm.google.com/」の部分を差し替えてください。
+    st.markdown('<a href="https://notebooklm.google.com/" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
+    
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
     with st.expander("📦 備品管理", expanded=True):
         st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
