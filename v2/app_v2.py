@@ -53,10 +53,39 @@ st.markdown("""
             font-size: 0.82rem !important;
         }
         
-        .main h2 { font-size: 1.3rem !important; }
+        /* 🚨 2. 各個別ページのタイトル（st.header、h2タグ）のサイズもh3（1.15rem）に揃えて小さくし、上部余白をゼロ化 */
+        .main h2,
+        .main h2 span,
+        .main [data-testid="stMarkdownContainer"] h2 {
+            font-size: 1.15rem !important;
+            margin-top: 0px !important;
+            padding-top: 0px !important;
+            margin-bottom: 0.4rem !important;
+            line-height: 1.2 !important;
+        }
+        
+        /* 🚨 3. 期日アラートなどのh3タグの上部マージンもリセット */
         .main h3 {
             font-size: 1.15rem !important;
+            margin-top: 0px !important;
+            padding-top: 0px !important;
             margin-bottom: 0.4rem !important;
+        }
+        
+        /* タイトルやヘッダーが入っているブロック自体の隙間を強制排除 */
+        .main [data-testid="element-container"]:has(h2),
+        .main [data-testid="element-container"]:has(h3) {
+            margin-top: 0px !important;
+            padding-top: 0px !important;
+        }
+        
+        /* 右側の日付の位置調整 */
+        .date-display-box {
+            text-align: right; 
+            font-size: 1.1rem; 
+            padding-top: 0px !important; 
+            margin-top: 0px !important;
+            line-height: 1.2 !important;
         }
         
         /* サイドバーデザイン */
@@ -522,7 +551,7 @@ def show_task_dialog(row_data):
                             update_lineworks_calendar_event(event_id, new_name, new_assignee_str, new_limit_str, new_pri, new_note, new_creator)
                     else:
                         creator_id = LINEWORKS_USER_MAP.get(new_creator)
-                        new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, note_text, creator_id, new_creator)
+                        new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
                         if new_event_id: event_id = new_event_id
                 
                 row_dict["タスク名"] = new_name
@@ -578,9 +607,9 @@ try:
     # 🏠 ページ：ホーム (動的ダッシュボード)
     # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
-        # 🚨 【完全解決】st.titleを完全に廃止し、パディングもマージンも完全にゼロにしたHTMLでタイトルを1列に結合して出力
+        # 🚨 HTML直書きでタイトルと日付の余白を完全排除。 margin-topをマイナスにして上にギュッと詰めました
         st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -15px !important; padding: 0px; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -30px !important; padding: 0px; width: 100%;">
                 <h3 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🏢 総務管理アプリ</h3>
                 <div style="font-size: 1.1rem; color: #ffffff !important; font-weight: bold;">📅 {datetime.now().strftime('%Y年%m月%d日')}</div>
             </div>
@@ -631,7 +660,13 @@ try:
     # ==========================================
     elif page_selection in MENU_TO_CAT:
         cat = MENU_TO_CAT[page_selection]
-        st.header(f"🗃️ {page_selection.strip()} 管理")
+        # 🚨 【完全解決】個別ページの st.header("...")を完全廃止し、上部余白を限界まで削り、サイズをh3(1.15rem)に揃えたHTMLに変更
+        st.markdown(f"""
+            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
+                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🗃️ {page_selection.strip()} 管理</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
         main_tab1, main_tab2, main_tab3 = st.tabs(["🔍 一覧・検索", "📝 新規登録", "📂 CSV一括入出力"])
         with main_tab1:
             st.text_input("フリーワード検索", placeholder="Enterで検索", key="input_search_key", on_change=submit_search)
@@ -686,7 +721,13 @@ try:
     # 🔐 ページ：電子証明書管理
     # ==========================================
     elif page_selection == "🔐 電子証明書管理":
-        st.header("🔐 電子証明書管理")
+        # 🚨 上部余白排除＆サイズ縮小HTML
+        st.markdown(f"""
+            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
+                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🔐 電子証明書管理</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
         t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
         df_cert = get_certificate_data()
         with t1:
@@ -732,7 +773,13 @@ try:
     # 👤 ページ：新規入職者管理
     # ==========================================
     elif page_selection == "👤 新規入職者管理":
-        st.header("👤 新規入職者管理")
+        # 🚨 上部余白排除＆サイズ縮小HTML
+        st.markdown(f"""
+            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
+                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">👤 新規入職者管理</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
         t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
         df_emp = get_new_employee_data()
         with t1:
@@ -763,7 +810,13 @@ try:
     # 📋 ページ：タスク管理
     # ==========================================
     elif page_selection == "📋 タスク管理":
-        st.header("📋 タスク管理")
+        # 🚨 上部余白排除＆サイズ縮小HTML
+        st.markdown(f"""
+            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
+                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">📋 タスク管理</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
         task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
         df_task = get_task_data()
         with task_tab1:
@@ -864,7 +917,13 @@ try:
     # 📅 ページ：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        st.header("📅 5年経過リスト (PC/iPad)")
+        # 🚨 上部余白排除＆サイズ縮小HTML
+        st.markdown(f"""
+            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
+                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">📅 5年経過リスト (PC/iPad)</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
         if not df.empty and 'カテゴリ' in df.columns:
             df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
             if not df_old.empty:
