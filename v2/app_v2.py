@@ -28,7 +28,6 @@ st.markdown("""
         h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
             color: #ffffff !important;
         }
-        /* 🚨 強調文字色をCSSで強制的に適用するための設定 */
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
         .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
         
@@ -129,7 +128,6 @@ st.markdown("""
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
         hr { border-top: 1px solid #333333 !important; }
         
-        /* 💡 外部マニュアルリンク用のサイドバースタイル調整 */
         .sidebar-link {
             display: flex !important; align-items: center !important; justify-content: flex-start !important;
             padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important;
@@ -525,7 +523,6 @@ with st.sidebar:
     st.markdown("### 🛠️ メニュー")
     
     # 💡 外部への総務マニュアルリンク (NotebookLM)
-    # ※実際のNotebookLM共有URLがある場合は、下記の「https://notebooklm.google.com/」の部分を差し替えてください。
     st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
     
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
