@@ -18,7 +18,7 @@ def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
 
-# --- 🌟 タイトルサイズ・余白を【超強力に】強制上書きするカスタムCSS 🌟 ---
+# --- 🌟 最上部の空白だけを削り取り、タイトル下は自然な広さに戻すCSS 🌟 ---
 st.markdown("""
     <style>
         /* 全体背景と標準テキストカラー */
@@ -27,7 +27,7 @@ st.markdown("""
             color: #ffffff !important;
         }
         
-        /* 🚨 1. アプリ最上部ヘッダーの完全非表示と余白削除 */
+        /* 🚨 1. アプリ最上部ヘッダーの完全非表示 */
         [data-testid="stHeader"] { 
             height: 0px !important; 
             min-height: 0px !important; 
@@ -36,10 +36,10 @@ st.markdown("""
             margin: 0px !important;
         }
         
-        /* コンテンツエリア全体の最上部パディングをゼロにし、上へ引っ張り上げる */
+        /* 🚨 2. コンテンツエリア全体の最上部の巨大なデッドスペースを、マイナスマージンで強制的に上へ引き上げる */
         .main .block-container {
             padding-top: 0px !important;
-            margin-top: -40px !important; /* 全体を極限まで上に詰める */
+            margin-top: -110px !important; /* 👈 ここで最上部の真っ黒な空白を根こそぎカットして上へ引き上げます */
             padding-bottom: 1rem !important;
         }
 
@@ -53,12 +53,11 @@ st.markdown("""
             font-size: 0.82rem !important;
         }
         
-        /* 🚨 2. 【超重要】各個別ページのカスタムタイトル（HTML）の上部余白とサイズを強制固定 */
+        /* 🚨 3. タイトル（h2）の下は詰まりすぎないよう、ほどよい余白（margin-bottom）を確保 */
         .page-title-box {
-            margin-top: -20px !important;
+            margin-top: 0px !important;
             padding-top: 0px !important;
-            padding-bottom: 0px !important;
-            margin-bottom: 5px !important;
+            margin-bottom: 15px !important; /* 👈 タイトルとタブの間の隙間を心地よい広さに戻しました */
         }
         .page-title-box h2 {
             font-size: 1.15rem !important;
@@ -68,32 +67,24 @@ st.markdown("""
             line-height: 1.2 !important;
         }
         
-        /* 🚨 3. Streamlit標準の要素が勝手に作る上部マージンをすべてゼロ化（!important連打） */
+        /* 文字サイズの統一ルール */
         .main h2, .main h3, .main h4,
         .main [data-testid="stMarkdownContainer"] h2,
         .main [data-testid="stMarkdownContainer"] h3 {
             font-size: 1.15rem !important;
             margin-top: 0px !important;
             padding-top: 0px !important;
-            margin-bottom: 5px !important;
         }
         
-        /* タブ（st.tabs）自体の上の無駄な空白を消し去る */
+        /* タブの上のマージンは自然な距離に設定 */
         [data-testid="stTabs"] {
-            margin-top: -15px !important;
+            margin-top: 5px !important;
             padding-top: 0px !important;
         }
         
-        /* 各要素を包むコンテナのブロック間の隙間（Gap）を詰める */
+        /* コンポーネント間の垂直方向の隙間を標準化 */
         [data-testid="stVerticalBlock"] {
-            gap: 0.4rem !important;
-        }
-        
-        /* タイトルやヘッダーが入っているブロック自体の隙間を排除 */
-        .main [data-testid="element-container"] {
-            margin-top: 0px !important;
-            padding-top: 0px !important;
-            margin-bottom: 0px !important;
+            gap: 0.8rem !important;
         }
         
         /* 右側の日付の位置調整 */
@@ -196,14 +187,6 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
         hr { border-top: 1px solid #333333 !important; }
-        
-        .sidebar-link {
-            display: flex !important; align-items: center !important; justify-content: flex-start !important;
-            padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important;
-            color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important;
-            margin-bottom: 5px !important;
-        }
-        .sidebar-link:hover { background-color: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; text-decoration: none !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -677,7 +660,7 @@ try:
     # ==========================================
     elif page_selection in MENU_TO_CAT:
         cat = MENU_TO_CAT[page_selection]
-        # 🚨 【完全解決】タイトル表示を専用クラスでラップ。サイズを1.15remに固定、上部余白を極限までカット
+        # 🚨 タイトルの外枠（コンテナ）をリセットし、タブとの間に適度な余白を設定
         st.markdown(f"""
             <div class="page-title-box">
                 <h2>🗃️ {page_selection.strip()} 管理</h2>
@@ -738,7 +721,6 @@ try:
     # 🔐 ページ：電子証明書管理
     # ==========================================
     elif page_selection == "🔐 電子証明書管理":
-        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
             <div class="page-title-box">
                 <h2>🔐 電子証明書管理</h2>
@@ -790,7 +772,6 @@ try:
     # 👤 ページ：新規入職者管理
     # ==========================================
     elif page_selection == "👤 新規入職者管理":
-        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
             <div class="page-title-box">
                 <h2>👤 新規入職者管理</h2>
@@ -827,7 +808,6 @@ try:
     # 📋 ページ：タスク管理
     # ==========================================
     elif page_selection == "📋 タスク管理":
-        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
             <div class="page-title-box">
                 <h2>📋 タスク管理</h2>
@@ -934,7 +914,6 @@ try:
     # 📅 ページ：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
             <div class="page-title-box">
                 <h2>📅 5年経過リスト (PC/iPad)</h2>
