@@ -750,7 +750,7 @@ try:
                             c[3].write(str(row.get('担当者', '')))
                             c[4].write(str(row.get('関係者', '')))
                             
-                            # 💡 確実な赤文字適用
+                            # 💡 確実な赤文字適用＆色調整
                             dt = parse_date(row.get('期限'))
                             current_status = str(row.get('ステータス', '')).strip()
                             if dt and current_status != '完了':
@@ -758,7 +758,7 @@ try:
                                 if diff < 0:
                                     c[5].markdown(f"<div class='text-alert'>{row.get('期限')} (超過)</div>", unsafe_allow_html=True)
                                 elif diff == 0:
-                                    c[5].markdown(f"<div class='text-alert'>{row.get('期限')} (本日)</div>", unsafe_allow_html=True)
+                                    c[5].markdown(f"<div class='text-warning'>{row.get('期限')} (本日)</div>", unsafe_allow_html=True)
                                 elif diff <= 3:
                                     c[5].markdown(f"<div class='text-warning'>{row.get('期限')} (あと{diff}日)</div>", unsafe_allow_html=True)
                                 else:
