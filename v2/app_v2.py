@@ -526,7 +526,7 @@ with st.sidebar:
     
     # 💡 外部への総務マニュアルリンク (NotebookLM)
     # ※実際のNotebookLM共有URLがある場合は、下記の「https://notebooklm.google.com/」の部分を差し替えてください。
-    st.markdown('<a href="https://notebooklm.google.com/" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
+    st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
     
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
     with st.expander("📦 備品管理", expanded=True):
