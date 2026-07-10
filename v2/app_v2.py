@@ -132,6 +132,7 @@ st.markdown("""
             display: flex !important; align-items: center !important; justify-content: flex-start !important;
             padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important;
             color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important;
+            margin-bottom: 5px !important;
         }
         .sidebar-link:hover { background-color: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; text-decoration: none !important; }
     </style>
@@ -154,6 +155,7 @@ COLUMNS_DEF = {
     "携帯電話": ["購入日", "電話番号", "SIM", "メーカー", "製造番号", "使用部署", "保管場所", "キャリア", "備考"],
     "Office365": ["アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"],
     "ウイルスバスター": ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"],
+    "other": ["使用部署", "使用場所", "使用開始日", "備考"],
     "その他機器": ["使用部署", "使用場所", "使用開始日", "備考"]
 }
 
@@ -521,10 +523,6 @@ def show_task_dialog(row_data):
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
-    
-    # 💡 外部への総務マニュアルリンク (NotebookLM)
-    st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
-    
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
     with st.expander("📦 備品管理", expanded=True):
         st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
@@ -540,6 +538,10 @@ with st.sidebar:
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
     st.button("📅 5年経過リスト", on_click=change_page, args=("📅 5年経過リスト (PC/iPad)",), use_container_width=True)
     st.markdown("---")
+    
+    # 💡 外部への総務マニュアルリンク (NotebookLM) - 🚨位置を「🔄データを最新にする」ボタンの直上に完璧に修正！
+    st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
+    
     if st.button("🔄 データを最新にする", use_container_width=True): get_all_data.clear(); st.rerun()
 
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "other", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
@@ -760,7 +762,6 @@ try:
                             c[3].write(str(row.get('担当者', '')))
                             c[4].write(str(row.get('関係者', '')))
                             
-                            # 💡 確実な赤文字適用＆色調整
                             dt = parse_date(row.get('期限'))
                             current_status = str(row.get('ステータス', '')).strip()
                             if dt and current_status != '完了':
