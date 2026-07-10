@@ -18,21 +18,59 @@ def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
 
-# --- 🌟 新UI完全再現のための強力なカスタムCSS 🌟 ---
+# --- 🌟 タイトルサイズ・余白を確実に消し去るためのカスタムCSS 🌟 ---
 st.markdown("""
     <style>
+        /* 全体背景と標準テキストカラー */
         .stApp, [data-testid="stHeader"], .main .block-container {
             background-color: #000000 !important;
             color: #ffffff !important;
         }
-        /* 🚨 アプリ最上部およびコンテンツ上部の余白を極限まで削る */
-        [data-testid="stHeader"] { height: 0px !important; min-height: 0px !important; display: none !important; }
+        
+        /* 🚨 1. アプリ最上部ヘッダーの完全非表示と余白削除 */
+        [data-testid="stHeader"] { 
+            height: 0px !important; 
+            min-height: 0px !important; 
+            display: none !important; 
+            padding: 0px !important;
+            margin: 0px !important;
+        }
+        
+        /* コンテンツエリア全体の最上部パディングをゼロに */
         .main .block-container {
-            padding-top: 0.5rem !important;
+            padding-top: 0rem !important;
+            margin-top: 0rem !important;
             padding-bottom: 1rem !important;
         }
         
-        h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
+        /* 🚨 2. 「総務管理アプリ」タイトル(h1)のサイズ縮小＆上部の空白を完全にゼロ化 */
+        .main h1, 
+        .main h1 span, 
+        .main [data-testid="stMarkdownContainer"] h1 {
+            font-size: 1.15rem !important; /* 「期日アラート」(h3)と同等サイズに固定 */
+            margin-top: 0px !important;
+            padding-top: 0px !important;
+            margin-bottom: 0.2rem !important;
+            line-height: 1.2 !important;
+        }
+        
+        /* タイトルが入っている親ブロックの隙間も排除 */
+        .main [data-testid="element-container"]:has(h1) {
+            margin-top: 0px !important;
+            padding-top: 0px !important;
+        }
+        
+        /* 🚨 3. 右側の日付の位置調整 */
+        /* タイトルが小さく・高くなったのに合わせて、日付の上部隙間もゼロにして綺麗に揃えます */
+        .date-display-box {
+            text-align: right; 
+            font-size: 1.1rem; 
+            padding-top: 0px !important; 
+            margin-top: 0px !important;
+            line-height: 1.2 !important;
+        }
+
+        h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
             color: #ffffff !important;
         }
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
@@ -42,18 +80,13 @@ st.markdown("""
             font-size: 0.82rem !important;
         }
         
-        /* 🚨 「総務管理アプリ」タイトルのサイズを期日アラート（h3）と同等にし、上の余白をゼロに */
-        .main h1 { 
-            font-size: 1.15rem !important; 
-            margin-top: 0rem !important;
-            padding-top: 0rem !important;
-            margin-bottom: 0.4rem !important;
-        }
         .main h2 { font-size: 1.3rem !important; }
         .main h3 {
             font-size: 1.15rem !important;
             margin-bottom: 0.4rem !important;
         }
+        
+        /* サイドバーデザイン */
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] {
             background-color: #7f7f7f !important;
         }
@@ -95,6 +128,7 @@ st.markdown("""
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
         button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; -webkit-box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
         
+        /* メインエリア白ボタン */
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button,
         html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button,
         html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
@@ -109,6 +143,7 @@ st.markdown("""
         html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
         
+        /* フォーム入力エリア */
         html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; -webkit-text-fill-color: #ffffff !important; }
         html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div, html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div { background-color: #222222 !important; color: #ffffff !important; }
@@ -124,6 +159,7 @@ st.markdown("""
         html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"] { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 2px solid #cccccc !important; font-weight: bold !important; }
         html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"]::placeholder { color: #888888 !important; -webkit-text-fill-color: #888888 !important; font-weight: normal !important; }
         
+        /* リスト表示枠 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) { background-color: #7f7f7f !important; padding: 10px 15px !important; border-radius: 8px !important; margin-top: 8px !important; margin-bottom: 15px !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] { margin-bottom: -10px !important; margin-top: -10px !important; align-items: center !important; }
@@ -571,8 +607,7 @@ try:
     if page_selection == "🏠 ホーム (ダッシュボード)":
         head_col1, head_col2 = st.columns([4, 1])
         with head_col1: st.title("🏢 総務管理アプリ")
-        # 🚨 タイトルの高低に合わせて日付のpadding-topを0.2remに修正
-        with head_col2: st.markdown(f"<div style='text-align:right; font-size:1.1rem; padding-top:0.2rem;'>📅 {datetime.now().strftime('%Y年%m月%d日')}</div>", unsafe_allow_html=True)
+        with head_col2: st.markdown(f"<div class='date-display-box'>📅 {datetime.now().strftime('%Y年%m月%d日')}</div>", unsafe_allow_html=True)
         st.markdown("---")
         st.subheader("期日アラート")
         
