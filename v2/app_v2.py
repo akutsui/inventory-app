@@ -25,6 +25,13 @@ st.markdown("""
             background-color: #000000 !important;
             color: #ffffff !important;
         }
+        /* 🚨 アプリ最上部およびコンテンツ上部の余白を極限まで削る */
+        [data-testid="stHeader"] { height: 0px !important; min-height: 0px !important; display: none !important; }
+        .main .block-container {
+            padding-top: 0.5rem !important;
+            padding-bottom: 1rem !important;
+        }
+        
         h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
             color: #ffffff !important;
         }
@@ -34,7 +41,14 @@ st.markdown("""
         .main .block-container p, .main .block-container div, .main .block-container span {
             font-size: 0.82rem !important;
         }
-        .main h1 { font-size: 1.8rem !important; }
+        
+        /* 🚨 「総務管理アプリ」タイトルのサイズを期日アラート（h3）と同等にし、上の余白をゼロに */
+        .main h1 { 
+            font-size: 1.15rem !important; 
+            margin-top: 0rem !important;
+            padding-top: 0rem !important;
+            margin-bottom: 0.4rem !important;
+        }
         .main h2 { font-size: 1.3rem !important; }
         .main h3 {
             font-size: 1.15rem !important;
@@ -539,7 +553,7 @@ with st.sidebar:
     st.button("📅 5年経過リスト", on_click=change_page, args=("📅 5年経過リスト (PC/iPad)",), use_container_width=True)
     st.markdown("---")
     
-    # 💡 外部への総務マニュアルリンク (NotebookLM) - 🚨位置を「🔄データを最新にする」ボタンの直上に完璧に修正！
+    # 💡 外部への総務マニュアルリンク (NotebookLM)
     st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
     
     if st.button("🔄 データを最新にする", use_container_width=True): get_all_data.clear(); st.rerun()
@@ -557,7 +571,8 @@ try:
     if page_selection == "🏠 ホーム (ダッシュボード)":
         head_col1, head_col2 = st.columns([4, 1])
         with head_col1: st.title("🏢 総務管理アプリ")
-        with head_col2: st.markdown(f"<div style='text-align:right; font-size:1.1rem; padding-top:1.5rem;'>📅 {datetime.now().strftime('%Y年%m月%d日')}</div>", unsafe_allow_html=True)
+        # 🚨 タイトルの高低に合わせて日付のpadding-topを0.2remに修正
+        with head_col2: st.markdown(f"<div style='text-align:right; font-size:1.1rem; padding-top:0.2rem;'>📅 {datetime.now().strftime('%Y年%m月%d日')}</div>", unsafe_allow_html=True)
         st.markdown("---")
         st.subheader("期日アラート")
         
