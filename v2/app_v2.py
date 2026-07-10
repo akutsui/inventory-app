@@ -28,6 +28,10 @@ st.markdown("""
         h1, h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
             color: #ffffff !important;
         }
+        /* 🚨 強調文字色をCSSで強制的に適用するための設定 */
+        .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
+        .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
+        
         .main .block-container p, .main .block-container div, .main .block-container span {
             font-size: 0.82rem !important;
         }
@@ -664,9 +668,9 @@ try:
                         if dt:
                             diff = (dt.date() - datetime.now().date()).days
                             if diff < 0:
-                                c[4].markdown(f"<span style='color:#ff4b4b; font-weight:bold;'>{row.get('有効期限')} (超過)</span>", unsafe_allow_html=True)
+                                c[4].markdown(f"<div class='text-alert'>{row.get('有効期限')} (超過)</div>", unsafe_allow_html=True)
                             elif diff <= 75:
-                                c[4].markdown(f"<span style='color:#faca2b; font-weight:bold;'>{row.get('有効期限')} (あと{diff}日)</span>", unsafe_allow_html=True)
+                                c[4].markdown(f"<div class='text-warning'>{row.get('有効期限')} (あと{diff}日)</div>", unsafe_allow_html=True)
                             else:
                                 c[4].write(row.get('有効期限'))
                         else:
@@ -746,17 +750,17 @@ try:
                             c[3].write(str(row.get('担当者', '')))
                             c[4].write(str(row.get('関係者', '')))
                             
-                            # 💡 今日が期限のもの、超過したものを赤字にする処理
+                            # 💡 確実な赤文字適用
                             dt = parse_date(row.get('期限'))
                             current_status = str(row.get('ステータス', '')).strip()
                             if dt and current_status != '完了':
                                 diff = (dt.date() - datetime.now().date()).days
                                 if diff < 0:
-                                    c[5].markdown(f"<span style='color:#ff4b4b; font-weight:bold;'>{row.get('期限')} (超過)</span>", unsafe_allow_html=True)
+                                    c[5].markdown(f"<div class='text-alert'>{row.get('期限')} (超過)</div>", unsafe_allow_html=True)
                                 elif diff == 0:
-                                    c[5].markdown(f"<span style='color:#ff4b4b; font-weight:bold;'>{row.get('期限')} (本日)</span>", unsafe_allow_html=True)
+                                    c[5].markdown(f"<div class='text-alert'>{row.get('期限')} (本日)</div>", unsafe_allow_html=True)
                                 elif diff <= 3:
-                                    c[5].markdown(f"<span style='color:#faca2b; font-weight:bold;'>{row.get('期限')} (あと{diff}日)</span>", unsafe_allow_html=True)
+                                    c[5].markdown(f"<div class='text-warning'>{row.get('期限')} (あと{diff}日)</div>", unsafe_allow_html=True)
                                 else:
                                     c[5].write(row.get('期限'))
                             else:
