@@ -18,7 +18,7 @@ def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
 
-# --- 🌟 タイトルサイズ・余白を確実に消し去るためのカスタムCSS 🌟 ---
+# --- 🌟 タイトルサイズ・余白を【超強力に】強制上書きするカスタムCSS 🌟 ---
 st.markdown("""
     <style>
         /* 全体背景と標準テキストカラー */
@@ -36,10 +36,10 @@ st.markdown("""
             margin: 0px !important;
         }
         
-        /* コンテンツエリア全体の最上部パディングを限界までゼロに */
+        /* コンテンツエリア全体の最上部パディングをゼロにし、上へ引っ張り上げる */
         .main .block-container {
-            padding-top: 0.5rem !important;
-            margin-top: 0rem !important;
+            padding-top: 0px !important;
+            margin-top: -40px !important; /* 全体を極限まで上に詰める */
             padding-bottom: 1rem !important;
         }
 
@@ -53,30 +53,47 @@ st.markdown("""
             font-size: 0.82rem !important;
         }
         
-        /* 🚨 2. 各個別ページのタイトル（st.header、h2タグ）のサイズもh3（1.15rem）に揃えて小さくし、上部余白をゼロ化 */
-        .main h2,
-        .main h2 span,
-        .main [data-testid="stMarkdownContainer"] h2 {
-            font-size: 1.15rem !important;
-            margin-top: 0px !important;
+        /* 🚨 2. 【超重要】各個別ページのカスタムタイトル（HTML）の上部余白とサイズを強制固定 */
+        .page-title-box {
+            margin-top: -20px !important;
             padding-top: 0px !important;
-            margin-bottom: 0.4rem !important;
+            padding-bottom: 0px !important;
+            margin-bottom: 5px !important;
+        }
+        .page-title-box h2 {
+            font-size: 1.15rem !important;
+            font-weight: bold !important;
+            margin: 0px !important;
+            padding: 0px !important;
             line-height: 1.2 !important;
         }
         
-        /* 🚨 3. 期日アラートなどのh3タグの上部マージンもリセット */
-        .main h3 {
+        /* 🚨 3. Streamlit標準の要素が勝手に作る上部マージンをすべてゼロ化（!important連打） */
+        .main h2, .main h3, .main h4,
+        .main [data-testid="stMarkdownContainer"] h2,
+        .main [data-testid="stMarkdownContainer"] h3 {
             font-size: 1.15rem !important;
             margin-top: 0px !important;
             padding-top: 0px !important;
-            margin-bottom: 0.4rem !important;
+            margin-bottom: 5px !important;
         }
         
-        /* タイトルやヘッダーが入っているブロック自体の隙間を強制排除 */
-        .main [data-testid="element-container"]:has(h2),
-        .main [data-testid="element-container"]:has(h3) {
+        /* タブ（st.tabs）自体の上の無駄な空白を消し去る */
+        [data-testid="stTabs"] {
+            margin-top: -15px !important;
+            padding-top: 0px !important;
+        }
+        
+        /* 各要素を包むコンテナのブロック間の隙間（Gap）を詰める */
+        [data-testid="stVerticalBlock"] {
+            gap: 0.4rem !important;
+        }
+        
+        /* タイトルやヘッダーが入っているブロック自体の隙間を排除 */
+        .main [data-testid="element-container"] {
             margin-top: 0px !important;
             padding-top: 0px !important;
+            margin-bottom: 0px !important;
         }
         
         /* 右側の日付の位置調整 */
@@ -607,9 +624,9 @@ try:
     # 🏠 ページ：ホーム (動的ダッシュボード)
     # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
-        # 🚨 HTML直書きでタイトルと日付の余白を完全排除。 margin-topをマイナスにして上にギュッと詰めました
+        # 🚨 HTML直書きでタイトルと日付の余白を完全排除。
         st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -30px !important; padding: 0px; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0px !important; padding: 0px; width: 100%;">
                 <h3 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🏢 総務管理アプリ</h3>
                 <div style="font-size: 1.1rem; color: #ffffff !important; font-weight: bold;">📅 {datetime.now().strftime('%Y年%m月%d日')}</div>
             </div>
@@ -660,10 +677,10 @@ try:
     # ==========================================
     elif page_selection in MENU_TO_CAT:
         cat = MENU_TO_CAT[page_selection]
-        # 🚨 【完全解決】個別ページの st.header("...")を完全廃止し、上部余白を限界まで削り、サイズをh3(1.15rem)に揃えたHTMLに変更
+        # 🚨 【完全解決】タイトル表示を専用クラスでラップ。サイズを1.15remに固定、上部余白を極限までカット
         st.markdown(f"""
-            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
-                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🗃️ {page_selection.strip()} 管理</h2>
+            <div class="page-title-box">
+                <h2>🗃️ {page_selection.strip()} 管理</h2>
             </div>
         """, unsafe_allow_html=True)
         
@@ -721,10 +738,10 @@ try:
     # 🔐 ページ：電子証明書管理
     # ==========================================
     elif page_selection == "🔐 電子証明書管理":
-        # 🚨 上部余白排除＆サイズ縮小HTML
+        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
-            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
-                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🔐 電子証明書管理</h2>
+            <div class="page-title-box">
+                <h2>🔐 電子証明書管理</h2>
             </div>
         """, unsafe_allow_html=True)
         
@@ -773,10 +790,10 @@ try:
     # 👤 ページ：新規入職者管理
     # ==========================================
     elif page_selection == "👤 新規入職者管理":
-        # 🚨 上部余白排除＆サイズ縮小HTML
+        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
-            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
-                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">👤 新規入職者管理</h2>
+            <div class="page-title-box">
+                <h2>👤 新規入職者管理</h2>
             </div>
         """, unsafe_allow_html=True)
         
@@ -810,10 +827,10 @@ try:
     # 📋 ページ：タスク管理
     # ==========================================
     elif page_selection == "📋 タスク管理":
-        # 🚨 上部余白排除＆サイズ縮小HTML
+        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
-            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
-                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">📋 タスク管理</h2>
+            <div class="page-title-box">
+                <h2>📋 タスク管理</h2>
             </div>
         """, unsafe_allow_html=True)
         
@@ -917,10 +934,10 @@ try:
     # 📅 ページ：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        # 🚨 上部余白排除＆サイズ縮小HTML
+        # 🚨 タイトル専用クラスで余白完全排除
         st.markdown(f"""
-            <div style="margin-top: -30px !important; padding: 0px; width: 100%;">
-                <h2 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">📅 5年経過リスト (PC/iPad)</h2>
+            <div class="page-title-box">
+                <h2>📅 5年経過リスト (PC/iPad)</h2>
             </div>
         """, unsafe_allow_html=True)
         
