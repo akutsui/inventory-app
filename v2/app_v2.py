@@ -39,7 +39,7 @@ st.markdown("""
         /* 🚨 2. コンテンツエリア全体の最上部の巨大なデッドスペースを、マイナスマージンで強制的に上へ引き上げる */
         .main .block-container {
             padding-top: 0px !important;
-            margin-top: -110px !important; /* 👈 ここで最上部の真っ黒な空白を根こそぎカットして上へ引き上げます */
+            margin-top: -110px !important; 
             padding-bottom: 1rem !important;
         }
 
@@ -57,7 +57,7 @@ st.markdown("""
         .page-title-box {
             margin-top: 0px !important;
             padding-top: 0px !important;
-            margin-bottom: 15px !important; /* 👈 タイトルとタブの間の隙間を心地よい広さに戻しました */
+            margin-bottom: 15px !important; 
         }
         .page-title-box h2 {
             font-size: 1.15rem !important;
@@ -187,6 +187,14 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
         hr { border-top: 1px solid #333333 !important; }
+        
+        .sidebar-link {
+            display: flex !important; align-items: center !important; justify-content: flex-start !important;
+            padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important;
+            color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important;
+            margin-bottom: 5px !important;
+        }
+        .sidebar-link:hover { background-color: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; text-decoration: none !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -369,6 +377,19 @@ def generate_auto_id(df_target, prefix, id_col='ID'):
                 except: pass
     return f"{prefix}{max_num + 1:04d}"
 
+def generate_auto_id(df_target, prefix, id_col='ID'):
+    if df_target is None or df_target.empty: return f"{prefix}0001"
+    max_num = 0
+    if id_col in df_target.columns:
+        for val in df_target[id_col].astype(str):
+            val = val.strip()
+            if val.startswith(prefix):
+                try:
+                    num = int(val[len(prefix):])
+                    if num > max_num: max_num = num
+                except: pass
+    return f"{prefix}{max_num + 1:04d}"
+
 def get_auto_id(category, current_df):
     prefix_dict = {"PC":"A","訪問車":"B","iPad":"C","携帯電話":"D","Office365":"E","ウイルスバスター":"F","その他機器":"G"}
     if not current_df.empty and 'カテゴリ' in current_df.columns: target_df = current_df[current_df['カテゴリ']==category]
@@ -435,7 +456,7 @@ def show_detail_dialog(row_data):
             custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
         else:
-            for col in COLUMNS_DEF.get(cat, []):
+            for col in COLUMNS_DEF[cat]:
                 val = row_data.get(col, '')
                 if '日' in col or '期限' in col:
                     d_val = st.date_input(col, value=parse_date(val))
@@ -607,7 +628,6 @@ try:
     # 🏠 ページ：ホーム (動的ダッシュボード)
     # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
-        # 🚨 HTML直書きでタイトルと日付の余白を完全排除。
         st.markdown(f"""
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0px !important; padding: 0px; width: 100%;">
                 <h3 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🏢 総務管理アプリ</h3>
@@ -660,7 +680,6 @@ try:
     # ==========================================
     elif page_selection in MENU_TO_CAT:
         cat = MENU_TO_CAT[page_selection]
-        # 🚨 タイトルの外枠（コンテナ）をリセットし、タブとの間に適度な余白を設定
         st.markdown(f"""
             <div class="page-title-box">
                 <h2>🗃️ {page_selection.strip()} 管理</h2>
@@ -684,7 +703,21 @@ try:
                         c[2].write(f"**{safe_text(row.get('品名', ''))}**")
                         c[3].write(row.get('利用者', ''))
                         c[4].write(row.get('ステータス', ''))
-                        c[5].write(row.get('購入日', row.get('登録番号', '')))
+                        
+                        # 💡 🚨【nan対策・完全改善】右端に表示する項目をカテゴリごとに切り替え、未設定（nan）の場合は完全に空白化するロジックを実装
+                        right_col_val = ""
+                        if cat == "訪問車":
+                            right_col_val = row.get('登録番号', '')
+                        elif cat in ["Office365", "ウイルスバスター"]:
+                            right_col_val = row.get('備考', '')
+                        else:
+                            right_col_val = row.get('購入日', row.get('登録番号', ''))
+                        
+                        # 文字列として 'nan' または本当のNaNだった場合は非表示にする
+                        if pd.isna(right_col_val) or str(right_col_val).strip().lower() == 'nan':
+                            right_col_val = ""
+                        
+                        c[5].write(str(right_col_val))
                         st.markdown("<hr>", unsafe_allow_html=True)
         with main_tab2:
             if st.session_state.zaiko_reg_success:
