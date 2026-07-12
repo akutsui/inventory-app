@@ -207,6 +207,7 @@ SHEET_NEW_EMPLOYEE = "新規入職者"
 ONBOARDING_TASKS = ["PC", "iPad", "携帯", "駐車場", "LineworksID", "モバカルモバナーID", "MCS", "アルコールチェックID", "訪問車両", "備品", "机・椅子", "三文判", "シャチハタ"]
 SHEET_CERTIFICATE = "電子証明書"
 SHEET_TASK = "タスク管理"
+SHEET_MATERNITY = "産休育休"
 
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
@@ -226,7 +227,7 @@ SPREADSHEET_NAME = 'management_db'
 
 if 'page_number' not in st.session_state: st.session_state['page_number'] = 0
 if 'active_search_query' not in st.session_state: st.session_state['active_search_query'] = ""
-for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_reg_success']:
+for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_reg_success', 'mat_reg_success']:
     if key not in st.session_state: st.session_state[key] = False
 
 # ==========================================
@@ -377,19 +378,6 @@ def generate_auto_id(df_target, prefix, id_col='ID'):
                 except: pass
     return f"{prefix}{max_num + 1:04d}"
 
-def generate_auto_id(df_target, prefix, id_col='ID'):
-    if df_target is None or df_target.empty: return f"{prefix}0001"
-    max_num = 0
-    if id_col in df_target.columns:
-        for val in df_target[id_col].astype(str):
-            val = val.strip()
-            if val.startswith(prefix):
-                try:
-                    num = int(val[len(prefix):])
-                    if num > max_num: max_num = num
-                except: pass
-    return f"{prefix}{max_num + 1:04d}"
-
 def get_auto_id(category, current_df):
     prefix_dict = {"PC":"A","訪問車":"B","iPad":"C","携帯電話":"D","Office365":"E","ウイルスバスター":"F","その他機器":"G"}
     if not current_df.empty and 'カテゴリ' in current_df.columns: target_df = current_df[current_df['カテゴリ']==category]
@@ -406,6 +394,10 @@ def get_certificate_data():
 
 def get_task_data():
     try: return pd.DataFrame(client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK).get_all_records())
+    except: return pd.DataFrame()
+
+def get_maternity_data():
+    try: return pd.DataFrame(client.open(SPREADSHEET_NAME).worksheet(SHEET_MATERNITY).get_all_records())
     except: return pd.DataFrame()
 
 def parse_date(date_val):
@@ -482,7 +474,7 @@ def show_onboarding_task_dialog(row_data):
         cols = st.columns(2)
         for i, task in enumerate(ONBOARDING_TASKS):
             with cols[i % 2]: task_status[task] = st.text_input(task, value=row_data.get(task, ''))
-        new_status = st.selectbox("全体のステータス", ["準備中", "完了", "保留"], index=0)
+        new_status = st.selectbox("全体のステータス", ["準備中", "完了", "保留"], index=["準備中", "完了", "保留"].index(row_data.get('ステータス', '準備中')))
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         if st.form_submit_button("✅ 更新する"):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
@@ -504,6 +496,25 @@ def show_cert_dialog(row_data):
             worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
             headers = worksheet.row_values(1)
             data_dict = {"ID":row_data.get('ID',''), "種類":new_type, "端末":new_dev, "有効期限":str(new_exp) if new_exp else '', "備考":new_note}
+            row_to_save = [data_dict.get(h, "") for h in headers]
+            cell = worksheet.find(str(row_data.get('ID','')))
+            if cell: worksheet.update(f"A{cell.row}", [row_to_save])
+            st.rerun()
+
+@st.dialog("📝 産休育休者の編集")
+def show_maternity_dialog(row_data):
+    with st.form("maternity_edit_form"):
+        # 💡 「名前」の編集欄を追加
+        new_name = st.text_input("名前", value=row_data.get('名前', ''))
+        new_dept = st.text_input("部署", value=row_data.get('部署', ''))
+        new_start = st.date_input("休暇開始日", value=parse_date(row_data.get('休暇開始日')))
+        new_return = st.date_input("復帰予定日", value=parse_date(row_data.get('復帰予定日')))
+        new_status = st.selectbox("ステータス", ["取得中", "復職済"], index=["取得中", "復職済"].index(row_data.get('ステータス', '取得中')))
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        if st.form_submit_button("✅ 更新する"):
+            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_MATERNITY)
+            headers = worksheet.row_values(1)
+            data_dict = {"ID":row_data.get('ID',''), "名前":new_name, "部署":new_dept, "休暇開始日":str(new_start) if new_start else '', "復帰予定日":str(new_return) if new_return else '', "ステータス":new_status, "備考":new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
@@ -608,6 +619,7 @@ with st.sidebar:
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
+    st.button("👶 産休育休者管理", on_click=change_page, args=("👶 産休育休者管理",), use_container_width=True)
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
     st.button("📅 5年経過リスト", on_click=change_page, args=("📅 5年経過リスト (PC/iPad)",), use_container_width=True)
     st.markdown("---")
@@ -704,7 +716,6 @@ try:
                         c[3].write(row.get('利用者', ''))
                         c[4].write(row.get('ステータス', ''))
                         
-                        # 💡 🚨【nan対策・完全改善】右端に表示する項目をカテゴリごとに切り替え、未設定（nan）の場合は完全に空白化するロジックを実装
                         right_col_val = ""
                         if cat == "訪問車":
                             right_col_val = row.get('登録番号', '')
@@ -713,7 +724,6 @@ try:
                         else:
                             right_col_val = row.get('購入日', row.get('登録番号', ''))
                         
-                        # 文字列として 'nan' または本当のNaNだった場合は非表示にする
                         if pd.isna(right_col_val) or str(right_col_val).strip().lower() == 'nan':
                             right_col_val = ""
                         
@@ -815,6 +825,10 @@ try:
         df_emp = get_new_employee_data()
         with t1:
             if not df_emp.empty:
+                status_weight = {"準備中": 0, "保留": 1, "完了": 2}
+                df_emp['sort_weight'] = df_emp['ステータス'].apply(lambda x: status_weight.get(str(x).strip(), 9))
+                df_emp = df_emp.sort_values(by='sort_weight', ascending=True)
+                
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     for idx, row in df_emp.iterrows():
@@ -836,6 +850,84 @@ try:
                 if st.form_submit_button("登録"):
                     ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
                     ws.append_row([e_id, e_name, e_furi, str(e_date), "", "", "準備中"] + [""]*13 + [""]); st.success("登録しました"); st.rerun()
+
+    # ==========================================
+    # 👶 ページ：産休育休者管理 (「名前」列追加版)
+    # ==========================================
+    elif page_selection == "👶 産休育休者管理":
+        st.markdown(f"""
+            <div class="page-title-box">
+                <h2>👶 産休育休者管理</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        t1, t2 = st.tabs(["📋 休暇者一覧", "➕ 新規登録"])
+        df_mat = get_maternity_data()
+        
+        with t1:
+            if not df_mat.empty:
+                mat_status_weight = {"取得中": 0, "復職済": 1}
+                df_mat['sort_weight'] = df_mat['ステータス'].apply(lambda x: mat_status_weight.get(str(x).strip(), 9))
+                df_mat = df_mat.sort_values(by='sort_weight', ascending=True)
+                
+                with st.container():
+                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    # 💡 「名前」を表示するためにカラムバランスを調整（6分割）
+                    hc = st.columns([0.8, 1.0, 1.8, 2.0, 2.0, 2.0, 1.8])
+                    headers_text = ["操作", "ID", "名前", "部署", "休暇開始日", "復帰予定日", "ステータス"]
+                    for i, h_text in enumerate(headers_text):
+                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    
+                    for idx, row in df_mat.iterrows():
+                        c = st.columns([0.8, 1.0, 1.8, 2.0, 2.0, 2.0, 1.8])
+                        if c[0].button("詳細", key=f"mat_edit_{idx}"): show_maternity_dialog(row)
+                        c[1].write(str(row.get('ID', '')))
+                        # 💡 名前列を表示
+                        c[2].write(f"**{safe_text(row.get('名前', ''))}**")
+                        c[3].write(str(row.get('部署', '')))
+                        c[4].write(str(row.get('休暇開始日', '')))
+                        c[5].write(str(row.get('復帰予定日', '')))
+                        
+                        curr_st = str(row.get('ステータス', '')).strip()
+                        if curr_st == "取得中":
+                            c[6].markdown(f"<span class='text-warning'>{curr_st}</span>", unsafe_allow_html=True)
+                        else:
+                            c[6].write(curr_st)
+                        st.markdown("<hr>", unsafe_allow_html=True)
+            else:
+                st.info("データがありません。")
+                
+        with t2:
+            if st.session_state.mat_reg_success:
+                st.success("✅ 登録完了しました！")
+                st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'mat_reg_success', False))
+            else:
+                with st.form("mat_reg_form"):
+                    m_id = st.text_input("ID", value=generate_auto_id(df_mat, "M"))
+                    # 💡 新規登録フォームに「名前」を追加
+                    m_name = st.text_input("名前")
+                    m_dept = st.text_input("部署")
+                    m_start = st.date_input("休暇開始日", value=None)
+                    m_return = st.date_input("復帰予定日", value=None)
+                    m_status = st.selectbox("ステータス", ["取得中", "復職済"])
+                    m_note = st.text_area("備考")
+                    if st.form_submit_button("登録する"):
+                        if not m_name or not m_dept:
+                            st.error("名前と部署の入力は必須です。")
+                        else:
+                            try:
+                                ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_MATERNITY)
+                            except gspread.exceptions.WorksheetNotFound:
+                                wb = client.open(SPREADSHEET_NAME)
+                                ws = wb.add_worksheet(title=SHEET_MATERNITY, rows="100", cols="20")
+                                # 💡 列見出しのIDと部署の間に「名前」を組み込み
+                                ws.append_row(["ID", "名前", "部署", "休暇開始日", "復帰予定日", "ステータス", "備考"])
+                            
+                            ws.append_row([m_id, m_name, m_dept, str(m_start) if m_start else '', str(m_return) if m_return else '', m_status, m_note])
+                            st.session_state.mat_reg_success = True
+                            get_all_data.clear()
+                            st.rerun()
 
     # ==========================================
     # 📋 ページ：タスク管理
@@ -947,12 +1039,7 @@ try:
     # 📅 ページ：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>📅 5年経過リスト (PC/iPad)</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.header("📅 5年経過リスト (PC/iPad)")
         if not df.empty and 'カテゴリ' in df.columns:
             df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
             if not df_old.empty:
