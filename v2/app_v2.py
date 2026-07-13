@@ -437,10 +437,8 @@ def show_maternity_dialog(row_data):
             get_maternity_data.clear() # 該当キャッシュだけクリア
             st.rerun()
 
-# 💡 🚨【NEW】ORCA証明書編集画面（PC側の該当列と完全リンクさせて表示）
 @st.dialog("📝 ORCA証明書の編集")
 def show_orca_cert_dialog(row_data):
-    # 各列に入力されている値（番号など）を取得
     cert_name = str(row_data.get('名前', '')).strip()
     cert_u = str(row_data.get('ORCA宇都宮', '')).strip()
     cert_k = str(row_data.get('ORCA鹿沼', '')).strip()
@@ -464,7 +462,6 @@ def show_orca_cert_dialog(row_data):
             get_orca_cert_data.clear()
             st.rerun()
             
-    # 💡【重要機能】この証明書がインストールされているPCを各拠点ごとにリンクして自動表示
     st.markdown("---")
     st.markdown(f"##### 💻 この証明書が紐付いているPC")
     
@@ -474,7 +471,6 @@ def show_orca_cert_dialog(row_data):
     if not df_all.empty and 'カテゴリ' in df_all.columns:
         df_pc = df_all[df_all['カテゴリ'] == 'PC']
         
-        # 💡 カンマ区切りの複数入力（「1, 2」など）や、完全一致だけを正確に拾う関数
         def is_match(pc_val, cert_val):
             if not pc_val or not cert_val: 
                 return False
@@ -487,7 +483,6 @@ def show_orca_cert_dialog(row_data):
             pc_k = str(pc_row.get('ORCA鹿沼', '')).strip()
             pc_m = str(pc_row.get('ORCA益子', '')).strip()
             
-            # 宇都宮は宇都宮同士、鹿沼は鹿沼同士、益子は益子同士で値が一致するか判定
             if is_match(pc_u, cert_u) or is_match(pc_k, cert_k) or is_match(pc_m, cert_m):
                 installed_pcs.append(pc_row)
     
@@ -807,7 +802,7 @@ try:
                     st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # 🏥 ページ：ORCA証明書管理
+    # 🏥 ページ：ORCA証明書管理 (一覧にPC紐付け表示追加)
     # ==========================================
     elif page_selection == "🏥 ORCA証明書管理":
         st.markdown(f"""
@@ -824,23 +819,58 @@ try:
                 if 'ID' in df_orca.columns:
                     df_orca = df_orca.sort_values(by='ID', ascending=True)
                 
+                # 💡 一覧表示用にPCデータを事前に一度だけ取得しておく
+                df_all_pc = pd.DataFrame()
+                if not df.empty and 'カテゴリ' in df.columns:
+                    df_all_pc = df[df['カテゴリ'] == 'PC']
+                
+                # 完全一致・カンマ区切り一致判定関数
+                def is_match_list(pc_val, cert_val):
+                    if not pc_val or not cert_val: return False
+                    v_str = pc_val.replace('、', ',').replace(' ', ',').replace(' ', ',')
+                    v_list = [v.strip() for v in v_str.split(',') if v.strip()]
+                    return cert_val in v_list or cert_val == pc_val.strip()
+
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                    hc = st.columns([0.8, 1.0, 1.8, 1.5, 1.6, 1.6, 1.6])
-                    headers_text = ["操作", "ID", "名前", "部署", "宇都宮", "鹿沼", "益子"]
+                    # 💡 右端に「紐付くPC」列を追加し、カラム幅を調整
+                    hc = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
+                    headers_text = ["操作", "ID", "名前", "部署", "宇都宮", "鹿沼", "益子", "紐付くPC"]
                     for i, h_text in enumerate(headers_text):
                         hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                     st.markdown("<hr>", unsafe_allow_html=True)
                     
                     for idx, row in df_orca.iterrows():
-                        c = st.columns([0.8, 1.0, 1.8, 1.5, 1.6, 1.6, 1.6])
+                        cert_u = str(row.get('ORCA宇都宮', '')).strip()
+                        cert_k = str(row.get('ORCA鹿沼', '')).strip()
+                        cert_m = str(row.get('ORCA益子', '')).strip()
+                        
+                        # 💡 各証明書に対して、裏側でPCを検索して文字列を作成
+                        linked_pcs = []
+                        if not df_all_pc.empty:
+                            for _, pc_row in df_all_pc.iterrows():
+                                pc_u = str(pc_row.get('ORCA宇都宮', '')).strip()
+                                pc_k = str(pc_row.get('ORCA鹿沼', '')).strip()
+                                pc_m = str(pc_row.get('ORCA益子', '')).strip()
+                                
+                                if is_match_list(pc_u, cert_u) or is_match_list(pc_k, cert_k) or is_match_list(pc_m, cert_m):
+                                    pc_id = str(pc_row.get('ID', ''))
+                                    pc_user = str(pc_row.get('利用者', ''))
+                                    linked_pcs.append(f"{pc_id}({pc_user})")
+                        
+                        # 紐付くPCがなければハイフンを表示
+                        pc_disp_text = ", ".join(linked_pcs) if linked_pcs else "-"
+                        
+                        c = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
                         if c[0].button("詳細", key=f"orca_edit_{idx}"): show_orca_cert_dialog(row)
                         c[1].write(str(row.get('ID', '')))
                         c[2].write(f"**{safe_text(row.get('名前', ''))}**")
                         c[3].write(str(row.get('部署', '')))
-                        c[4].write(str(row.get('ORCA宇都宮', '')))
-                        c[5].write(str(row.get('ORCA鹿沼', '')))
-                        c[6].write(str(row.get('ORCA益子', '')))
+                        c[4].write(cert_u)
+                        c[5].write(cert_k)
+                        c[6].write(cert_m)
+                        # 💡 紐付いたPCのIDと名前を表示（少し文字サイズを小さくして見やすく）
+                        c[7].markdown(f"<span style='font-size:0.75rem; color:#aaaaaa;'>{pc_disp_text}</span>", unsafe_allow_html=True)
                         st.markdown("<hr>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。")
