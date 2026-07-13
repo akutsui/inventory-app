@@ -104,13 +104,11 @@ COLUMNS_DEF = {
     "携帯電話": ["購入日", "電話番号", "SIM", "メーカー", "製造番号", "使用部署", "保管場所", "キャリア", "備考"],
     "Office365": ["アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"],
     "ウイルスバスター": ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"],
-    "other": ["使用部署", "使用場所", "使用開始日", "備考"],
     "その他機器": ["使用部署", "使用場所", "使用開始日", "備考"]
 }
 
 SPREADSHEET_NAME = 'management_db'
 
-# 🚀 改善1: Googleスプレッドシートへの接続を全体で1回だけ行い、キャッシュ（一時保存）する
 @st.cache_resource
 def get_spreadsheet():
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -118,7 +116,6 @@ def get_spreadsheet():
     client = gspread.authorize(creds)
     return client.open(SPREADSHEET_NAME)
 
-# 共有のドキュメントオブジェクトを利用
 doc = get_spreadsheet()
 
 if 'page_number' not in st.session_state: st.session_state['page_number'] = 0
@@ -280,7 +277,6 @@ def get_auto_id(category, current_df):
     else: target_df = pd.DataFrame()
     return generate_auto_id(target_df, prefix_dict.get(category, "Z"))
 
-# 🚀 改善2: 新規入職者、証明書、タスク、産休の各データをしっかりキャッシュ化（画面切替時の遅延を解消）
 @st.cache_data(ttl=600)
 def get_new_employee_data():
     try: return pd.DataFrame(doc.worksheet(SHEET_NEW_EMPLOYEE).get_all_records())
@@ -349,7 +345,7 @@ def show_detail_dialog(row_data):
             custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
         else:
-            for col in COLUMNS_DEF[cat]:
+            for col in COLUMNS_DEF.get(cat, []):
                 val = row_data.get(col, '')
                 if '日' in col or '期限' in col:
                     d_val = st.date_input(col, value=parse_date(val))
@@ -552,7 +548,8 @@ with st.sidebar:
         get_maternity_data.clear()
         st.rerun()
 
-MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "other", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
+# 💡 🚨 辞書のマッピングを完全に修正（otherを使わず直接連携）
+MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 try:
     df = get_all_data()
