@@ -17,6 +17,7 @@ if 'page_selection' not in st.session_state:
 def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
+    st.session_state['page_number'] = 0  # 💡 ページ移動時に1ページ目にリセット
 
 # --- 🌟 CSS省略（レイアウト設定） 🌟 ---
 st.markdown("""
@@ -649,6 +650,7 @@ with st.sidebar:
         get_orca_cert_data.clear()
         st.rerun()
 
+# 💡 🚨 辞書のマッピング
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 try:
@@ -728,7 +730,20 @@ try:
             else:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                    for idx, row in display_df.head(50).iterrows():
+                    
+                    # --- 💡 ページネーション設定 ---
+                    ITEMS_PER_PAGE = 50
+                    total_items = len(display_df)
+                    total_pages = (total_items - 1) // ITEMS_PER_PAGE + 1 if total_items > 0 else 1
+                    
+                    if st.session_state.page_number >= total_pages:
+                        st.session_state.page_number = 0
+                        
+                    start_idx = st.session_state.page_number * ITEMS_PER_PAGE
+                    end_idx = start_idx + ITEMS_PER_PAGE
+                    current_page_df = display_df.iloc[start_idx:end_idx]
+                    
+                    for idx, row in current_page_df.iterrows():
                         c = st.columns([0.8, 1, 3, 2, 1.5, 1])
                         if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
                         c[1].write(row.get('ID', ''))
@@ -749,6 +764,20 @@ try:
                         
                         c[5].write(str(right_col_val))
                         st.markdown("<hr>", unsafe_allow_html=True)
+                        
+                    # --- 💡 ページネーションボタン ---
+                    if total_pages > 1:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        pc1, pc2, pc3 = st.columns([1, 2, 1])
+                        with pc1:
+                            if st.session_state.page_number > 0:
+                                st.button("⬅️ 前のページ", key=f"prev_{cat}", on_click=lambda: st.session_state.update(page_number=st.session_state.page_number - 1), use_container_width=True)
+                        with pc2:
+                            st.markdown(f"<div style='text-align: center; font-weight: bold; padding-top: 5px;'>ページ {st.session_state.page_number + 1} / {total_pages} （全 {total_items} 件）</div>", unsafe_allow_html=True)
+                        with pc3:
+                            if st.session_state.page_number < total_pages - 1:
+                                st.button("次のページ ➡️", key=f"next_{cat}", on_click=lambda: st.session_state.update(page_number=st.session_state.page_number + 1), use_container_width=True)
+
         with main_tab2:
             if st.session_state.zaiko_reg_success:
                 st.success("✅ 登録完了しました！"); st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'zaiko_reg_success', False))
