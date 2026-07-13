@@ -437,17 +437,21 @@ def show_maternity_dialog(row_data):
             get_maternity_data.clear() # 該当キャッシュだけクリア
             st.rerun()
 
-# 💡 🚨【NEW】ORCA証明書編集画面（PC紐付け表示付き）
+# 💡 🚨【NEW】ORCA証明書編集画面（PC側の該当列と完全リンクさせて表示）
 @st.dialog("📝 ORCA証明書の編集")
 def show_orca_cert_dialog(row_data):
+    # 各列に入力されている値（番号など）を取得
     cert_name = str(row_data.get('名前', '')).strip()
+    cert_u = str(row_data.get('ORCA宇都宮', '')).strip()
+    cert_k = str(row_data.get('ORCA鹿沼', '')).strip()
+    cert_m = str(row_data.get('ORCA益子', '')).strip()
     
     with st.form("orca_edit_form"):
         new_name = st.text_input("名前", value=cert_name)
         new_dept = st.text_input("部署", value=row_data.get('部署', ''))
-        new_utsu = st.text_input("ORCA宇都宮", value=row_data.get('ORCA宇都宮', ''))
-        new_kanu = st.text_input("ORCA鹿沼", value=row_data.get('ORCA鹿沼', ''))
-        new_mashi = st.text_input("ORCA益子", value=row_data.get('ORCA益子', ''))
+        new_utsu = st.text_input("ORCA宇都宮", value=cert_u)
+        new_kanu = st.text_input("ORCA鹿沼", value=cert_k)
+        new_mashi = st.text_input("ORCA益子", value=cert_m)
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         
         if st.form_submit_button("✅ 更新する"):
@@ -460,39 +464,41 @@ def show_orca_cert_dialog(row_data):
             get_orca_cert_data.clear()
             st.rerun()
             
-    # 💡【重要機能】この証明書がインストールされているPCを裏側で検索して自動表示
-    if cert_name:
-        st.markdown("---")
-        st.markdown(f"##### 💻 この証明書（{cert_name}）が入っているPC")
+    # 💡【重要機能】この証明書がインストールされているPCを各拠点ごとにリンクして自動表示
+    st.markdown("---")
+    st.markdown(f"##### 💻 この証明書が紐付いているPC")
+    
+    df_all = get_all_data()
+    installed_pcs = []
+    
+    if not df_all.empty and 'カテゴリ' in df_all.columns:
+        df_pc = df_all[df_all['カテゴリ'] == 'PC']
         
-        df_all = get_all_data()
-        installed_pcs = []
+        # 💡 カンマ区切りの複数入力（「1, 2」など）や、完全一致だけを正確に拾う関数
+        def is_match(pc_val, cert_val):
+            if not pc_val or not cert_val: 
+                return False
+            v_str = pc_val.replace('、', ',').replace(' ', ',').replace(' ', ',')
+            v_list = [v.strip() for v in v_str.split(',') if v.strip()]
+            return cert_val in v_list or cert_val == pc_val.strip()
         
-        if not df_all.empty and 'カテゴリ' in df_all.columns:
-            df_pc = df_all[df_all['カテゴリ'] == 'PC']
+        for _, pc_row in df_pc.iterrows():
+            pc_u = str(pc_row.get('ORCA宇都宮', '')).strip()
+            pc_k = str(pc_row.get('ORCA鹿沼', '')).strip()
+            pc_m = str(pc_row.get('ORCA益子', '')).strip()
             
-            for _, pc_row in df_pc.iterrows():
-                u_val = str(pc_row.get('ORCA宇都宮', ''))
-                k_val = str(pc_row.get('ORCA鹿沼', ''))
-                m_val = str(pc_row.get('ORCA益子', ''))
-                
-                # 「1」で検索して「11」が引っかからないよう、完全一致＆カンマ区切りのみ抽出する関数
-                def is_match(val_str):
-                    v_str = val_str.replace('、', ',').replace(' ', ',').replace(' ', ',')
-                    v_list = [v.strip() for v in v_str.split(',') if v.strip()]
-                    return cert_name in v_list or cert_name == val_str.strip()
-                
-                if is_match(u_val) or is_match(k_val) or is_match(m_val):
-                    installed_pcs.append(pc_row)
-        
-        if installed_pcs:
-            for pc in installed_pcs:
-                pid = pc.get('ID', '')
-                pname = pc.get('品名', '')
-                puser = pc.get('利用者', '')
-                st.markdown(f"- **{pid}**: {pname} （利用者: {puser}）")
-        else:
-            st.info("現在、この証明書が入っているPCは見つかりませんでした。")
+            # 宇都宮は宇都宮同士、鹿沼は鹿沼同士、益子は益子同士で値が一致するか判定
+            if is_match(pc_u, cert_u) or is_match(pc_k, cert_k) or is_match(pc_m, cert_m):
+                installed_pcs.append(pc_row)
+    
+    if installed_pcs:
+        for pc in installed_pcs:
+            pid = pc.get('ID', '')
+            pname = pc.get('品名', '')
+            puser = pc.get('利用者', '')
+            st.markdown(f"- **{pid}**: {pname} （利用者: {puser}）")
+    else:
+        st.info("現在、この証明書が紐付いているPCは見つかりませんでした。")
 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
