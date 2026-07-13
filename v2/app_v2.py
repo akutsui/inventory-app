@@ -474,13 +474,13 @@ def show_maternity_dialog(row_data):
 
 @st.dialog("📝 ORCA証明書の編集")
 def show_orca_cert_dialog(row_data):
-    cert_name = str(row_data.get('名前', '')).strip()
+    cert_name = str(row_data.get('使用者', '')).strip()
     cert_u = str(row_data.get('ORCA宇都宮', '')).strip()
     cert_k = str(row_data.get('ORCA鹿沼', '')).strip()
     cert_m = str(row_data.get('ORCA益子', '')).strip()
     
     with st.form("orca_edit_form"):
-        new_name = st.text_input("名前", value=cert_name)
+        new_name = st.text_input("使用者", value=cert_name)
         new_dept = st.text_input("部署", value=row_data.get('部署', ''))
         new_utsu = st.text_input("ORCA宇都宮", value=cert_u)
         new_kanu = st.text_input("ORCA鹿沼", value=cert_k)
@@ -490,7 +490,7 @@ def show_orca_cert_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_ORCA_CERT)
             headers = worksheet.row_values(1)
-            data_dict = {"ID":row_data.get('ID',''), "名前":new_name, "部署":new_dept, "ORCA宇都宮":new_utsu, "ORCA鹿沼":new_kanu, "ORCA益子":new_mashi, "備考":new_note}
+            data_dict = {"ID":row_data.get('ID',''), "使用者":new_name, "部署":new_dept, "ORCA宇都宮":new_utsu, "ORCA鹿沼":new_kanu, "ORCA益子":new_mashi, "備考":new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
@@ -649,7 +649,6 @@ with st.sidebar:
         get_orca_cert_data.clear()
         st.rerun()
 
-# 💡 🚨 辞書のマッピング
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 try:
@@ -837,7 +836,7 @@ try:
                     st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # 🏥 ページ：ORCA証明書管理
+    # 🏥 ページ：ORCA証明書管理 (「名前」を「使用者」に変更)
     # ==========================================
     elif page_selection == "🏥 ORCA証明書管理":
         st.markdown(f"""
@@ -867,7 +866,8 @@ try:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     hc = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
-                    headers_text = ["操作", "ID", "名前", "部署", "宇都宮", "鹿沼", "益子", "紐付くPC"]
+                    # 💡 ヘッダーを「使用者」に変更
+                    headers_text = ["操作", "ID", "使用者", "部署", "宇都宮", "鹿沼", "益子", "紐付くPC"]
                     for i, h_text in enumerate(headers_text):
                         hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                     st.markdown("<hr>", unsafe_allow_html=True)
@@ -894,7 +894,8 @@ try:
                         c = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
                         if c[0].button("詳細", key=f"orca_edit_{idx}"): show_orca_cert_dialog(row)
                         c[1].write(str(row.get('ID', '')))
-                        c[2].write(f"**{safe_text(row.get('名前', ''))}**")
+                        # 💡 データを「使用者」列から取得
+                        c[2].write(f"**{safe_text(row.get('使用者', ''))}**")
                         c[3].write(str(row.get('部署', '')))
                         c[4].write(cert_u)
                         c[5].write(cert_k)
@@ -911,7 +912,8 @@ try:
             else:
                 with st.form("orca_reg_form"):
                     o_id = st.text_input("ID", value=generate_auto_id(df_orca, "O"))
-                    o_name = st.text_input("名前")
+                    # 💡 入力項目を「使用者」に変更
+                    o_name = st.text_input("使用者")
                     o_dept = st.text_input("部署")
                     o_utsu = st.text_input("ORCA宇都宮")
                     o_kanu = st.text_input("ORCA鹿沼")
@@ -919,13 +921,14 @@ try:
                     o_note = st.text_area("備考")
                     if st.form_submit_button("登録する"):
                         if not o_name:
-                            st.error("名前の入力は必須です。")
+                            st.error("使用者の入力は必須です。")
                         else:
                             try:
                                 ws = doc.worksheet(SHEET_ORCA_CERT)
                             except gspread.exceptions.WorksheetNotFound:
                                 ws = doc.add_worksheet(title=SHEET_ORCA_CERT, rows="100", cols="10")
-                                ws.append_row(["ID", "名前", "部署", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "備考"])
+                                # 💡 新規シート作成時のヘッダーも「使用者」に
+                                ws.append_row(["ID", "使用者", "部署", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "備考"])
                             
                             ws.append_row([o_id, o_name, o_dept, o_utsu, o_kanu, o_mashi, o_note])
                             st.session_state.orca_reg_success = True
