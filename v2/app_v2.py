@@ -17,7 +17,6 @@ if 'page_selection' not in st.session_state:
 def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
-    st.session_state['page_number'] = 0  # 💡 ページ移動時に1ページ目にリセット
 
 # --- 🌟 CSS省略（レイアウト設定） 🌟 ---
 st.markdown("""
@@ -410,6 +409,12 @@ def show_onboarding_task_dialog(row_data):
         c1, c2 = st.columns(2)
         with c1: new_name = st.text_input("氏名", value=row_data.get('氏名', ''))
         with c2: new_furi = st.text_input("フリガナ", value=row_data.get('フリガナ', ''))
+        
+        # 💡 新規入職者の詳細編集に「職種」と「部署」を追加
+        c3, c4 = st.columns(2)
+        with c3: new_type = st.text_input("職種", value=row_data.get('職種', ''))
+        with c4: new_dept = st.text_input("部署", value=row_data.get('部署', ''))
+        
         task_status = {}
         cols = st.columns(2)
         for i, task in enumerate(ONBOARDING_TASKS):
@@ -424,7 +429,8 @@ def show_onboarding_task_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_NEW_EMPLOYEE)
             headers = worksheet.row_values(1)
-            data_dict = {"ID":row_data.get('ID',''), "氏名":new_name, "フリガナ":new_furi, "入職日":row_data.get('入職日',''), "職種":row_data.get('職種',''), "部署":row_data.get('部署',''), "ステータス":new_status, "備考":new_note}
+            # 💡 職種と部署を保存データに含める
+            data_dict = {"ID":row_data.get('ID',''), "氏名":new_name, "フリガナ":new_furi, "入職日":row_data.get('入職日',''), "職種":new_type, "部署":new_dept, "ステータス":new_status, "備考":new_note}
             for t in ONBOARDING_TASKS: data_dict[t] = task_status[t]
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
@@ -895,7 +901,6 @@ try:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     hc = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
-                    # 💡 ヘッダーを「使用者」に変更
                     headers_text = ["操作", "ID", "使用者", "部署", "宇都宮", "鹿沼", "益子", "紐付くPC"]
                     for i, h_text in enumerate(headers_text):
                         hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
@@ -923,7 +928,6 @@ try:
                         c = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
                         if c[0].button("詳細", key=f"orca_edit_{idx}"): show_orca_cert_dialog(row)
                         c[1].write(str(row.get('ID', '')))
-                        # 💡 データを「使用者」列から取得
                         c[2].write(f"**{safe_text(row.get('使用者', ''))}**")
                         c[3].write(str(row.get('部署', '')))
                         c[4].write(cert_u)
@@ -941,7 +945,6 @@ try:
             else:
                 with st.form("orca_reg_form"):
                     o_id = st.text_input("ID", value=generate_auto_id(df_orca, "O"))
-                    # 💡 入力項目を「使用者」に変更
                     o_name = st.text_input("使用者")
                     o_dept = st.text_input("部署")
                     o_utsu = st.text_input("ORCA宇都宮")
@@ -956,7 +959,6 @@ try:
                                 ws = doc.worksheet(SHEET_ORCA_CERT)
                             except gspread.exceptions.WorksheetNotFound:
                                 ws = doc.add_worksheet(title=SHEET_ORCA_CERT, rows="100", cols="10")
-                                # 💡 新規シート作成時のヘッダーも「使用者」に
                                 ws.append_row(["ID", "使用者", "部署", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "備考"])
                             
                             ws.append_row([o_id, o_name, o_dept, o_utsu, o_kanu, o_mashi, o_note])
@@ -965,7 +967,7 @@ try:
                             st.rerun()
 
     # ==========================================
-    # 👤 ページ：新規入職者管理
+    # 👤 ページ：新規入職者管理 (💡 ヘッダー＆職種・部署追加)
     # ==========================================
     elif page_selection == "👤 新規入職者管理":
         st.markdown(f"""
@@ -984,14 +986,25 @@ try:
                 
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    
+                    # 💡 欠落していたヘッダー（列名）を追加
+                    hc = st.columns([0.8, 1.0, 1.5, 1.5, 1.2, 1.5, 1.5, 1.2])
+                    headers_text = ["操作", "ID", "氏名", "フリガナ", "職種", "部署", "入職日", "ステータス"]
+                    for i, h_text in enumerate(headers_text):
+                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    st.markdown("<hr>", unsafe_allow_html=True)
+                    
                     for idx, row in df_emp.iterrows():
-                        c = st.columns([1, 1, 2, 2, 2, 2])
+                        c = st.columns([0.8, 1.0, 1.5, 1.5, 1.2, 1.5, 1.5, 1.2])
                         if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
-                        c[1].write(row.get('ID',''))
-                        c[2].write(f"**{row.get('氏名','')}**")
-                        c[3].write(row.get('フリガナ',''))
-                        c[4].write(row.get('入職日',''))
-                        c[5].write(row.get('ステータス',''))
+                        c[1].write(str(row.get('ID','')))
+                        c[2].write(f"**{safe_text(row.get('氏名',''))}**")
+                        c[3].write(str(row.get('フリガナ','')))
+                        # 💡 職種・部署を一覧に表示
+                        c[4].write(str(row.get('職種','')))
+                        c[5].write(str(row.get('部署','')))
+                        c[6].write(str(row.get('入職日','')))
+                        c[7].write(str(row.get('ステータス','')))
                         st.markdown("<hr>", unsafe_allow_html=True)
             else: st.info("データがありません。")
         with t2:
@@ -999,10 +1012,17 @@ try:
                 e_id = st.text_input("ID", value=generate_auto_id(df_emp, "H"))
                 e_name = st.text_input("氏名")
                 e_furi = st.text_input("フリガナ")
+                
+                # 💡 新規登録フォームに職種と部署を追加
+                col_type, col_dept = st.columns(2)
+                with col_type: e_type = st.text_input("職種")
+                with col_dept: e_dept = st.text_input("部署")
+                
                 e_date = st.date_input("入職日")
                 if st.form_submit_button("登録"):
                     ws = doc.worksheet(SHEET_NEW_EMPLOYEE)
-                    ws.append_row([e_id, e_name, e_furi, str(e_date), "", "", "準備中"] + [""]*13 + [""])
+                    # 💡 スプレッドシートの並びに合わせて職種・部署を含めて保存
+                    ws.append_row([e_id, e_name, e_furi, str(e_date), e_type, e_dept, "準備中"] + [""]*13 + [""])
                     get_new_employee_data.clear() # キャッシュクリア
                     st.success("登録しました"); st.rerun()
 
@@ -1059,7 +1079,7 @@ try:
                 with st.form("mat_reg_form"):
                     m_id = st.text_input("ID", value=generate_auto_id(df_mat, "M"))
                     m_name = st.text_input("名前")
-                    m_dept = st.text_input("部署")
+                    m_dept = text_input("部署")
                     m_start = st.date_input("休暇開始日", value=None)
                     m_return = st.date_input("復帰予定日", value=None)
                     m_status = st.selectbox("ステータス", ["取得中", "復職済"])
