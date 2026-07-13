@@ -617,18 +617,6 @@ def show_task_dialog(row_data):
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
-    
-    if st.button("🔄 データを最新にする", use_container_width=True): 
-        get_all_data.clear()
-        get_new_employee_data.clear()
-        get_certificate_data.clear()
-        get_task_data.clear()
-        get_maternity_data.clear()
-        get_orca_cert_data.clear()
-        st.rerun()
-        
-    st.markdown("<hr style='margin-top:0px; margin-bottom:10px;'>", unsafe_allow_html=True)
-    
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
     with st.expander("📦 備品管理", expanded=True):
         st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
@@ -650,6 +638,18 @@ with st.sidebar:
     # 💡 外部への総務マニュアルリンク (NotebookLM)
     st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
+    # 🚀 更新ボタンを一番下に戻す
+    if st.button("🔄 データを最新にする", use_container_width=True): 
+        get_all_data.clear()
+        get_new_employee_data.clear()
+        get_certificate_data.clear()
+        get_task_data.clear()
+        get_maternity_data.clear()
+        get_orca_cert_data.clear()
+        st.rerun()
+
+# 💡 🚨 辞書のマッピング
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 try:
@@ -837,7 +837,7 @@ try:
                     st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # 🏥 ページ：ORCA証明書管理 (一覧にPC紐付け表示追加)
+    # 🏥 ページ：ORCA証明書管理
     # ==========================================
     elif page_selection == "🏥 ORCA証明書管理":
         st.markdown(f"""
