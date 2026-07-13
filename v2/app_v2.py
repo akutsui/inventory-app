@@ -18,142 +18,40 @@ def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
 
-# --- 🌟 最上部の空白だけを削り取り、タイトル下は自然な広さに戻すCSS 🌟 ---
+# --- 🌟 CSS省略（レイアウト設定） 🌟 ---
 st.markdown("""
     <style>
-        /* 全体背景と標準テキストカラー */
-        .stApp, [data-testid="stHeader"], .main .block-container {
-            background-color: #000000 !important;
-            color: #ffffff !important;
-        }
-        
-        /* 🚨 1. アプリ最上部ヘッダーの完全非表示 */
-        [data-testid="stHeader"] { 
-            height: 0px !important; 
-            min-height: 0px !important; 
-            display: none !important; 
-            padding: 0px !important;
-            margin: 0px !important;
-        }
-        
-        /* 🚨 2. コンテンツエリア全体の最上部の巨大なデッドスペースを、マイナスマージンで強制的に上へ引き上げる */
-        .main .block-container {
-            padding-top: 0px !important;
-            margin-top: -110px !important; 
-            padding-bottom: 1rem !important;
-        }
-
-        h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
-            color: #ffffff !important;
-        }
+        .stApp, [data-testid="stHeader"], .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
+        [data-testid="stHeader"] { height: 0px !important; min-height: 0px !important; display: none !important; padding: 0px !important; margin: 0px !important; }
+        .main .block-container { padding-top: 0px !important; margin-top: -110px !important; padding-bottom: 1rem !important; }
+        h2, h3, h4, h5, h6, p, span, label, div.stMarkdown { color: #ffffff !important; }
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
         .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
-        
-        .main .block-container p, .main .block-container div, .main .block-container span {
-            font-size: 0.82rem !important;
-        }
-        
-        /* 🚨 3. タイトル（h2）の下は詰まりすぎないよう、ほどよい余白（margin-bottom）を確保 */
-        .page-title-box {
-            margin-top: 0px !important;
-            padding-top: 0px !important;
-            margin-bottom: 15px !important; 
-        }
-        .page-title-box h2 {
-            font-size: 1.15rem !important;
-            font-weight: bold !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            line-height: 1.2 !important;
-        }
-        
-        /* 文字サイズの統一ルール */
-        .main h2, .main h3, .main h4,
-        .main [data-testid="stMarkdownContainer"] h2,
-        .main [data-testid="stMarkdownContainer"] h3 {
-            font-size: 1.15rem !important;
-            margin-top: 0px !important;
-            padding-top: 0px !important;
-        }
-        
-        /* タブの上のマージンは自然な距離に設定 */
-        [data-testid="stTabs"] {
-            margin-top: 5px !important;
-            padding-top: 0px !important;
-        }
-        
-        /* コンポーネント間の垂直方向の隙間を標準化 */
-        [data-testid="stVerticalBlock"] {
-            gap: 0.8rem !important;
-        }
-        
-        /* 右側の日付の位置調整 */
-        .date-display-box {
-            text-align: right; 
-            font-size: 1.1rem; 
-            padding-top: 0px !important; 
-            margin-top: 0px !important;
-            line-height: 1.2 !important;
-        }
-        
-        /* サイドバーデザイン */
-        [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] {
-            background-color: #7f7f7f !important;
-        }
-        [data-testid="stSidebar"] * {
-            color: #ffffff !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stExpander"],
-        [data-testid="stSidebar"] [data-testid="stExpander"] details,
-        [data-testid="stSidebar"] [data-testid="stExpander"] summary,
-        [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] {
-            border: none !important;
-            background-color: transparent !important;
-            background: none !important;
-            box-shadow: transparent 0px 0px 0px 0px !important;
-            outline: none !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-            padding-left: 0px !important; padding-top: 0px !important; padding-bottom: 0px !important;
-            font-size: 0.95rem !important; font-weight: bold !important; min-height: 2rem !important;
-        }
+        .main .block-container p, .main .block-container div, .main .block-container span { font-size: 0.82rem !important; }
+        .page-title-box { margin-top: 0px !important; padding-top: 0px !important; margin-bottom: 15px !important; }
+        .page-title-box h2 { font-size: 1.15rem !important; font-weight: bold !important; margin: 0px !important; padding: 0px !important; line-height: 1.2 !important; }
+        .main h2, .main h3, .main h4, .main [data-testid="stMarkdownContainer"] h2, .main [data-testid="stMarkdownContainer"] h3 { font-size: 1.15rem !important; margin-top: 0px !important; padding-top: 0px !important; }
+        [data-testid="stTabs"] { margin-top: 5px !important; padding-top: 0px !important; }
+        [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
+        .date-display-box { text-align: right; font-size: 1.1rem; padding-top: 0px !important; margin-top: 0px !important; line-height: 1.2 !important; }
+        [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] { background-color: #7f7f7f !important; }
+        [data-testid="stSidebar"] * { color: #ffffff !important; }
+        [data-testid="stSidebar"] [data-testid="stExpander"], [data-testid="stSidebar"] [data-testid="stExpander"] details, [data-testid="stSidebar"] [data-testid="stExpander"] summary, [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] { border: none !important; background-color: transparent !important; background: none !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary { padding-left: 0px !important; padding-top: 0px !important; padding-bottom: 0px !important; font-size: 0.95rem !important; font-weight: bold !important; min-height: 2rem !important; }
         [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover { color: #dddddd !important; }
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0rem !important; }
         [data-testid="stSidebar"] .element-container { margin-bottom: 0px !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-top: 0px !important; padding-bottom: 0px !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button {
-            background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important;
-            padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important;
-            outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div,
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div {
-            width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button p {
-            text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; 
-        }
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div, [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div { width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button p { text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
         button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; -webkit-box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
-        
-        /* メインエリア白ボタン */
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button,
-        html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button,
-        html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
-        html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { 
-            height: 1.6rem !important; background-color: #ffffff !important; background: #ffffff !important; color: #000000 !important;             
-            border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important;
-            box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; transition: none !important;           
-        }
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *,
-        html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *,
-        html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *,
-        html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
+        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { height: 1.6rem !important; background-color: #ffffff !important; background: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; transition: none !important; }
+        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
-        
-        /* フォーム入力エリア */
         html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; -webkit-text-fill-color: #ffffff !important; }
         html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div, html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div { background-color: #222222 !important; color: #ffffff !important; }
@@ -165,11 +63,8 @@ st.markdown("""
         html body .stApp ul[role="listbox"], html body .stApp ul[data-baseweb="menu"] { background-color: #333333 !important; }
         html body .stApp ul[role="listbox"] li, html body .stApp ul[data-baseweb="menu"] li { background-color: #333333 !important; color: #ffffff !important; }
         html body .stApp ul[role="listbox"] li:hover, html body .stApp ul[data-baseweb="menu"] li:hover { background-color: #555555 !important; }
-        
         html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"] { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 2px solid #cccccc !important; font-weight: bold !important; }
         html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"]::placeholder { color: #888888 !important; -webkit-text-fill-color: #888888 !important; font-weight: normal !important; }
-        
-        /* リスト表示枠 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) { background-color: #7f7f7f !important; padding: 10px 15px !important; border-radius: 8px !important; margin-top: 8px !important; margin-bottom: 15px !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] { margin-bottom: -10px !important; margin-top: -10px !important; align-items: center !important; }
@@ -178,7 +73,6 @@ st.markdown("""
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button p, div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button * { white-space: nowrap !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button { height: 1.4rem !important; min-height: 1.4rem !important; padding: 0px 5px !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr { margin-top: 2px !important; margin-bottom: 2px !important; border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; }
-        
         * { -webkit-tap-highlight-color: transparent !important; }
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #ea4335; }
         html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
@@ -187,13 +81,7 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
         hr { border-top: 1px solid #333333 !important; }
-        
-        .sidebar-link {
-            display: flex !important; align-items: center !important; justify-content: flex-start !important;
-            padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important;
-            color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important;
-            margin-bottom: 5px !important;
-        }
+        .sidebar-link { display: flex !important; align-items: center !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important; color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important; margin-bottom: 5px !important; }
         .sidebar-link:hover { background-color: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; text-decoration: none !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -220,10 +108,18 @@ COLUMNS_DEF = {
     "その他機器": ["使用部署", "使用場所", "使用開始日", "備考"]
 }
 
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
-client = gspread.authorize(creds)
 SPREADSHEET_NAME = 'management_db'
+
+# 🚀 改善1: Googleスプレッドシートへの接続を全体で1回だけ行い、キャッシュ（一時保存）する
+@st.cache_resource
+def get_spreadsheet():
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    client = gspread.authorize(creds)
+    return client.open(SPREADSHEET_NAME)
+
+# 共有のドキュメントオブジェクトを利用
+doc = get_spreadsheet()
 
 if 'page_number' not in st.session_state: st.session_state['page_number'] = 0
 if 'active_search_query' not in st.session_state: st.session_state['active_search_query'] = ""
@@ -326,7 +222,7 @@ def delete_lineworks_calendar_event(event_id):
 def update_task_status(task_id, new_status):
     if not task_id or pd.isna(task_id): return False
     try:
-        worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+        worksheet = doc.worksheet(SHEET_TASK)
         headers = worksheet.row_values(1)
         id_col_idx = headers.index("ID") + 1
         status_col_idx = headers.index("ステータス") + 1
@@ -351,7 +247,7 @@ def get_all_data():
     all_data = []
     for cat_name, sheet_name in CATEGORY_MAP.items():
         try:
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(sheet_name)
+            worksheet = doc.worksheet(sheet_name)
             records = worksheet.get_all_records(value_render_option='FORMATTED_VALUE')
             for record in records: record['カテゴリ'] = cat_name
             all_data.extend(records)
@@ -384,20 +280,25 @@ def get_auto_id(category, current_df):
     else: target_df = pd.DataFrame()
     return generate_auto_id(target_df, prefix_dict.get(category, "Z"))
 
+# 🚀 改善2: 新規入職者、証明書、タスク、産休の各データをしっかりキャッシュ化（画面切替時の遅延を解消）
+@st.cache_data(ttl=600)
 def get_new_employee_data():
-    try: return pd.DataFrame(client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE).get_all_records())
+    try: return pd.DataFrame(doc.worksheet(SHEET_NEW_EMPLOYEE).get_all_records())
     except: return pd.DataFrame()
 
+@st.cache_data(ttl=600)
 def get_certificate_data():
-    try: return pd.DataFrame(client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE).get_all_records())
+    try: return pd.DataFrame(doc.worksheet(SHEET_CERTIFICATE).get_all_records())
     except: return pd.DataFrame()
 
+@st.cache_data(ttl=600)
 def get_task_data():
-    try: return pd.DataFrame(client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK).get_all_records())
+    try: return pd.DataFrame(doc.worksheet(SHEET_TASK).get_all_records())
     except: return pd.DataFrame()
 
+@st.cache_data(ttl=600)
 def get_maternity_data():
-    try: return pd.DataFrame(client.open(SPREADSHEET_NAME).worksheet(SHEET_MATERNITY).get_all_records())
+    try: return pd.DataFrame(doc.worksheet(SHEET_MATERNITY).get_all_records())
     except: return pd.DataFrame()
 
 def parse_date(date_val):
@@ -455,14 +356,15 @@ def show_detail_dialog(row_data):
                     custom_values[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
                 else: custom_values[col] = st.text_input(col, value=val)
         if st.form_submit_button("✅ 更新する"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(CATEGORY_MAP[cat])
+            worksheet = doc.worksheet(CATEGORY_MAP[cat])
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell:
                 row_to_save = [row_data.get('ID',''), cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
                 cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
                 for col in cols: row_to_save.append(custom_values.get(col, ''))
                 worksheet.update(f"A{cell.row}", [row_to_save])
-                get_all_data.clear(); st.rerun()
+                get_all_data.clear() # 備品更新時は備品キャッシュをクリア
+                st.rerun()
 
 @st.dialog("📝 入職準備タスク管理")
 def show_onboarding_task_dialog(row_data):
@@ -474,16 +376,23 @@ def show_onboarding_task_dialog(row_data):
         cols = st.columns(2)
         for i, task in enumerate(ONBOARDING_TASKS):
             with cols[i % 2]: task_status[task] = st.text_input(task, value=row_data.get(task, ''))
-        new_status = st.selectbox("全体のステータス", ["準備中", "完了", "保留"], index=["準備中", "完了", "保留"].index(row_data.get('ステータス', '準備中')))
+            
+        st_opts = ["準備中", "完了", "保留"]
+        curr_st = str(row_data.get('ステータス', '')).strip()
+        st_index = st_opts.index(curr_st) if curr_st in st_opts else 0
+        new_status = st.selectbox("全体のステータス", st_opts, index=st_index)
+        
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         if st.form_submit_button("✅ 更新する"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
+            worksheet = doc.worksheet(SHEET_NEW_EMPLOYEE)
             headers = worksheet.row_values(1)
             data_dict = {"ID":row_data.get('ID',''), "氏名":new_name, "フリガナ":new_furi, "入職日":row_data.get('入職日',''), "職種":row_data.get('職種',''), "部署":row_data.get('部署',''), "ステータス":new_status, "備考":new_note}
             for t in ONBOARDING_TASKS: data_dict[t] = task_status[t]
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
-            if cell: worksheet.update(f"A{cell.row}", [row_to_save]); st.rerun()
+            if cell: worksheet.update(f"A{cell.row}", [row_to_save])
+            get_new_employee_data.clear() # 該当キャッシュだけクリア
+            st.rerun()
 
 @st.dialog("📝 電子証明書の編集")
 def show_cert_dialog(row_data):
@@ -493,31 +402,37 @@ def show_cert_dialog(row_data):
         new_exp = st.date_input("有効期限", value=parse_date(row_data.get('有効期限')))
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         if st.form_submit_button("✅ 更新する"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
+            worksheet = doc.worksheet(SHEET_CERTIFICATE)
             headers = worksheet.row_values(1)
             data_dict = {"ID":row_data.get('ID',''), "種類":new_type, "端末":new_dev, "有効期限":str(new_exp) if new_exp else '', "備考":new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
+            get_certificate_data.clear() # 該当キャッシュだけクリア
             st.rerun()
 
 @st.dialog("📝 産休育休者の編集")
 def show_maternity_dialog(row_data):
     with st.form("maternity_edit_form"):
-        # 💡 「名前」の編集欄を追加
         new_name = st.text_input("名前", value=row_data.get('名前', ''))
         new_dept = st.text_input("部署", value=row_data.get('部署', ''))
         new_start = st.date_input("休暇開始日", value=parse_date(row_data.get('休暇開始日')))
         new_return = st.date_input("復帰予定日", value=parse_date(row_data.get('復帰予定日')))
-        new_status = st.selectbox("ステータス", ["取得中", "復職済"], index=["取得中", "復職済"].index(row_data.get('ステータス', '取得中')))
+        
+        m_opts = ["取得中", "復職済"]
+        curr_m_st = str(row_data.get('ステータス', '')).strip()
+        m_index = m_opts.index(curr_m_st) if curr_m_st in m_opts else 0
+        new_status = st.selectbox("ステータス", m_opts, index=m_index)
+        
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         if st.form_submit_button("✅ 更新する"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_MATERNITY)
+            worksheet = doc.worksheet(SHEET_MATERNITY)
             headers = worksheet.row_values(1)
             data_dict = {"ID":row_data.get('ID',''), "名前":new_name, "部署":new_dept, "休暇開始日":str(new_start) if new_start else '', "復帰予定日":str(new_return) if new_return else '', "ステータス":new_status, "備考":new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
+            get_maternity_data.clear() # 該当キャッシュだけクリア
             st.rerun()
 
 @st.dialog("📝 タスクの編集")
@@ -547,7 +462,7 @@ def show_task_dialog(row_data):
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         
         if st.form_submit_button("✅ 更新する"):
-            worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+            worksheet = doc.worksheet(SHEET_TASK)
             headers = worksheet.row_values(1)
             
             if "イベントID" not in headers:
@@ -600,7 +515,8 @@ def show_task_dialog(row_data):
                 worksheet.update(f"A{cell.row}", [row_to_save])
                 
                 st.toast("スプレッドシートとLINE WORKSカレンダーを完全に同期しました！", icon="📅")
-                get_all_data.clear(); st.rerun()
+                get_task_data.clear() # タスクキャッシュだけクリア
+                st.rerun()
 
 # ==========================================
 # 🌟 左側：階層化されたサイドバーメニュー 🌟
@@ -627,7 +543,14 @@ with st.sidebar:
     # 💡 外部への総務マニュアルリンク (NotebookLM)
     st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
     
-    if st.button("🔄 データを最新にする", use_container_width=True): get_all_data.clear(); st.rerun()
+    # 🚀 改善4: 更新ボタンを押したときだけ「全キャッシュ」を手動で消去する
+    if st.button("🔄 データを最新にする", use_container_width=True): 
+        get_all_data.clear()
+        get_new_employee_data.clear()
+        get_certificate_data.clear()
+        get_task_data.clear()
+        get_maternity_data.clear()
+        st.rerun()
 
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "other", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
@@ -753,11 +676,13 @@ try:
                     else:
                         for col in COLUMNS_DEF[cat]: custom_vals[col] = st.text_input(col)
                     if st.form_submit_button("登録"):
-                        ws = client.open(SPREADSHEET_NAME).worksheet(CATEGORY_MAP[cat])
+                        ws = doc.worksheet(CATEGORY_MAP[cat])
                         row = [i_id, cat, i_name, i_user, "利用可能", datetime.now().strftime('%Y-%m-%d')]
                         cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
                         for col in cols: row.append(custom_vals.get(col, ""))
-                        ws.append_row(row); st.session_state.zaiko_reg_success = True; st.rerun()
+                        ws.append_row(row)
+                        get_all_data.clear() # キャッシュクリア
+                        st.session_state.zaiko_reg_success = True; st.rerun()
         with main_tab3: st.info("※CSV一括入出力はスペース節約のため省略。以前のコード同様に動作します。")
 
     # ==========================================
@@ -808,8 +733,10 @@ try:
                 c_dev = st.text_input("端末")
                 c_exp = st.date_input("有効期限")
                 if st.form_submit_button("登録"):
-                    ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_CERTIFICATE)
-                    ws.append_row([c_id, c_type, c_dev, str(c_exp), ""]); st.success("登録しました"); st.rerun()
+                    ws = doc.worksheet(SHEET_CERTIFICATE)
+                    ws.append_row([c_id, c_type, c_dev, str(c_exp), ""])
+                    get_certificate_data.clear() # キャッシュクリア
+                    st.success("登録しました"); st.rerun()
 
     # ==========================================
     # 👤 ページ：新規入職者管理
@@ -848,11 +775,13 @@ try:
                 e_furi = st.text_input("フリガナ")
                 e_date = st.date_input("入職日")
                 if st.form_submit_button("登録"):
-                    ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_NEW_EMPLOYEE)
-                    ws.append_row([e_id, e_name, e_furi, str(e_date), "", "", "準備中"] + [""]*13 + [""]); st.success("登録しました"); st.rerun()
+                    ws = doc.worksheet(SHEET_NEW_EMPLOYEE)
+                    ws.append_row([e_id, e_name, e_furi, str(e_date), "", "", "準備中"] + [""]*13 + [""])
+                    get_new_employee_data.clear() # キャッシュクリア
+                    st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # 👶 ページ：産休育休者管理 (「名前」列追加版)
+    # 👶 ページ：産休育休者管理
     # ==========================================
     elif page_selection == "👶 産休育休者管理":
         st.markdown(f"""
@@ -872,7 +801,6 @@ try:
                 
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                    # 💡 「名前」を表示するためにカラムバランスを調整（6分割）
                     hc = st.columns([0.8, 1.0, 1.8, 2.0, 2.0, 2.0, 1.8])
                     headers_text = ["操作", "ID", "名前", "部署", "休暇開始日", "復帰予定日", "ステータス"]
                     for i, h_text in enumerate(headers_text):
@@ -883,7 +811,6 @@ try:
                         c = st.columns([0.8, 1.0, 1.8, 2.0, 2.0, 2.0, 1.8])
                         if c[0].button("詳細", key=f"mat_edit_{idx}"): show_maternity_dialog(row)
                         c[1].write(str(row.get('ID', '')))
-                        # 💡 名前列を表示
                         c[2].write(f"**{safe_text(row.get('名前', ''))}**")
                         c[3].write(str(row.get('部署', '')))
                         c[4].write(str(row.get('休暇開始日', '')))
@@ -905,7 +832,6 @@ try:
             else:
                 with st.form("mat_reg_form"):
                     m_id = st.text_input("ID", value=generate_auto_id(df_mat, "M"))
-                    # 💡 新規登録フォームに「名前」を追加
                     m_name = st.text_input("名前")
                     m_dept = st.text_input("部署")
                     m_start = st.date_input("休暇開始日", value=None)
@@ -917,16 +843,14 @@ try:
                             st.error("名前と部署の入力は必須です。")
                         else:
                             try:
-                                ws = client.open(SPREADSHEET_NAME).worksheet(SHEET_MATERNITY)
+                                ws = doc.worksheet(SHEET_MATERNITY)
                             except gspread.exceptions.WorksheetNotFound:
-                                wb = client.open(SPREADSHEET_NAME)
-                                ws = wb.add_worksheet(title=SHEET_MATERNITY, rows="100", cols="20")
-                                # 💡 列見出しのIDと部署の間に「名前」を組み込み
+                                ws = doc.add_worksheet(title=SHEET_MATERNITY, rows="100", cols="20")
                                 ws.append_row(["ID", "名前", "部署", "休暇開始日", "復帰予定日", "ステータス", "備考"])
                             
                             ws.append_row([m_id, m_name, m_dept, str(m_start) if m_start else '', str(m_return) if m_return else '', m_status, m_note])
                             st.session_state.mat_reg_success = True
-                            get_all_data.clear()
+                            get_maternity_data.clear() # キャッシュクリア
                             st.rerun()
 
     # ==========================================
@@ -984,10 +908,14 @@ try:
                             
                             if current_status != '完了':
                                 if c[8].button("✅ 完了にする", key=f"comp_{task_id_str}"):
-                                    if update_task_status(task_id_str, "完了"): get_all_data.clear(); st.rerun()
+                                    if update_task_status(task_id_str, "完了"): 
+                                        get_task_data.clear() # タスクだけクリア
+                                        st.rerun()
                             else:
                                 if c[8].button("↩️ 未完了に戻す", key=f"rev_{task_id_str}"):
-                                    if update_task_status(task_id_str, "未着手"): get_all_data.clear(); st.rerun()
+                                    if update_task_status(task_id_str, "未着手"): 
+                                        get_task_data.clear() # タスクだけクリア
+                                        st.rerun()
                             st.markdown("<hr>", unsafe_allow_html=True)
                         except Exception as inner_e:
                             st.warning(f"1件のタスクを描画できませんでした。")
@@ -1015,7 +943,7 @@ try:
                         if not task_name: st.error("タスク名は必須です。")
                         else:
                             try:
-                                worksheet = client.open(SPREADSHEET_NAME).worksheet(SHEET_TASK)
+                                worksheet = doc.worksheet(SHEET_TASK)
                                 headers = worksheet.row_values(1)
                                 if "イベントID" not in headers:
                                     worksheet.update_cell(1, len(headers) + 1, "イベントID")
@@ -1032,14 +960,21 @@ try:
                                 row_to_save = [data_dict.get(h, "") for h in headers]
                                 worksheet.append_row(row_to_save)
                                 st.toast("カレンダー連携 成功!", icon="✅")
-                                st.session_state.task_reg_success = True; get_all_data.clear(); st.rerun()
+                                st.session_state.task_reg_success = True
+                                get_task_data.clear() # タスクキャッシュだけクリア
+                                st.rerun()
                             except Exception as e: st.error(f"登録エラー: {e}")
 
     # ==========================================
     # 📅 ページ：5年経過リスト
     # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        st.header("📅 5年経過リスト (PC/iPad)")
+        st.markdown(f"""
+            <div class="page-title-box">
+                <h2>📅 5年経過リスト (PC/iPad)</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
         if not df.empty and 'カテゴリ' in df.columns:
             df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
             if not df_old.empty:
