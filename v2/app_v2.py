@@ -18,142 +18,40 @@ def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
 
-# --- 🌟 CSS ---
+# --- 🌟 CSS省略（レイアウト設定） 🌟 ---
 st.markdown("""
     <style>
-        /* 全体背景と標準テキストカラー */
-        .stApp, [data-testid="stHeader"], .main .block-container {
-            background-color: #000000 !important;
-            color: #ffffff !important;
-        }
-        
-        /* 🚨 1. アプリ最上部ヘッダーの完全非表示 */
-        [data-testid="stHeader"] { 
-            height: 0px !important; 
-            min-height: 0px !important; 
-            display: none !important; 
-            padding: 0px !important;
-            margin: 0px !important;
-        }
-        
-        /* 🚨 2. コンテンツエリア全体の最上部の巨大なデッドスペースを、マイナスマージンで強制的に上へ引き上げる */
-        .main .block-container {
-            padding-top: 0px !important;
-            margin-top: -110px !important; 
-            padding-bottom: 1rem !important;
-        }
-
-        h2, h3, h4, h5, h6, p, span, label, div.stMarkdown {
-            color: #ffffff !important;
-        }
+        .stApp, [data-testid="stHeader"], .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
+        [data-testid="stHeader"] { height: 0px !important; min-height: 0px !important; display: none !important; padding: 0px !important; margin: 0px !important; }
+        .main .block-container { padding-top: 0px !important; margin-top: -110px !important; padding-bottom: 1rem !important; }
+        h2, h3, h4, h5, h6, p, span, label, div.stMarkdown { color: #ffffff !important; }
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
         .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
-        
-        .main .block-container p, .main .block-container div, .main .block-container span {
-            font-size: 0.82rem !important;
-        }
-        
-        /* 🚨 3. タイトル（h2）の下は詰まりすぎないよう、ほどよい余白（margin-bottom）を確保 */
-        .page-title-box {
-            margin-top: 0px !important;
-            padding-top: 0px !important;
-            margin-bottom: 15px !important; 
-        }
-        .page-title-box h2 {
-            font-size: 1.15rem !important;
-            font-weight: bold !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            line-height: 1.2 !important;
-        }
-        
-        /* 文字サイズの統一ルール */
-        .main h2, .main h3, .main h4,
-        .main [data-testid="stMarkdownContainer"] h2,
-        .main [data-testid="stMarkdownContainer"] h3 {
-            font-size: 1.15rem !important;
-            margin-top: 0px !important;
-            padding-top: 0px !important;
-        }
-        
-        /* タブの上のマージンは自然な距離に設定 */
-        [data-testid="stTabs"] {
-            margin-top: 5px !important;
-            padding-top: 0px !important;
-        }
-        
-        /* コンポーネント間の垂直方向の隙間を標準化 */
-        [data-testid="stVerticalBlock"] {
-            gap: 0.8rem !important;
-        }
-        
-        /* 右側の日付の位置調整 */
-        .date-display-box {
-            text-align: right; 
-            font-size: 1.1rem; 
-            padding-top: 0px !important; 
-            margin-top: 0px !important;
-            line-height: 1.2 !important;
-        }
-        
-        /* サイドバーデザイン */
-        [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] {
-            background-color: #7f7f7f !important;
-        }
-        [data-testid="stSidebar"] * {
-            color: #ffffff !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stExpander"],
-        [data-testid="stSidebar"] [data-testid="stExpander"] details,
-        [data-testid="stSidebar"] [data-testid="stExpander"] summary,
-        [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] {
-            border: none !important;
-            background-color: transparent !important;
-            background: none !important;
-            box-shadow: transparent 0px 0px 0px 0px !important;
-            outline: none !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-            padding-left: 0px !important; padding-top: 0px !important; padding-bottom: 0px !important;
-            font-size: 0.95rem !important; font-weight: bold !important; min-height: 2rem !important;
-        }
+        .main .block-container p, .main .block-container div, .main .block-container span { font-size: 0.82rem !important; }
+        .page-title-box { margin-top: 0px !important; padding-top: 0px !important; margin-bottom: 15px !important; }
+        .page-title-box h2 { font-size: 1.15rem !important; font-weight: bold !important; margin: 0px !important; padding: 0px !important; line-height: 1.2 !important; }
+        .main h2, .main h3, .main h4, .main [data-testid="stMarkdownContainer"] h2, .main [data-testid="stMarkdownContainer"] h3 { font-size: 1.15rem !important; margin-top: 0px !important; padding-top: 0px !important; }
+        [data-testid="stTabs"] { margin-top: 5px !important; padding-top: 0px !important; }
+        [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
+        .date-display-box { text-align: right; font-size: 1.1rem; padding-top: 0px !important; margin-top: 0px !important; line-height: 1.2 !important; }
+        [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] { background-color: #7f7f7f !important; }
+        [data-testid="stSidebar"] * { color: #ffffff !important; }
+        [data-testid="stSidebar"] [data-testid="stExpander"], [data-testid="stSidebar"] [data-testid="stExpander"] details, [data-testid="stSidebar"] [data-testid="stExpander"] summary, [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] { border: none !important; background-color: transparent !important; background: none !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary { padding-left: 0px !important; padding-top: 0px !important; padding-bottom: 0px !important; font-size: 0.95rem !important; font-weight: bold !important; min-height: 2rem !important; }
         [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover { color: #dddddd !important; }
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0rem !important; }
         [data-testid="stSidebar"] .element-container { margin-bottom: 0px !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-top: 0px !important; padding-bottom: 0px !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button {
-            background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important;
-            padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important;
-            outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div,
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div {
-            width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"] > button p {
-            text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; 
-        }
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button > div, [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div { width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"] > button p { text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
         button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; -webkit-box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
-        
-        /* メインエリア白ボタン */
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button,
-        html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button,
-        html body .stApp div[role="dialog"] div[data-testid="stButton"] > button,
-        html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { 
-            height: 1.6rem !important; background-color: #ffffff !important; background: #ffffff !important; color: #000000 !important;             
-            border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important;
-            box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; transition: none !important;           
-        }
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *,
-        html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *,
-        html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *,
-        html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
+        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { height: 1.6rem !important; background-color: #ffffff !important; background: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; transition: none !important; }
+        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
-        
-        /* フォーム入力エリア */
         html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; -webkit-text-fill-color: #ffffff !important; }
         html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div, html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div { background-color: #222222 !important; color: #ffffff !important; }
@@ -165,11 +63,8 @@ st.markdown("""
         html body .stApp ul[role="listbox"], html body .stApp ul[data-baseweb="menu"] { background-color: #333333 !important; }
         html body .stApp ul[role="listbox"] li, html body .stApp ul[data-baseweb="menu"] li { background-color: #333333 !important; color: #ffffff !important; }
         html body .stApp ul[role="listbox"] li:hover, html body .stApp ul[data-baseweb="menu"] li:hover { background-color: #555555 !important; }
-        
         html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"] { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 2px solid #cccccc !important; font-weight: bold !important; }
         html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"]::placeholder { color: #888888 !important; -webkit-text-fill-color: #888888 !important; font-weight: normal !important; }
-        
-        /* リスト表示枠 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) { background-color: #7f7f7f !important; padding: 10px 15px !important; border-radius: 8px !important; margin-top: 8px !important; margin-bottom: 15px !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] { margin-bottom: -10px !important; margin-top: -10px !important; align-items: center !important; }
@@ -178,7 +73,6 @@ st.markdown("""
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button p, div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button * { white-space: nowrap !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button { height: 1.4rem !important; min-height: 1.4rem !important; padding: 0px 5px !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr { margin-top: 2px !important; margin-bottom: 2px !important; border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; }
-        
         * { -webkit-tap-highlight-color: transparent !important; }
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #ea4335; }
         html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
@@ -187,13 +81,7 @@ st.markdown("""
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
         hr { border-top: 1px solid #333333 !important; }
-        
-        .sidebar-link {
-            display: flex !important; align-items: center !important; justify-content: flex-start !important;
-            padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important;
-            color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important;
-            margin-bottom: 5px !important;
-        }
+        .sidebar-link { display: flex !important; align-items: center !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important; color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important; margin-bottom: 5px !important; }
         .sidebar-link:hover { background-color: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; text-decoration: none !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -208,7 +96,7 @@ ONBOARDING_TASKS = ["PC", "iPad", "携帯", "駐車場", "LineworksID", "モバ�
 SHEET_CERTIFICATE = "電子証明書"
 SHEET_TASK = "タスク管理"
 SHEET_MATERNITY = "産休育休"
-SHEET_ORCA_CERT = "ORCA証明書" # 🏥 ORCA証明書用シート名
+SHEET_ORCA_CERT = "ORCA証明書"
 
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
@@ -549,10 +437,13 @@ def show_maternity_dialog(row_data):
             get_maternity_data.clear() # 該当キャッシュだけクリア
             st.rerun()
 
+# 💡 🚨【NEW】ORCA証明書編集画面（PC紐付け表示付き）
 @st.dialog("📝 ORCA証明書の編集")
 def show_orca_cert_dialog(row_data):
+    cert_name = str(row_data.get('名前', '')).strip()
+    
     with st.form("orca_edit_form"):
-        new_name = st.text_input("名前", value=row_data.get('名前', ''))
+        new_name = st.text_input("名前", value=cert_name)
         new_dept = st.text_input("部署", value=row_data.get('部署', ''))
         new_utsu = st.text_input("ORCA宇都宮", value=row_data.get('ORCA宇都宮', ''))
         new_kanu = st.text_input("ORCA鹿沼", value=row_data.get('ORCA鹿沼', ''))
@@ -568,6 +459,40 @@ def show_orca_cert_dialog(row_data):
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
             get_orca_cert_data.clear()
             st.rerun()
+            
+    # 💡【重要機能】この証明書がインストールされているPCを裏側で検索して自動表示
+    if cert_name:
+        st.markdown("---")
+        st.markdown(f"##### 💻 この証明書（{cert_name}）が入っているPC")
+        
+        df_all = get_all_data()
+        installed_pcs = []
+        
+        if not df_all.empty and 'カテゴリ' in df_all.columns:
+            df_pc = df_all[df_all['カテゴリ'] == 'PC']
+            
+            for _, pc_row in df_pc.iterrows():
+                u_val = str(pc_row.get('ORCA宇都宮', ''))
+                k_val = str(pc_row.get('ORCA鹿沼', ''))
+                m_val = str(pc_row.get('ORCA益子', ''))
+                
+                # 「1」で検索して「11」が引っかからないよう、完全一致＆カンマ区切りのみ抽出する関数
+                def is_match(val_str):
+                    v_str = val_str.replace('、', ',').replace(' ', ',').replace(' ', ',')
+                    v_list = [v.strip() for v in v_str.split(',') if v.strip()]
+                    return cert_name in v_list or cert_name == val_str.strip()
+                
+                if is_match(u_val) or is_match(k_val) or is_match(m_val):
+                    installed_pcs.append(pc_row)
+        
+        if installed_pcs:
+            for pc in installed_pcs:
+                pid = pc.get('ID', '')
+                pname = pc.get('品名', '')
+                puser = pc.get('利用者', '')
+                st.markdown(f"- **{pid}**: {pname} （利用者: {puser}）")
+        else:
+            st.info("現在、この証明書が入っているPCは見つかりませんでした。")
 
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
@@ -667,7 +592,6 @@ with st.sidebar:
     with st.expander("💿 ソフトウェア管理", expanded=True):
         st.button("📧 Office365", on_click=change_page, args=(" 📧 Office365",), use_container_width=True)
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
-        # 💡 ORCA証明書管理を追加
         st.button("🏥 ORCA証明書", on_click=change_page, args=("🏥 ORCA証明書管理",), use_container_width=True)
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
@@ -877,7 +801,7 @@ try:
                     st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # 🏥 ページ：ORCA証明書管理 (新規実装)
+    # 🏥 ページ：ORCA証明書管理
     # ==========================================
     elif page_selection == "🏥 ORCA証明書管理":
         st.markdown(f"""
@@ -891,7 +815,6 @@ try:
         
         with t1:
             if not df_orca.empty:
-                # IDでソート
                 if 'ID' in df_orca.columns:
                     df_orca = df_orca.sort_values(by='ID', ascending=True)
                 
@@ -1069,7 +992,7 @@ try:
             </div>
         """, unsafe_allow_html=True)
         
-        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新タスク登録"])
+        task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
         df_task = get_task_data()
         with task_tab1:
             if not df_task.empty:
