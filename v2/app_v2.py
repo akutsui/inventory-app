@@ -21,9 +21,20 @@ def change_page(page_name):
 # --- 🌟 CSS省略（レイアウト設定） 🌟 ---
 st.markdown("""
     <style>
-        .stApp, [data-testid="stHeader"], .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
-        [data-testid="stHeader"] { height: 0px !important; min-height: 0px !important; display: none !important; padding: 0px !important; margin: 0px !important; }
-        .main .block-container { padding-top: 0px !important; margin-top: -110px !important; padding-bottom: 1rem !important; }
+        .stApp, .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
+        
+        /* 🚨 1. ヘッダーを透明にして残すことで、サイドバー開閉の「＞」「＜」ボタンを復活させます */
+        [data-testid="stHeader"] { 
+            background: transparent !important; 
+        }
+        
+        /* 🚨 2. ヘッダーを残しつつ、メインコンテンツだけを上に引っ張り上げて余白を消します */
+        .main .block-container { 
+            padding-top: 0px !important; 
+            margin-top: -60px !important; 
+            padding-bottom: 1rem !important; 
+        }
+        
         h2, h3, h4, h5, h6, p, span, label, div.stMarkdown { color: #ffffff !important; }
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
         .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
@@ -34,6 +45,8 @@ st.markdown("""
         [data-testid="stTabs"] { margin-top: 5px !important; padding-top: 0px !important; }
         [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
         .date-display-box { text-align: right; font-size: 1.1rem; padding-top: 0px !important; margin-top: 0px !important; line-height: 1.2 !important; }
+        
+        /* サイドバーデザイン */
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] { background-color: #7f7f7f !important; }
         [data-testid="stSidebar"] * { color: #ffffff !important; }
         [data-testid="stSidebar"] [data-testid="stExpander"], [data-testid="stSidebar"] [data-testid="stExpander"] details, [data-testid="stSidebar"] [data-testid="stExpander"] summary, [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] { border: none !important; background-color: transparent !important; background: none !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
@@ -43,11 +56,33 @@ st.markdown("""
         [data-testid="stSidebar"] .element-container { margin-bottom: 0px !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-top: 0px !important; padding-bottom: 0px !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+        
+        /* 通常のメニューボタン */
         [data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button > div, [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div { width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button p { text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
+        
+        /* 🚨 「データを最新にする」更新ボタンだけ青色で目立たせる特別CSS */
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button {
+            background-color: #4285f4 !important;
+            border-radius: 6px !important;
+            justify-content: center !important;
+            height: 2.2rem !important;
+            min-height: 2.2rem !important;
+            margin-bottom: 10px !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important;
+        }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button p {
+            text-align: center !important;
+            font-weight: bold !important;
+            font-size: 0.9rem !important;
+        }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button:hover {
+            background-color: #3367d6 !important;
+        }
+
         button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; -webkit-box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { height: 1.6rem !important; background-color: #ffffff !important; background: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; transition: none !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
@@ -471,9 +506,8 @@ def show_orca_cert_dialog(row_data):
     if not df_all.empty and 'カテゴリ' in df_all.columns:
         df_pc = df_all[df_all['カテゴリ'] == 'PC']
         
-        def is_match(pc_val, cert_val):
-            if not pc_val or not cert_val: 
-                return False
+        def is_match_list(pc_val, cert_val):
+            if not pc_val or not cert_val: return False
             v_str = pc_val.replace('、', ',').replace(' ', ',').replace(' ', ',')
             v_list = [v.strip() for v in v_str.split(',') if v.strip()]
             return cert_val in v_list or cert_val == pc_val.strip()
@@ -483,7 +517,7 @@ def show_orca_cert_dialog(row_data):
             pc_k = str(pc_row.get('ORCA鹿沼', '')).strip()
             pc_m = str(pc_row.get('ORCA益子', '')).strip()
             
-            if is_match(pc_u, cert_u) or is_match(pc_k, cert_k) or is_match(pc_m, cert_m):
+            if is_match_list(pc_u, cert_u) or is_match_list(pc_k, cert_k) or is_match_list(pc_m, cert_m):
                 installed_pcs.append(pc_row)
     
     if installed_pcs:
@@ -583,6 +617,18 @@ def show_task_dialog(row_data):
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
+    
+    if st.button("🔄 データを最新にする", use_container_width=True): 
+        get_all_data.clear()
+        get_new_employee_data.clear()
+        get_certificate_data.clear()
+        get_task_data.clear()
+        get_maternity_data.clear()
+        get_orca_cert_data.clear()
+        st.rerun()
+        
+    st.markdown("<hr style='margin-top:0px; margin-bottom:10px;'>", unsafe_allow_html=True)
+    
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
     with st.expander("📦 備品管理", expanded=True):
         st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
@@ -603,18 +649,7 @@ with st.sidebar:
     
     # 💡 外部への総務マニュアルリンク (NotebookLM)
     st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
-    
-    # 🚀 改善4: 更新ボタンを押したときだけ「全キャッシュ」を手動で消去する
-    if st.button("🔄 データを最新にする", use_container_width=True): 
-        get_all_data.clear()
-        get_new_employee_data.clear()
-        get_certificate_data.clear()
-        get_task_data.clear()
-        get_maternity_data.clear()
-        get_orca_cert_data.clear()
-        st.rerun()
 
-# 💡 🚨 辞書のマッピングを完全に修正（otherを使わず直接連携）
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 try:
@@ -819,12 +854,10 @@ try:
                 if 'ID' in df_orca.columns:
                     df_orca = df_orca.sort_values(by='ID', ascending=True)
                 
-                # 💡 一覧表示用にPCデータを事前に一度だけ取得しておく
                 df_all_pc = pd.DataFrame()
                 if not df.empty and 'カテゴリ' in df.columns:
                     df_all_pc = df[df['カテゴリ'] == 'PC']
                 
-                # 完全一致・カンマ区切り一致判定関数
                 def is_match_list(pc_val, cert_val):
                     if not pc_val or not cert_val: return False
                     v_str = pc_val.replace('、', ',').replace(' ', ',').replace(' ', ',')
@@ -833,7 +866,6 @@ try:
 
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                    # 💡 右端に「紐付くPC」列を追加し、カラム幅を調整
                     hc = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
                     headers_text = ["操作", "ID", "名前", "部署", "宇都宮", "鹿沼", "益子", "紐付くPC"]
                     for i, h_text in enumerate(headers_text):
@@ -845,7 +877,6 @@ try:
                         cert_k = str(row.get('ORCA鹿沼', '')).strip()
                         cert_m = str(row.get('ORCA益子', '')).strip()
                         
-                        # 💡 各証明書に対して、裏側でPCを検索して文字列を作成
                         linked_pcs = []
                         if not df_all_pc.empty:
                             for _, pc_row in df_all_pc.iterrows():
@@ -858,7 +889,6 @@ try:
                                     pc_user = str(pc_row.get('利用者', ''))
                                     linked_pcs.append(f"{pc_id}({pc_user})")
                         
-                        # 紐付くPCがなければハイフンを表示
                         pc_disp_text = ", ".join(linked_pcs) if linked_pcs else "-"
                         
                         c = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
@@ -869,7 +899,6 @@ try:
                         c[4].write(cert_u)
                         c[5].write(cert_k)
                         c[6].write(cert_m)
-                        # 💡 紐付いたPCのIDと名前を表示（少し文字サイズを小さくして見やすく）
                         c[7].markdown(f"<span style='font-size:0.75rem; color:#aaaaaa;'>{pc_disp_text}</span>", unsafe_allow_html=True)
                         st.markdown("<hr>", unsafe_allow_html=True)
             else:
