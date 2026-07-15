@@ -17,6 +17,7 @@ if 'page_selection' not in st.session_state:
 def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
+    st.session_state['page_number'] = 0  # 💡 ページ移動時に1ページ目にリセット
 
 # --- 🌟 CSS省略（レイアウト設定） 🌟 ---
 st.markdown("""
@@ -132,6 +133,7 @@ SHEET_CERTIFICATE = "電子証明書"
 SHEET_TASK = "タスク管理"
 SHEET_MATERNITY = "産休育休"
 SHEET_ORCA_CERT = "ORCA証明書"
+SHEET_PARKING = "駐車場データ"  # 💡 駐車場データ用のシート名を追加
 
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
@@ -156,7 +158,7 @@ doc = get_spreadsheet()
 
 if 'page_number' not in st.session_state: st.session_state['page_number'] = 0
 if 'active_search_query' not in st.session_state: st.session_state['active_search_query'] = ""
-for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_reg_success', 'mat_reg_success', 'orca_reg_success']:
+for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_reg_success', 'mat_reg_success', 'orca_reg_success', 'parking_reg_success']:
     if key not in st.session_state: st.session_state[key] = False
 
 # ==========================================
@@ -338,6 +340,12 @@ def get_orca_cert_data():
     try: return pd.DataFrame(doc.worksheet(SHEET_ORCA_CERT).get_all_records())
     except: return pd.DataFrame()
 
+# 💡 駐車場データのキャッシュ取得関数を追加
+@st.cache_data(ttl=600)
+def get_parking_data():
+    try: return pd.DataFrame(doc.worksheet(SHEET_PARKING).get_all_records())
+    except: return pd.DataFrame()
+
 def parse_date(date_val):
     if not date_val: return None
     if isinstance(date_val, (int, float)):
@@ -410,7 +418,6 @@ def show_onboarding_task_dialog(row_data):
         with c1: new_name = st.text_input("氏名", value=row_data.get('氏名', ''))
         with c2: new_furi = st.text_input("フリガナ", value=row_data.get('フリガナ', ''))
         
-        # 💡 新規入職者の詳細編集に「職種」と「部署」を追加
         c3, c4 = st.columns(2)
         with c3: new_type = st.text_input("職種", value=row_data.get('職種', ''))
         with c4: new_dept = st.text_input("部署", value=row_data.get('部署', ''))
@@ -429,7 +436,6 @@ def show_onboarding_task_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_NEW_EMPLOYEE)
             headers = worksheet.row_values(1)
-            # 💡 職種と部署を保存データに含める
             data_dict = {"ID":row_data.get('ID',''), "氏名":new_name, "フリガナ":new_furi, "入職日":row_data.get('入職日',''), "職種":new_type, "部署":new_dept, "ステータス":new_status, "備考":new_note}
             for t in ONBOARDING_TASKS: data_dict[t] = task_status[t]
             row_to_save = [data_dict.get(h, "") for h in headers]
@@ -536,6 +542,39 @@ def show_orca_cert_dialog(row_data):
     else:
         st.info("現在、この証明書が紐付いているPCは見つかりませんでした。")
 
+# 💡【NEW】駐車場区画の詳細編集ダイアログ
+@st.dialog("📝 駐車場区画の編集")
+def show_parking_dialog(row_data):
+    with st.form("parking_edit_form"):
+        # 区画番号はVLOOKUPのキーになるため、変更不可（または注意喚起）にするのが安全です
+        st.write(f"**区画番号:** {row_data.get('区画番号', '')}")
+        new_name = st.text_input("駐車場名", value=row_data.get('駐車場名', ''))
+        
+        type_opts = ["社有車", "自家用車", "来客用", "空き"]
+        curr_type = str(row_data.get('区分', '')).strip()
+        type_index = type_opts.index(curr_type) if curr_type in type_opts else 0
+        new_type = st.selectbox("区分", type_opts, index=type_index)
+        
+        new_user = st.text_input("使用者", value=row_data.get('使用者', ''))
+        new_note = st.text_area("備考", value=row_data.get('備考', ''))
+        
+        if st.form_submit_button("✅ 更新する"):
+            worksheet = doc.worksheet(SHEET_PARKING)
+            headers = worksheet.row_values(1)
+            data_dict = {"区画番号": row_data.get('区画番号', ''), "駐車場名": new_name, "区分": new_type, "使用者": new_user, "備考": new_note}
+            row_to_save = [data_dict.get(h, "") for h in headers]
+            
+            id_col_idx = headers.index("区画番号") + 1
+            cell = worksheet.find(str(row_data.get('区画番号', '')), in_column=id_col_idx)
+            
+            if cell: 
+                worksheet.update(f"A{cell.row}", [row_to_save])
+            else:
+                worksheet.append_row(row_to_save)
+                
+            get_parking_data.clear()
+            st.rerun()
+
 @st.dialog("📝 タスクの編集")
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
@@ -638,6 +677,10 @@ with st.sidebar:
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
     st.button("👶 産休育休者管理", on_click=change_page, args=("👶 産休育休者管理",), use_container_width=True)
+    
+    # 💡 駐車場管理をここに追加
+    st.button("🅿️ 駐車場管理", on_click=change_page, args=("🅿️ 駐車場管理",), use_container_width=True)
+    
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
     st.button("📅 5年経過リスト", on_click=change_page, args=("📅 5年経過リスト (PC/iPad)",), use_container_width=True)
     st.markdown("---")
@@ -654,6 +697,7 @@ with st.sidebar:
         get_task_data.clear()
         get_maternity_data.clear()
         get_orca_cert_data.clear()
+        get_parking_data.clear() # 💡 駐車場のキャッシュクリアも追加
         st.rerun()
 
 # 💡 🚨 辞書のマッピング
@@ -871,7 +915,7 @@ try:
                     st.success("登録しました"); st.rerun()
 
     # ==========================================
-    # 🏥 ページ：ORCA証明書管理 (「名前」を「使用者」に変更)
+    # 🏥 ページ：ORCA証明書管理
     # ==========================================
     elif page_selection == "🏥 ORCA証明書管理":
         st.markdown(f"""
@@ -967,7 +1011,96 @@ try:
                             st.rerun()
 
     # ==========================================
-    # 👤 ページ：新規入職者管理 (💡 ヘッダー＆職種・部署追加)
+    # 🅿️ ページ：駐車場管理 (新規追加！)
+    # ==========================================
+    elif page_selection == "🅿️ 駐車場管理":
+        st.markdown(f"""
+            <div class="page-title-box">
+                <h2>🅿️ 駐車場管理</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # === 🗺️ 配置図のリンク設定 ===
+        # 💡 取得した図面のURLを以下の " " の中に貼り付けてください！
+        url_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/edit?gid=591211712#gid=591211712"
+        url_company = "https://docs.google.com/spreadsheets/"
+        url_private = "https://docs.google.com/spreadsheets/"
+        
+        st.markdown("##### 🗺️ 最新の配置図を確認する")
+        mc1, mc2, mc3 = st.columns(3)
+        mc1.link_button("🔗 全体配置図を開く", url_all, use_container_width=True)
+        mc2.link_button("🔗 社有車のみ表示", url_company, use_container_width=True)
+        mc3.link_button("🔗 自家用車のみ表示", url_private, use_container_width=True)
+        st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
+        
+        t1, t2 = st.tabs(["📋 区画・使用者一覧", "➕ 新規区画の登録"])
+        df_park = get_parking_data()
+        
+        with t1:
+            st.text_input("フリーワード検索（区画番号や名前で検索）", placeholder="Enterで検索", key="input_search_key", on_change=submit_search)
+            if not df_park.empty:
+                display_df = df_park.copy()
+                if st.session_state.active_search_query:
+                    display_df = display_df[display_df.astype(str).apply(lambda r: r.str.contains(st.session_state.active_search_query, case=False).any(), axis=1)]
+                
+                if display_df.empty:
+                    st.info("該当するデータがありません。")
+                else:
+                    with st.container():
+                        st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                        hc = st.columns([0.8, 1.5, 2.0, 1.5, 2.0, 2.0])
+                        headers_text = ["操作", "区画番号", "駐車場名", "区分", "使用者", "備考"]
+                        for i, h_text in enumerate(headers_text):
+                            hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                        st.markdown("<hr>", unsafe_allow_html=True)
+                        
+                        for idx, row in display_df.iterrows():
+                            c = st.columns([0.8, 1.5, 2.0, 1.5, 2.0, 2.0])
+                            if c[0].button("詳細", key=f"park_{idx}"): show_parking_dialog(row)
+                            c[1].write(f"**{str(row.get('区画番号', ''))}**")
+                            c[2].write(str(row.get('駐車場名', '')))
+                            
+                            p_type = str(row.get('区分', ''))
+                            if p_type == "社有車": c[3].markdown(f"<span style='color:#4285f4; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
+                            elif p_type == "自家用車": c[3].markdown(f"<span style='color:#34a853; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
+                            else: c[3].write(p_type)
+                            
+                            c[4].write(f"**{safe_text(row.get('使用者', ''))}**")
+                            c[5].write(str(row.get('備考', '')))
+                            st.markdown("<hr>", unsafe_allow_html=True)
+            else:
+                st.info("データがありません。右のタブから区画と使用者を登録してください。")
+                
+        with t2:
+            if st.session_state.parking_reg_success:
+                st.success("✅ 登録完了しました！")
+                st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'parking_reg_success', False))
+            else:
+                with st.form("park_reg_form"):
+                    st.info("※「区画番号」は配置図のVLOOKUP関数と一致させるためのキーになります。正確に入力してください。（例：第1-01）")
+                    p_id = st.text_input("区画番号 (必須)")
+                    p_name = st.text_input("駐車場名")
+                    p_type = st.selectbox("区分", ["社有車", "自家用車", "来客用", "空き"])
+                    p_user = st.text_input("使用者")
+                    p_note = st.text_area("備考")
+                    
+                    if st.form_submit_button("登録する"):
+                        if not p_id:
+                            st.error("区画番号の入力は必須です。")
+                        else:
+                            try:
+                                ws = doc.worksheet(SHEET_PARKING)
+                            except gspread.exceptions.WorksheetNotFound:
+                                ws = doc.add_worksheet(title=SHEET_PARKING, rows="100", cols="10")
+                                ws.append_row(["区画番号", "駐車場名", "区分", "使用者", "備考"])
+                            
+                            ws.append_row([p_id, p_name, p_type, p_user, p_note])
+                            st.session_state.parking_reg_success = True
+                            get_parking_data.clear()
+                            st.rerun()
+
+    # ==========================================
+    # 👤 ページ：新規入職者管理
     # ==========================================
     elif page_selection == "👤 新規入職者管理":
         st.markdown(f"""
@@ -986,8 +1119,6 @@ try:
                 
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                    
-                    # 💡 欠落していたヘッダー（列名）を追加
                     hc = st.columns([0.8, 1.0, 1.5, 1.5, 1.2, 1.5, 1.5, 1.2])
                     headers_text = ["操作", "ID", "氏名", "フリガナ", "職種", "部署", "入職日", "ステータス"]
                     for i, h_text in enumerate(headers_text):
@@ -1000,7 +1131,6 @@ try:
                         c[1].write(str(row.get('ID','')))
                         c[2].write(f"**{safe_text(row.get('氏名',''))}**")
                         c[3].write(str(row.get('フリガナ','')))
-                        # 💡 職種・部署を一覧に表示
                         c[4].write(str(row.get('職種','')))
                         c[5].write(str(row.get('部署','')))
                         c[6].write(str(row.get('入職日','')))
@@ -1012,16 +1142,12 @@ try:
                 e_id = st.text_input("ID", value=generate_auto_id(df_emp, "H"))
                 e_name = st.text_input("氏名")
                 e_furi = st.text_input("フリガナ")
-                
-                # 💡 新規登録フォームに職種と部署を追加
                 col_type, col_dept = st.columns(2)
                 with col_type: e_type = st.text_input("職種")
                 with col_dept: e_dept = st.text_input("部署")
-                
                 e_date = st.date_input("入職日")
                 if st.form_submit_button("登録"):
                     ws = doc.worksheet(SHEET_NEW_EMPLOYEE)
-                    # 💡 スプレッドシートの並びに合わせて職種・部署を含めて保存
                     ws.append_row([e_id, e_name, e_furi, str(e_date), e_type, e_dept, "準備中"] + [""]*13 + [""])
                     get_new_employee_data.clear() # キャッシュクリア
                     st.success("登録しました"); st.rerun()
@@ -1079,7 +1205,7 @@ try:
                 with st.form("mat_reg_form"):
                     m_id = st.text_input("ID", value=generate_auto_id(df_mat, "M"))
                     m_name = st.text_input("名前")
-                    m_dept = text_input("部署")
+                    m_dept = st.text_input("部署")
                     m_start = st.date_input("休暇開始日", value=None)
                     m_return = st.date_input("復帰予定日", value=None)
                     m_status = st.selectbox("ステータス", ["取得中", "復職済"])
