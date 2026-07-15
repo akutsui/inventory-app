@@ -133,7 +133,7 @@ SHEET_CERTIFICATE = "電子証明書"
 SHEET_TASK = "タスク管理"
 SHEET_MATERNITY = "産休育休"
 SHEET_ORCA_CERT = "ORCA証明書"
-SHEET_PARKING = "駐車場データ"  # 💡 駐車場データ用のシート名
+SHEET_PARKING = "駐車場データ"
 
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
@@ -541,12 +541,14 @@ def show_orca_cert_dialog(row_data):
     else:
         st.info("現在、この証明書が紐付いているPCは見つかりませんでした。")
 
-# 💡 駐車場区画の詳細編集ダイアログ（「社有車」を「訪問車」に変更）
+# 💡 駐車場区画の詳細編集ダイアログ（駐車番号を追加）
 @st.dialog("📝 駐車場区画の編集")
 def show_parking_dialog(row_data):
     with st.form("parking_edit_form"):
         st.write(f"**区画番号:** {row_data.get('区画番号', '')}")
         new_name = st.text_input("駐車場名", value=row_data.get('駐車場名', ''))
+        # 💡 駐車番号を追加
+        new_park_num = st.text_input("駐車番号", value=row_data.get('駐車番号', ''))
         
         type_opts = ["訪問車", "自家用車", "来客用", "空き"]
         curr_type = str(row_data.get('区分', '')).strip()
@@ -559,7 +561,8 @@ def show_parking_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_PARKING)
             headers = worksheet.row_values(1)
-            data_dict = {"区画番号": row_data.get('区画番号', ''), "駐車場名": new_name, "区分": new_type, "使用者": new_user, "備考": new_note}
+            # 💡 駐車番号を保存データに含める
+            data_dict = {"区画番号": row_data.get('区画番号', ''), "駐車場名": new_name, "駐車番号": new_park_num, "区分": new_type, "使用者": new_user, "備考": new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
             
             id_col_idx = headers.index("区画番号") + 1
@@ -676,7 +679,6 @@ with st.sidebar:
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
     st.button("👶 産休育休者管理", on_click=change_page, args=("👶 産休育休者管理",), use_container_width=True)
     
-    # 💡 駐車場管理をここに追加
     st.button("🅿️ 駐車場管理", on_click=change_page, args=("🅿️ 駐車場管理",), use_container_width=True)
     
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
@@ -695,10 +697,9 @@ with st.sidebar:
         get_task_data.clear()
         get_maternity_data.clear()
         get_orca_cert_data.clear()
-        get_parking_data.clear() # 💡 駐車場のキャッシュクリアも追加
+        get_parking_data.clear()
         st.rerun()
 
-# 💡 🚨 辞書のマッピング
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 try:
@@ -1009,7 +1010,7 @@ try:
                             st.rerun()
 
     # ==========================================
-    # 🅿️ ページ：駐車場管理
+    # 🅿️ ページ：駐車場管理 (💡 駐車番号を追加)
     # ==========================================
     elif page_selection == "🅿️ 駐車場管理":
         st.markdown(f"""
@@ -1025,7 +1026,6 @@ try:
         st.markdown("##### 🗺️ 最新の配置図を確認する")
         mc1, mc2, mc3 = st.columns(3)
         mc1.link_button("🔗 全体配置図を開く", url_all, use_container_width=True)
-        # 💡 社有車 → 訪問車に変更
         mc2.link_button("🔗 訪問車のみ表示", url_company, use_container_width=True)
         mc3.link_button("🔗 自家用車のみ表示", url_private, use_container_width=True)
         st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
@@ -1045,26 +1045,28 @@ try:
                 else:
                     with st.container():
                         st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                        hc = st.columns([0.8, 1.5, 2.0, 1.5, 2.0, 2.0])
-                        headers_text = ["操作", "区画番号", "駐車場名", "区分", "使用者", "備考"]
+                        # 💡 ヘッダー列に「駐車番号」を追加し、幅を調整
+                        hc = st.columns([0.8, 1.2, 1.8, 1.2, 1.2, 1.8, 2.0])
+                        headers_text = ["操作", "区画番号", "駐車場名", "駐車番号", "区分", "使用者", "備考"]
                         for i, h_text in enumerate(headers_text):
                             hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                         st.markdown("<hr>", unsafe_allow_html=True)
                         
                         for idx, row in display_df.iterrows():
-                            c = st.columns([0.8, 1.5, 2.0, 1.5, 2.0, 2.0])
+                            c = st.columns([0.8, 1.2, 1.8, 1.2, 1.2, 1.8, 2.0])
                             if c[0].button("詳細", key=f"park_{idx}"): show_parking_dialog(row)
                             c[1].write(f"**{str(row.get('区画番号', ''))}**")
                             c[2].write(str(row.get('駐車場名', '')))
+                            # 💡 駐車番号を表示
+                            c[3].write(str(row.get('駐車番号', '')))
                             
                             p_type = str(row.get('区分', ''))
-                            # 💡 社有車 → 訪問車に変更
-                            if p_type == "訪問車": c[3].markdown(f"<span style='color:#4285f4; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
-                            elif p_type == "自家用車": c[3].markdown(f"<span style='color:#34a853; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
-                            else: c[3].write(p_type)
+                            if p_type == "訪問車": c[4].markdown(f"<span style='color:#4285f4; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
+                            elif p_type == "自家用車": c[4].markdown(f"<span style='color:#34a853; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
+                            else: c[4].write(p_type)
                             
-                            c[4].write(f"**{safe_text(row.get('使用者', ''))}**")
-                            c[5].write(str(row.get('備考', '')))
+                            c[5].write(f"**{safe_text(row.get('使用者', ''))}**")
+                            c[6].write(str(row.get('備考', '')))
                             st.markdown("<hr>", unsafe_allow_html=True)
             else:
                 st.info("データがありません。右のタブから区画と使用者を登録してください。")
@@ -1078,7 +1080,8 @@ try:
                     st.info("※「区画番号」は配置図のVLOOKUP関数と一致させるためのキーになります。正確に入力してください。（例：第1-01）")
                     p_id = st.text_input("区画番号 (必須)")
                     p_name = st.text_input("駐車場名")
-                    # 💡 社有車 → 訪問車に変更
+                    # 💡 登録フォームに「駐車番号」を追加
+                    p_num = st.text_input("駐車番号")
                     p_type = st.selectbox("区分", ["訪問車", "自家用車", "来客用", "空き"])
                     p_user = st.text_input("使用者")
                     p_note = st.text_area("備考")
@@ -1091,9 +1094,10 @@ try:
                                 ws = doc.worksheet(SHEET_PARKING)
                             except gspread.exceptions.WorksheetNotFound:
                                 ws = doc.add_worksheet(title=SHEET_PARKING, rows="100", cols="10")
-                                ws.append_row(["区画番号", "駐車場名", "区分", "使用者", "備考"])
+                                # 💡 新規シート作成時のヘッダーも「駐車番号」を追加
+                                ws.append_row(["区画番号", "駐車場名", "駐車番号", "区分", "使用者", "備考"])
                             
-                            ws.append_row([p_id, p_name, p_type, p_user, p_note])
+                            ws.append_row([p_id, p_name, p_num, p_type, p_user, p_note])
                             st.session_state.parking_reg_success = True
                             get_parking_data.clear()
                             st.rerun()
