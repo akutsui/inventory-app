@@ -133,7 +133,7 @@ SHEET_CERTIFICATE = "電子証明書"
 SHEET_TASK = "タスク管理"
 SHEET_MATERNITY = "産休育休"
 SHEET_ORCA_CERT = "ORCA証明書"
-SHEET_PARKING = "駐車場データ"  # 💡 駐車場データ用のシート名を追加
+SHEET_PARKING = "駐車場データ"  # 💡 駐車場データ用のシート名
 
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
@@ -340,7 +340,6 @@ def get_orca_cert_data():
     try: return pd.DataFrame(doc.worksheet(SHEET_ORCA_CERT).get_all_records())
     except: return pd.DataFrame()
 
-# 💡 駐車場データのキャッシュ取得関数を追加
 @st.cache_data(ttl=600)
 def get_parking_data():
     try: return pd.DataFrame(doc.worksheet(SHEET_PARKING).get_all_records())
@@ -542,15 +541,14 @@ def show_orca_cert_dialog(row_data):
     else:
         st.info("現在、この証明書が紐付いているPCは見つかりませんでした。")
 
-# 💡【NEW】駐車場区画の詳細編集ダイアログ
+# 💡 駐車場区画の詳細編集ダイアログ（「社有車」を「訪問車」に変更）
 @st.dialog("📝 駐車場区画の編集")
 def show_parking_dialog(row_data):
     with st.form("parking_edit_form"):
-        # 区画番号はVLOOKUPのキーになるため、変更不可（または注意喚起）にするのが安全です
         st.write(f"**区画番号:** {row_data.get('区画番号', '')}")
         new_name = st.text_input("駐車場名", value=row_data.get('駐車場名', ''))
         
-        type_opts = ["社有車", "自家用車", "来客用", "空き"]
+        type_opts = ["訪問車", "自家用車", "来客用", "空き"]
         curr_type = str(row_data.get('区分', '')).strip()
         type_index = type_opts.index(curr_type) if curr_type in type_opts else 0
         new_type = st.selectbox("区分", type_opts, index=type_index)
@@ -1011,7 +1009,7 @@ try:
                             st.rerun()
 
     # ==========================================
-    # 🅿️ ページ：駐車場管理 (新規追加！)
+    # 🅿️ ページ：駐車場管理
     # ==========================================
     elif page_selection == "🅿️ 駐車場管理":
         st.markdown(f"""
@@ -1020,16 +1018,15 @@ try:
             </div>
         """, unsafe_allow_html=True)
         
-        # === 🗺️ 配置図のリンク設定 ===
-        # 💡 取得した図面のURLを以下の " " の中に貼り付けてください！
-        url_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/edit?gid=591211712#gid=591211712"
+        url_all = "https://docs.google.com/spreadsheets/"
         url_company = "https://docs.google.com/spreadsheets/"
         url_private = "https://docs.google.com/spreadsheets/"
         
         st.markdown("##### 🗺️ 最新の配置図を確認する")
         mc1, mc2, mc3 = st.columns(3)
         mc1.link_button("🔗 全体配置図を開く", url_all, use_container_width=True)
-        mc2.link_button("🔗 社有車のみ表示", url_company, use_container_width=True)
+        # 💡 社有車 → 訪問車に変更
+        mc2.link_button("🔗 訪問車のみ表示", url_company, use_container_width=True)
         mc3.link_button("🔗 自家用車のみ表示", url_private, use_container_width=True)
         st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
         
@@ -1061,7 +1058,8 @@ try:
                             c[2].write(str(row.get('駐車場名', '')))
                             
                             p_type = str(row.get('区分', ''))
-                            if p_type == "社有車": c[3].markdown(f"<span style='color:#4285f4; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
+                            # 💡 社有車 → 訪問車に変更
+                            if p_type == "訪問車": c[3].markdown(f"<span style='color:#4285f4; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
                             elif p_type == "自家用車": c[3].markdown(f"<span style='color:#34a853; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
                             else: c[3].write(p_type)
                             
@@ -1080,7 +1078,8 @@ try:
                     st.info("※「区画番号」は配置図のVLOOKUP関数と一致させるためのキーになります。正確に入力してください。（例：第1-01）")
                     p_id = st.text_input("区画番号 (必須)")
                     p_name = st.text_input("駐車場名")
-                    p_type = st.selectbox("区分", ["社有車", "自家用車", "来客用", "空き"])
+                    # 💡 社有車 → 訪問車に変更
+                    p_type = st.selectbox("区分", ["訪問車", "自家用車", "来客用", "空き"])
                     p_user = st.text_input("使用者")
                     p_note = st.text_area("備考")
                     
