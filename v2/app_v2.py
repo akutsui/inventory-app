@@ -541,13 +541,11 @@ def show_orca_cert_dialog(row_data):
     else:
         st.info("現在、この証明書が紐付いているPCは見つかりませんでした。")
 
-# 💡 駐車場区画の詳細編集ダイアログ（駐車番号を追加）
 @st.dialog("📝 駐車場区画の編集")
 def show_parking_dialog(row_data):
     with st.form("parking_edit_form"):
         st.write(f"**区画番号:** {row_data.get('区画番号', '')}")
         new_name = st.text_input("駐車場名", value=row_data.get('駐車場名', ''))
-        # 💡 駐車番号を追加
         new_park_num = st.text_input("駐車番号", value=row_data.get('駐車番号', ''))
         
         type_opts = ["訪問車", "自家用車", "来客用", "空き"]
@@ -561,7 +559,6 @@ def show_parking_dialog(row_data):
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_PARKING)
             headers = worksheet.row_values(1)
-            # 💡 駐車番号を保存データに含める
             data_dict = {"区画番号": row_data.get('区画番号', ''), "駐車場名": new_name, "駐車番号": new_park_num, "区分": new_type, "使用者": new_user, "備考": new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
             
@@ -1009,7 +1006,7 @@ try:
                             get_orca_cert_data.clear()
                             st.rerun()
 
-# ==========================================
+    # ==========================================
     # 🅿️ ページ：駐車場管理
     # ==========================================
     elif page_selection == "🅿️ 駐車場管理":
@@ -1019,16 +1016,21 @@ try:
             </div>
         """, unsafe_allow_html=True)
         
-        # 👇 作成したPDF用のURLを、ここの "" の中に貼り付けます！
+        # 💡 URLの設定場所（ここに実際のURLを貼り付けてください）
+        url_view_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/edit?gid=591211712#gid=591211712" # 全体閲覧用のURL
         url_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=591211712#gid=591211712&portrait=false&fitw=true"
         url_company = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=485728313#gid=485728313&portrait=false&fitw=true"
         url_private = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=130019541#gid=130019541&portrait=false&fitw=true"
+
         
-        st.markdown("##### 🗺️ 最新の配置図を確認する")
+        # 💡 閲覧用のリンク（全体のみ）
+        st.link_button("🔗 全体配置図をブラウザで開く (閲覧専用)", url_view_all, use_container_width=True)
+        
+        # 💡 PDFダウンロード用のリンク群
         mc1, mc2, mc3 = st.columns(3)
-        mc1.link_button("🔗 全体配置図を開く", url_all, use_container_width=True)
-        mc2.link_button("🔗 訪問車のみ表示", url_company, use_container_width=True)
-        mc3.link_button("🔗 自家用車のみ表示", url_private, use_container_width=True)
+        mc1.link_button("📥 全体配置図 (PDF)", url_all_pdf, use_container_width=True)
+        mc2.link_button("📥 訪問車のみ (PDF)", url_company_pdf, use_container_width=True)
+        mc3.link_button("📥 自家用車のみ (PDF)", url_private_pdf, use_container_width=True)
         st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
         
         t1, t2 = st.tabs(["📋 区画・使用者一覧", "➕ 新規区画の登録"])
@@ -1046,7 +1048,6 @@ try:
                 else:
                     with st.container():
                         st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                        # 💡 ヘッダー列に「駐車番号」を追加し、幅を調整
                         hc = st.columns([0.8, 1.2, 1.8, 1.2, 1.2, 1.8, 2.0])
                         headers_text = ["操作", "区画番号", "駐車場名", "駐車番号", "区分", "使用者", "備考"]
                         for i, h_text in enumerate(headers_text):
@@ -1058,7 +1059,6 @@ try:
                             if c[0].button("詳細", key=f"park_{idx}"): show_parking_dialog(row)
                             c[1].write(f"**{str(row.get('区画番号', ''))}**")
                             c[2].write(str(row.get('駐車場名', '')))
-                            # 💡 駐車番号を表示
                             c[3].write(str(row.get('駐車番号', '')))
                             
                             p_type = str(row.get('区分', ''))
@@ -1081,7 +1081,6 @@ try:
                     st.info("※「区画番号」は配置図のVLOOKUP関数と一致させるためのキーになります。正確に入力してください。（例：第1-01）")
                     p_id = st.text_input("区画番号 (必須)")
                     p_name = st.text_input("駐車場名")
-                    # 💡 登録フォームに「駐車番号」を追加
                     p_num = st.text_input("駐車番号")
                     p_type = st.selectbox("区分", ["訪問車", "自家用車", "来客用", "空き"])
                     p_user = st.text_input("使用者")
@@ -1095,7 +1094,6 @@ try:
                                 ws = doc.worksheet(SHEET_PARKING)
                             except gspread.exceptions.WorksheetNotFound:
                                 ws = doc.add_worksheet(title=SHEET_PARKING, rows="100", cols="10")
-                                # 💡 新規シート作成時のヘッダーも「駐車番号」を追加
                                 ws.append_row(["区画番号", "駐車場名", "駐車番号", "区分", "使用者", "備考"])
                             
                             ws.append_row([p_id, p_name, p_num, p_type, p_user, p_note])
