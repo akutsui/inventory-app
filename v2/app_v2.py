@@ -1009,8 +1009,8 @@ try:
                             get_orca_cert_data.clear()
                             st.rerun()
 
-    # ==========================================
-    # 🅿️ ページ：駐車場管理 (💡 駐車番号を追加)
+# ==========================================
+    # 🅿️ ページ：駐車場管理
     # ==========================================
     elif page_selection == "🅿️ 駐車場管理":
         st.markdown(f"""
@@ -1019,9 +1019,10 @@ try:
             </div>
         """, unsafe_allow_html=True)
         
-        url_all = "https://docs.google.com/spreadsheets/"
-        url_company = "https://docs.google.com/spreadsheets/"
-        url_private = "https://docs.google.com/spreadsheets/"
+        # 👇 作成したPDF用のURLを、ここの "" の中に貼り付けます！
+        url_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=591211712#gid=591211712&portrait=false&fitw=true"
+        url_company = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=485728313#gid=485728313&portrait=false&fitw=true"
+        url_private = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=130019541#gid=130019541&portrait=false&fitw=true"
         
         st.markdown("##### 🗺️ 最新の配置図を確認する")
         mc1, mc2, mc3 = st.columns(3)
