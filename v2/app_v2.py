@@ -716,10 +716,19 @@ try:
     today = datetime.now().date()
     page_selection = st.session_state['page_selection']
 
-# ==========================================
-    # 🏠 ページ：ホーム (動的ダッシュボード) 
-# ==========================================
-# 🔻🔻🔻 以下のコードを上の階層に合わせて貼り付けるか、行頭のスペースを調整してください 🔻🔻🔻
+    # ==========================================
+    # 🏠 ページ：ホーム (動的ダッシュボード)
+    # ==========================================
+    if page_selection == "🏠 ホーム (ダッシュボード)":
+        st.markdown(f"""
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0px !important; padding: 0px; width: 100%;">
+                <h3 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🏢 総務管理アプリ</h3>
+                <div style="font-size: 1.1rem; color: #ffffff !important; font-weight: bold;">📅 {datetime.now().strftime('%Y年%m月%d日')}</div>
+            </div>
+        """, unsafe_allow_html=True)
+        st.markdown("---")
+        
+        # 🔻🔻🔻 ここから一時的なテストコード（詳細デバッグ版） 🔻🔻🔻
         st.markdown("### 🛠️ カレンダー設定テスト (原因特定モード)")
         if st.button("🔍 エラーの本当の原因を調べる"):
             try:
@@ -760,6 +769,8 @@ try:
                     
             except Exception as e:
                 st.error(f"❌ プログラム内部の準備エラー: {e}")
+        st.markdown("---")
+        # 🔺🔺🔺 ここまで 🔺🔺🔺
         
         st.subheader("期日アラート")
         
