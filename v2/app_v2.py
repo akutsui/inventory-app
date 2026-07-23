@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import time
 import jwt
 import requests
+import calendar  # 👈 これを追加！
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務管理アプリ v2", page_icon="🏢", layout="wide")
@@ -689,17 +690,6 @@ with st.sidebar:
     st.markdown("<br>", unsafe_allow_html=True)
     # 🚀 更新ボタンを一番下に戻す
     st.markdown("---")
-    if st.button("🛠️ カレンダーID一覧を取得 (確認用)"):
-        token = get_lineworks_token()
-        url = f"https://www.worksapis.com/v1.0/users/{st.secrets['lineworks']['service_account']}/calendars"
-        headers = {"Authorization": f"Bearer {token}"}
-        res = requests.get(url, headers=headers)
-        if res.status_code == 200:
-            calendars = res.json().get("calendars", [])
-            for c in calendars:
-                st.info(f"【{c.get('name', '名前なし')}】\nID: {c.get('calendarId', '')}")
-        else:
-            st.error(f"取得失敗: {res.status_code}")
     if st.button("🔄 データを最新にする", use_container_width=True): 
         get_all_data.clear()
         get_new_employee_data.clear()
@@ -717,6 +707,94 @@ try:
     today = datetime.now().date()
     page_selection = st.session_state['page_selection']
 
+# 🔻🔻🔻 ここからカレンダー機能の裏側コードを追加 🔻🔻🔻
+@st.cache_data(ttl=600)  # 10分間キャッシュしてAPI制限を回避
+def fetch_absence_events(year, month):
+    token = get_lineworks_token()
+    if not token: return {}
+    
+    service_account = st.secrets["lineworks"]["service_account"]
+    calendar_id = "16f4dc1f-4b82-4c6e-9fb8-f2f27d7caf99"  # 取得したID
+    url = f"https://www.worksapis.com/v1.0/users/{service_account}/calendars/{calendar_id}/events"
+    
+    # 取得期間の計算（その月の1日から翌月の1日まで）
+    start_date = datetime(year, month, 1)
+    end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    params = {
+        "timeMin": start_date.strftime('%Y-%m-%dT00:00:00+09:00'),
+        "timeMax": end_date.strftime('%Y-%m-%dT00:00:00+09:00'),
+        "maxResults": 1000
+    }
+    
+    res = requests.get(url, headers=headers, params=params)
+    events_by_date = {}
+    
+    if res.status_code == 200:
+        events = res.json().get("events", [])
+        target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "仁平"]
+        exclude_words = ["リモート", "鹿沼便"]
+        
+        for item in events:
+            summary = item.get("summary", "")
+            # ルール判定（名前が含まれていて、かつ除外ワードが含まれていない）
+            if any(n in summary for n in target_names) and not any(w in summary for w in exclude_words):
+                start_dict = item.get("start", {})
+                start_str = start_dict.get("date") or start_dict.get("dateTime", "")[:10]
+                if start_str:
+                    # 複数日またがる予定にも対応
+                    dt_start = datetime.strptime(start_str, '%Y-%m-%d')
+                    end_dict = item.get("end", {})
+                    end_str = end_dict.get("date")
+                    dt_end = datetime.strptime(end_str, '%Y-%m-%d') if end_str else dt_start + timedelta(days=1)
+                    
+                    curr_dt = dt_start
+                    while curr_dt < dt_end:
+                        d_key = curr_dt.strftime('%Y-%m-%d')
+                        if d_key not in events_by_date: events_by_date[d_key] = []
+                        events_by_date[d_key].append(summary)
+                        curr_dt += timedelta(days=1)
+    return events_by_date
+
+def render_monthly_calendar(year, month, events_by_date):
+    cal = calendar.Calendar(firstweekday=6) # 日曜始まり
+    month_days = cal.monthdatescalendar(year, month)
+    
+    html = """
+    <style>
+    .custom-calendar { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+    .custom-calendar th { background-color: #333; color: white; padding: 6px; text-align: center; border: 1px solid #555; font-size: 0.9rem; }
+    .custom-calendar td { border: 1px solid #555; height: 90px; vertical-align: top; padding: 4px; background-color: #1a1a1a; overflow: hidden; }
+    .custom-calendar td.different-month { background-color: #0a0a0a; opacity: 0.5; }
+    .custom-calendar .day-num { font-weight: bold; margin-bottom: 4px; font-size: 0.85rem; color: #ddd; }
+    .custom-calendar .day-num.sunday { color: #ff6b6b; }
+    .custom-calendar .day-num.saturday { color: #4dabf7; }
+    .custom-calendar .event-item { background-color: #e53935; color: white; border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+    </style>
+    <table class="custom-calendar">
+    <tr><th style="color:#ff6b6b;">日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th style="color:#4dabf7;">土</th></tr>
+    """
+    
+    for week in month_days:
+        html += "<tr>"
+        for date_obj in week:
+            td_class = "different-month" if date_obj.month != month else ""
+            day_class = "sunday" if date_obj.weekday() == 6 else ("saturday" if date_obj.weekday() == 5 else "")
+            html += f'<td class="{td_class}"><div class="day-num {day_class}">{date_obj.day}</div>'
+            
+            day_events = events_by_date.get(date_obj.strftime('%Y-%m-%d'), [])
+            for ev in day_events: html += f'<div class="event-item" title="{ev}">{ev}</div>'
+            html += "</td>"
+        html += "</tr>"
+    html += "</table>"
+    return html
+# 🔺🔺🔺 カレンダー機能の裏側コード ここまで 🔺🔺🔺
+
+# ==========================================
+# 🏠 ページ：ホーム (動的ダッシュボード)
+# ==========================================
+    
     # ==========================================
     # 🏠 ページ：ホーム (動的ダッシュボード)
     # ==========================================
@@ -727,52 +805,7 @@ try:
                 <div style="font-size: 1.1rem; color: #ffffff !important; font-weight: bold;">📅 {datetime.now().strftime('%Y年%m月%d日')}</div>
             </div>
         """, unsafe_allow_html=True)
-        st.markdown("---")
-        
-        # 🔻🔻🔻 ここから一時的なテストコード（詳細デバッグ版） 🔻🔻🔻
-        st.markdown("### 🛠️ カレンダー設定テスト (原因特定モード)")
-        if st.button("🔍 エラーの本当の原因を調べる"):
-            try:
-                lw_secrets = st.secrets["lineworks"]
-                client_id = lw_secrets["client_id"]
-                client_secret = lw_secrets["client_secret"]
-                service_account = lw_secrets["service_account"]
-                private_key = lw_secrets["private_key"]
-                
-                current_time = int(time.time())
-                payload = {
-                    "iss": client_id, "sub": service_account, "iat": current_time, "exp": current_time + 3600
-                }
-                encoded_jwt = jwt.encode(payload, private_key, algorithm="RS256")
-                
-                url = "https://auth.worksmobile.com/oauth2/v2.0/token"
-                headers = {"Content-Type": "application/x-www-form-urlencoded"}
-                data = {
-                    "assertion": encoded_jwt, "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                    "client_id": client_id, "client_secret": client_secret, "scope": "calendar"
-                }
-                res = requests.post(url, headers=headers, data=data)
-                
-                if res.status_code == 200:
-                    st.success("✅ トークン取得成功！認証はバッチリです。")
-                    token = res.json().get("access_token")
-                    
-                    url_cal = f"https://www.worksapis.com/v1.0/users/{service_account}/calendars"
-                    res_cal = requests.get(url_cal, headers={"Authorization": f"Bearer {token}"})
-                    if res_cal.status_code == 200:
-                        data_cal = res_cal.json().get("calendars", [])
-                        for c in data_cal:
-                            st.info(f"名前: **{c.get('name', '不明')}**\n\nID: `{c.get('calendarId', '')}`")
-                    else:
-                        st.error(f"❌ カレンダー一覧の取得エラー: {res_cal.text}")
-                else:
-                    st.error(f"❌ LINE WORKSからの認証エラー応答: {res.status_code}\n\n{res.text}")
-                    
-            except Exception as e:
-                st.error(f"❌ プログラム内部の準備エラー: {e}")
-        st.markdown("---")
-        # 🔺🔺🔺 ここまで 🔺🔺🔺
-        
+        st.markdown("---")        
         st.subheader("期日アラート")
         
         alert_cars = []
@@ -813,6 +846,46 @@ try:
         if active_tasks: st.markdown(f'<div class="cassette-blue">{"".join([f"<div>{task}</div>" for task in active_tasks])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-blue">🎉 現在、進行中のタスクはありません。</div>', unsafe_allow_html=True)
 
+# （中略）ホームのタスク一覧を表示している部分
+        if active_tasks: st.markdown(f'<div class="cassette-blue">{"".join([f"<div>{task}</div>" for task in active_tasks])}</div>', unsafe_allow_html=True)
+        else: st.markdown('<div class="cassette-blue">🎉 現在、進行中のタスクはありません。</div>', unsafe_allow_html=True)
+
+        # 🔻🔻🔻 ここからダッシュボードの一番下に貼り付け！ 🔻🔻🔻
+        st.markdown("<br><hr><br>", unsafe_allow_html=True)
+        st.subheader("📅 総務メンバー 不在・予定カレンダー")
+        
+        # 表示する「年・月」をコントロールする設定
+        if 'cal_year' not in st.session_state: st.session_state['cal_year'] = datetime.now().year
+        if 'cal_month' not in st.session_state: st.session_state['cal_month'] = datetime.now().month
+
+        c1, c2, c3 = st.columns([1, 2, 1])
+        with c1:
+            if st.button("◀️ 先月", use_container_width=True):
+                st.session_state['cal_month'] -= 1
+                if st.session_state['cal_month'] == 0:
+                    st.session_state['cal_month'] = 12
+                    st.session_state['cal_year'] -= 1
+                st.rerun()
+        with c2:
+            st.markdown(f"<div style='text-align:center; font-weight:bold; font-size:1.2rem; margin-top:3px;'>{st.session_state['cal_year']}年 {st.session_state['cal_month']}月</div>", unsafe_allow_html=True)
+        with c3:
+            if st.button("次月 ▶️", use_container_width=True):
+                st.session_state['cal_month'] += 1
+                if st.session_state['cal_month'] == 13:
+                    st.session_state['cal_month'] = 1
+                    st.session_state['cal_year'] += 1
+                st.rerun()
+
+        # データの取得とHTML描画
+        with st.spinner("カレンダー情報を取得中..."):
+            events_by_date = fetch_absence_events(st.session_state['cal_year'], st.session_state['cal_month'])
+            cal_html = render_monthly_calendar(st.session_state['cal_year'], st.session_state['cal_month'], events_by_date)
+            st.markdown(cal_html, unsafe_allow_html=True)
+        # 🔺🔺🔺 カレンダーの表示コード ここまで 🔺🔺🔺
+
+    # ==========================================
+    # 📦 ページ：備品・ソフトウェア個別管理
+    
     # ==========================================
     # 📦 ページ：備品・ソフトウェア個別管理
     # ==========================================
