@@ -702,11 +702,6 @@ with st.sidebar:
 
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
-try:
-    df = get_all_data()
-    today = datetime.now().date()
-    page_selection = st.session_state['page_selection']
-
 # 🔻🔻🔻 ここからカレンダー機能の裏側コードを追加 🔻🔻🔻
 @st.cache_data(ttl=600)  # 10分間キャッシュしてAPI制限を回避
 def fetch_absence_events(year, month):
@@ -790,6 +785,11 @@ def render_monthly_calendar(year, month, events_by_date):
     html += "</table>"
     return html
 # 🔺🔺🔺 カレンダー機能の裏側コード ここまで 🔺🔺🔺
+
+try:
+    df = get_all_data()
+    today = datetime.now().date()
+    page_selection = st.session_state['page_selection']
 
 # ==========================================
 # 🏠 ページ：ホーム (動的ダッシュボード)
