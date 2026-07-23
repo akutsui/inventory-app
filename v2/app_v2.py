@@ -716,7 +716,7 @@ try:
     today = datetime.now().date()
     page_selection = st.session_state['page_selection']
 
-    # ==========================================
+# ==========================================
     # 🏠 ページ：ホーム (動的ダッシュボード)
     # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
@@ -727,6 +727,31 @@ try:
             </div>
         """, unsafe_allow_html=True)
         st.markdown("---")
+        
+        # 🔻🔻🔻 ここから一時的なテストコード 🔻🔻🔻
+        st.markdown("### 🛠️ カレンダー設定テスト")
+        if st.button("🔍 接続できる全カレンダーのIDを表示する"):
+            token = get_lineworks_token()
+            if not token:
+                st.error("❌ トークンの取得に失敗しました。認証設定を確認してください。")
+            else:
+                url = f"https://www.worksapis.com/v1.0/users/{st.secrets['lineworks']['service_account']}/calendars"
+                headers = {"Authorization": f"Bearer {token}"}
+                res = requests.get(url, headers=headers)
+                
+                st.write(f"通信ステータス: {res.status_code}")
+                if res.status_code == 200:
+                    data = res.json().get("calendars", [])
+                    if not data:
+                        st.warning("⚠️ カレンダーが1つも見つかりませんでした。（サービスアカウントがグループに招待されていない可能性があります）")
+                    else:
+                        for c in data:
+                            st.info(f"名前: **{c.get('name', '不明')}**\n\nID: `{c.get('calendarId', '')}`")
+                else:
+                    st.error(f"エラー詳細: {res.text}")
+        st.markdown("---")
+        # 🔺🔺🔺 ここまで 🔺🔺🔺
+        
         st.subheader("期日アラート")
         
         alert_cars = []
