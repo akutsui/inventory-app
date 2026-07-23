@@ -717,38 +717,49 @@ try:
     page_selection = st.session_state['page_selection']
 
 # ==========================================
-    # 🏠 ページ：ホーム (動的ダッシュボード)
-    # ==========================================
-    if page_selection == "🏠 ホーム (ダッシュボード)":
-        st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0px !important; padding: 0px; width: 100%;">
-                <h3 style="font-size: 1.15rem !important; margin: 0px !important; padding: 0px !important; color: #ffffff !important; font-weight: bold;">🏢 総務管理アプリ</h3>
-                <div style="font-size: 1.1rem; color: #ffffff !important; font-weight: bold;">📅 {datetime.now().strftime('%Y年%m月%d日')}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        st.markdown("---")
-        
-        # 🔻🔻🔻 ここから一時的なテストコード 🔻🔻🔻
-        st.markdown("### 🛠️ カレンダー設定テスト")
-        if st.button("🔍 接続できる全カレンダーのIDを表示する"):
-            token = get_lineworks_token()
-            if not token:
-                st.error("❌ トークンの取得に失敗しました。認証設定を確認してください。")
-            else:
-                url = f"https://www.worksapis.com/v1.0/users/{st.secrets['lineworks']['service_account']}/calendars"
-                headers = {"Authorization": f"Bearer {token}"}
-                res = requests.get(url, headers=headers)
+    # 🏠 ページ：ホーム (動的ダッシュボード) 
+# ==========================================
+   # 🔻🔻🔻 ここから一時的なテストコード（詳細デバッグ版） 🔻🔻🔻
+        st.markdown("### 🛠️ カレンダー設定テスト (原因特定モード)")
+        if st.button("🔍 エラーの本当の原因を調べる"):
+            try:
+                lw_secrets = st.secrets["lineworks"]
+                client_id = lw_secrets["client_id"]
+                client_secret = lw_secrets["client_secret"]
+                service_account = lw_secrets["service_account"]
+                private_key = lw_secrets["private_key"]
                 
-                st.write(f"通信ステータス: {res.status_code}")
+                current_time = int(time.time())
+                payload = {
+                    "iss": client_id, "sub": service_account, "iat": current_time, "exp": current_time + 3600
+                }
+                encoded_jwt = jwt.encode(payload, private_key, algorithm="RS256")
+                
+                url = "https://auth.worksmobile.com/oauth2/v2.0/token"
+                headers = {"Content-Type": "application/x-www-form-urlencoded"}
+                data = {
+                    "assertion": encoded_jwt, "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                    "client_id": client_id, "client_secret": client_secret, "scope": "calendar"
+                }
+                res = requests.post(url, headers=headers, data=data)
+                
                 if res.status_code == 200:
-                    data = res.json().get("calendars", [])
-                    if not data:
-                        st.warning("⚠️ カレンダーが1つも見つかりませんでした。（サービスアカウントがグループに招待されていない可能性があります）")
-                    else:
-                        for c in data:
+                    st.success("✅ トークン取得成功！認証はバッチリです。")
+                    token = res.json().get("access_token")
+                    
+                    url_cal = f"https://www.worksapis.com/v1.0/users/{service_account}/calendars"
+                    res_cal = requests.get(url_cal, headers={"Authorization": f"Bearer {token}"})
+                    if res_cal.status_code == 200:
+                        data_cal = res_cal.json().get("calendars", [])
+                        for c in data_cal:
                             st.info(f"名前: **{c.get('name', '不明')}**\n\nID: `{c.get('calendarId', '')}`")
+                    else:
+                        st.error(f"❌ カレンダー一覧の取得エラー: {res_cal.text}")
                 else:
-                    st.error(f"エラー詳細: {res.text}")
+                    st.error(f"❌ LINE WORKSからの認証エラー応答: {res.status_code}\n\n{res.text}")
+                    
+            except Exception as e:
+                st.error(f"❌ プログラム内部の準備エラー（secrets.tomlの書き方など）: {e}")
         st.markdown("---")
         # 🔺🔺🔺 ここまで 🔺🔺🔺
         
