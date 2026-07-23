@@ -687,6 +687,18 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     # 🚀 更新ボタンを一番下に戻す
+    st.markdown("---")
+    if st.button("🛠️ カレンダーID一覧を取得 (確認用)"):
+        token = get_lineworks_token()
+        url = f"https://www.worksapis.com/v1.0/users/{st.secrets['lineworks']['service_account']}/calendars"
+        headers = {"Authorization": f"Bearer {token}"}
+        res = requests.get(url, headers=headers)
+        if res.status_code == 200:
+            calendars = res.json().get("calendars", [])
+            for c in calendars:
+                st.info(f"【{c.get('name', '名前なし')}】\nID: {c.get('calendarId', '')}")
+        else:
+            st.error(f"取得失敗: {res.status_code}")
     if st.button("🔄 データを最新にする", use_container_width=True): 
         get_all_data.clear()
         get_new_employee_data.clear()
