@@ -167,6 +167,7 @@ for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_re
 LINEWORKS_USER_MAP = st.secrets["lineworks"].get("members", {})
 USER_OPTIONS = list(LINEWORKS_USER_MAP.keys())
 
+@st.cache_data(ttl=3000)
 def get_lineworks_token():
     try:
         lw_secrets = st.secrets["lineworks"]
