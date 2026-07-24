@@ -703,7 +703,8 @@ with st.sidebar:
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 # 🔻🔻🔻 カレンダー機能の裏側コード（完成版） 🔻🔻🔻
-@st.cache_data(ttl=600)  # 10分間キャッシュしてAPI制限を回避
+# 🔻🔻🔻 ここから書き換え 🔻🔻🔻
+# @st.cache_data(ttl=600)  # 👈 💡 先頭に「#」をつけて一時的に記憶（キャッシュ）を無効化！
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
     if not token: return {}
@@ -716,7 +717,6 @@ def fetch_absence_events(year, month):
     end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
     
     headers = {"Authorization": f"Bearer {token}"}
-    # 👇 修正ポイント：LINE WORKS専用の正しいパラメータ名に変更！
     params = {
         "fromDateTime": start_date.strftime('%Y-%m-%dT00:00:00+09:00'),
         "untilDateTime": end_date.strftime('%Y-%m-%dT00:00:00+09:00'),
@@ -732,8 +732,13 @@ def fetch_absence_events(year, month):
         
     events = res.json().get("events", [])
     
+    # 🔍 【追加】裏側で取れているすべての予定のタイトルを強制表示！
+    all_titles = [item.get("summary", "タイトルなし") for item in events]
+    st.warning(f"🔍 【デバッグ調査】今月({year}年{month}月)取れている全予定は {len(events)} 件です。内容: {all_titles}")
+    
     target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "仁平"]
     exclude_words = ["リモート", "鹿沼便"]
+# 🔺🔺🔺 ここまで 🔺🔺🔺
     
     for item in events:
         summary = item.get("summary", "")
