@@ -789,9 +789,6 @@ def render_monthly_calendar(year, month, events_by_date):
     return html
 # 🔺🔺🔺 カレンダー機能の裏側コード ここまで 🔺🔺🔺
 
-try: # 👈 💡 この下に続く形になります！
-    df = get_all_data()
-
 try:
     df = get_all_data()
     today = datetime.now().date()
