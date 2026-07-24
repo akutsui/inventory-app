@@ -702,9 +702,8 @@ with st.sidebar:
 
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
-# 🔻🔻🔻 カレンダー機能の裏側コード（完成版） 🔻🔻🔻
-# 🔻🔻🔻 カレンダー機能の裏側コード（真の完成版） 🔻🔻🔻
-@st.cache_data(ttl=600)  # 👈 💡 「#」を外してキャッシュ（記憶機能）を復活させました！
+# 🔻🔻🔻 カレンダー機能の裏側コード（生データ調査モード） 🔻🔻🔻
+# @st.cache_data(ttl=600)  # 👈 💡 「#」をつけて一時的に記憶機能をストップ！
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
     if not token: return {}
@@ -732,14 +731,17 @@ def fetch_absence_events(year, month):
         
     events = res.json().get("events", [])
     
+    # 🔍 【重要】LINE WORKSから届いた1件目の「生のデータ」をそのまま画面に出す！
+    if events:
+        st.warning(f"🔍 生データ大解剖！LINE WORKSからの返答👉 {events[0]}")
+        
     target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "仁平"]
     exclude_words = ["リモート", "鹿沼便"]
     
     for item in events:
-        # 👇 💡 ここを「summary」から「title」に修正しました！
-        title = item.get("title", "")
+        # summaryでもtitleでもeventNameでも、とにかく取れるものを探す
+        title = item.get("summary") or item.get("title") or item.get("eventName") or ""
         
-        # ルール判定（名前が含まれていて、かつ除外ワードが含まれていない）
         if any(n in title for n in target_names) and not any(w in title for w in exclude_words):
             start_dict = item.get("start", {})
             start_str = start_dict.get("date") or start_dict.get("dateTime", "")[:10]
