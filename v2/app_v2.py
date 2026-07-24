@@ -719,7 +719,7 @@ def fetch_absence_events(year, month):
     # 👇 修正ポイント：LINE WORKS専用の正しいパラメータ名に変更！
     params = {
         "fromDateTime": start_date.strftime('%Y-%m-%dT00:00:00+09:00'),
-        "toDateTime": end_date.strftime('%Y-%m-%dT00:00:00+09:00'),
+        "untilDateTime": end_date.strftime('%Y-%m-%dT00:00:00+09:00'),
         "maxResults": 1000
     }
     
