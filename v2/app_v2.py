@@ -703,8 +703,8 @@ with st.sidebar:
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 # 🔻🔻🔻 カレンダー機能の裏側コード（完成版） 🔻🔻🔻
-# 🔻🔻🔻 ここから書き換え 🔻🔻🔻
-# @st.cache_data(ttl=600)  # 👈 💡 先頭に「#」をつけて一時的に記憶（キャッシュ）を無効化！
+# 🔻🔻🔻 カレンダー機能の裏側コード（真の完成版） 🔻🔻🔻
+@st.cache_data(ttl=600)  # 👈 💡 「#」を外してキャッシュ（記憶機能）を復活させました！
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
     if not token: return {}
@@ -732,18 +732,15 @@ def fetch_absence_events(year, month):
         
     events = res.json().get("events", [])
     
-    # 🔍 【追加】裏側で取れているすべての予定のタイトルを強制表示！
-    all_titles = [item.get("summary", "タイトルなし") for item in events]
-    st.warning(f"🔍 【デバッグ調査】今月({year}年{month}月)取れている全予定は {len(events)} 件です。内容: {all_titles}")
-    
     target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "仁平"]
     exclude_words = ["リモート", "鹿沼便"]
-# 🔺🔺🔺 ここまで 🔺🔺🔺
     
     for item in events:
-        summary = item.get("summary", "")
+        # 👇 💡 ここを「summary」から「title」に修正しました！
+        title = item.get("title", "")
+        
         # ルール判定（名前が含まれていて、かつ除外ワードが含まれていない）
-        if any(n in summary for n in target_names) and not any(w in summary for w in exclude_words):
+        if any(n in title for n in target_names) and not any(w in title for w in exclude_words):
             start_dict = item.get("start", {})
             start_str = start_dict.get("date") or start_dict.get("dateTime", "")[:10]
             if start_str:
@@ -756,9 +753,10 @@ def fetch_absence_events(year, month):
                 while curr_dt < dt_end:
                     d_key = curr_dt.strftime('%Y-%m-%d')
                     if d_key not in events_by_date: events_by_date[d_key] = []
-                    events_by_date[d_key].append(summary)
+                    events_by_date[d_key].append(title)
                     curr_dt += timedelta(days=1)
     return events_by_date
+# 🔺🔺🔺 ここまで 🔺🔺🔺
 
 def render_monthly_calendar(year, month, events_by_date):
     cal = calendar.Calendar(firstweekday=6) # 日曜始まり
