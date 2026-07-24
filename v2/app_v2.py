@@ -702,8 +702,8 @@ with st.sidebar:
 
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
-# 🔻🔻🔻 カレンダー機能の裏側コード（生データ調査モード） 🔻🔻🔻
-# @st.cache_data(ttl=600)  # 👈 💡 「#」をつけて一時的に記憶機能をストップ！
+# 🔻🔻🔻 カレンダー機能の裏側コード（正真正銘の完成版） 🔻🔻🔻
+@st.cache_data(ttl=600)  # 👈 キャッシュ（記憶機能）を復活！
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
     if not token: return {}
@@ -731,23 +731,25 @@ def fetch_absence_events(year, month):
         
     events = res.json().get("events", [])
     
-    # 🔍 【重要】LINE WORKSから届いた1件目の「生のデータ」をそのまま画面に出す！
-    if events:
-        st.warning(f"🔍 生データ大解剖！LINE WORKSからの返答👉 {events[0]}")
-        
     target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "仁平"]
     exclude_words = ["リモート", "鹿沼便"]
     
     for item in events:
-        # summaryでもtitleでもeventNameでも、とにかく取れるものを探す
-        title = item.get("summary") or item.get("title") or item.get("eventName") or ""
+        # 👇 💡 マトリョーシカ（eventComponents）の中身を取り出す処理を追加！
+        components = item.get("eventComponents", [])
+        if not components:
+            continue
+            
+        comp = components[0] # 中身の予定データを取得
+        summary = comp.get("summary", "")
         
-        if any(n in title for n in target_names) and not any(w in title for w in exclude_words):
-            start_dict = item.get("start", {})
+        # ルール判定（名前が含まれていて、かつ除外ワードが含まれていない）
+        if any(n in summary for n in target_names) and not any(w in summary for w in exclude_words):
+            start_dict = comp.get("start", {})
             start_str = start_dict.get("date") or start_dict.get("dateTime", "")[:10]
             if start_str:
                 dt_start = datetime.strptime(start_str, '%Y-%m-%d')
-                end_dict = item.get("end", {})
+                end_dict = comp.get("end", {})
                 end_str = end_dict.get("date") or end_dict.get("dateTime", "")[:10]
                 dt_end = datetime.strptime(end_str, '%Y-%m-%d') if end_str else dt_start + timedelta(days=1)
                 
@@ -755,7 +757,7 @@ def fetch_absence_events(year, month):
                 while curr_dt < dt_end:
                     d_key = curr_dt.strftime('%Y-%m-%d')
                     if d_key not in events_by_date: events_by_date[d_key] = []
-                    events_by_date[d_key].append(title)
+                    events_by_date[d_key].append(summary)
                     curr_dt += timedelta(days=1)
     return events_by_date
 # 🔺🔺🔺 ここまで 🔺🔺🔺
