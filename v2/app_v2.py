@@ -702,7 +702,8 @@ with st.sidebar:
 
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
-# 🔻🔻🔻 ここから上書き 🔻🔻🔻
+# 🔻🔻🔻 カレンダー機能の裏側コード（完成版） 🔻🔻🔻
+@st.cache_data(ttl=600)  # 10分間キャッシュしてAPI制限を回避
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
     if not token: return {}
@@ -715,28 +716,28 @@ def fetch_absence_events(year, month):
     end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
     
     headers = {"Authorization": f"Bearer {token}"}
+    # 👇 修正ポイント：LINE WORKS専用の正しいパラメータ名に変更！
     params = {
-        "timeMin": start_date.strftime('%Y-%m-%dT00:00:00+09:00'),
-        "timeMax": end_date.strftime('%Y-%m-%dT00:00:00+09:00'),
+        "fromDateTime": start_date.strftime('%Y-%m-%dT00:00:00+09:00'),
+        "toDateTime": end_date.strftime('%Y-%m-%dT00:00:00+09:00'),
         "maxResults": 1000
     }
     
     res = requests.get(url, headers=headers, params=params)
     events_by_date = {}
     
-    # 🔍 エラー調査用の表示
     if res.status_code != 200:
         st.error(f"❌ カレンダー通信エラー ({res.status_code}): {res.text}")
         return {}
         
     events = res.json().get("events", [])
-    st.info(f"🔍 デバッグ情報: LINE WORKSから取得できた今月の全予定数は {len(events)} 件です")
     
     target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "仁平"]
     exclude_words = ["リモート", "鹿沼便"]
     
     for item in events:
         summary = item.get("summary", "")
+        # ルール判定（名前が含まれていて、かつ除外ワードが含まれていない）
         if any(n in summary for n in target_names) and not any(w in summary for w in exclude_words):
             start_dict = item.get("start", {})
             start_str = start_dict.get("date") or start_dict.get("dateTime", "")[:10]
@@ -753,7 +754,43 @@ def fetch_absence_events(year, month):
                     events_by_date[d_key].append(summary)
                     curr_dt += timedelta(days=1)
     return events_by_date
-# 🔺🔺🔺 ここまで上書き 🔺🔺🔺
+
+def render_monthly_calendar(year, month, events_by_date):
+    cal = calendar.Calendar(firstweekday=6) # 日曜始まり
+    month_days = cal.monthdatescalendar(year, month)
+    
+    html = """
+    <style>
+    .custom-calendar { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+    .custom-calendar th { background-color: #333; color: white; padding: 6px; text-align: center; border: 1px solid #555; font-size: 0.9rem; }
+    .custom-calendar td { border: 1px solid #555; height: 90px; vertical-align: top; padding: 4px; background-color: #1a1a1a; overflow: hidden; }
+    .custom-calendar td.different-month { background-color: #0a0a0a; opacity: 0.5; }
+    .custom-calendar .day-num { font-weight: bold; margin-bottom: 4px; font-size: 0.85rem; color: #ddd; }
+    .custom-calendar .day-num.sunday { color: #ff6b6b; }
+    .custom-calendar .day-num.saturday { color: #4dabf7; }
+    .custom-calendar .event-item { background-color: #e53935; color: white; border-radius: 4px; padding: 2px 4px; font-size: 0.75rem; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+    </style>
+    <table class="custom-calendar">
+    <tr><th style="color:#ff6b6b;">日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th style="color:#4dabf7;">土</th></tr>
+    """
+    
+    for week in month_days:
+        html += "<tr>"
+        for date_obj in week:
+            td_class = "different-month" if date_obj.month != month else ""
+            day_class = "sunday" if date_obj.weekday() == 6 else ("saturday" if date_obj.weekday() == 5 else "")
+            html += f'<td class="{td_class}"><div class="day-num {day_class}">{date_obj.day}</div>'
+            
+            day_events = events_by_date.get(date_obj.strftime('%Y-%m-%d'), [])
+            for ev in day_events: html += f'<div class="event-item" title="{ev}">{ev}</div>'
+            html += "</td>"
+        html += "</tr>"
+    html += "</table>"
+    return html
+# 🔺🔺🔺 カレンダー機能の裏側コード ここまで 🔺🔺🔺
+
+try: # 👈 💡 この下に続く形になります！
+    df = get_all_data()
 
 try:
     df = get_all_data()
