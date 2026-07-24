@@ -795,9 +795,6 @@ try:
 # 🏠 ページ：ホーム (動的ダッシュボード)
 # ==========================================
     
-    # ==========================================
-    # 🏠 ページ：ホーム (動的ダッシュボード)
-    # ==========================================
     if page_selection == "🏠 ホーム (ダッシュボード)":
         st.markdown(f"""
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0px !important; padding: 0px; width: 100%;">
@@ -846,9 +843,6 @@ try:
         if active_tasks: st.markdown(f'<div class="cassette-blue">{"".join([f"<div>{task}</div>" for task in active_tasks])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-blue">🎉 現在、進行中のタスクはありません。</div>', unsafe_allow_html=True)
 
-# （中略）ホームのタスク一覧を表示している部分
-        if active_tasks: st.markdown(f'<div class="cassette-blue">{"".join([f"<div>{task}</div>" for task in active_tasks])}</div>', unsafe_allow_html=True)
-        else: st.markdown('<div class="cassette-blue">🎉 現在、進行中のタスクはありません。</div>', unsafe_allow_html=True)
 
         # 🔻🔻🔻 ここからダッシュボードの一番下に貼り付け！ 🔻🔻🔻
         st.markdown("<br><hr><br>", unsafe_allow_html=True)
