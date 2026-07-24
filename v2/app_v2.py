@@ -703,7 +703,7 @@ with st.sidebar:
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
 # 🔻🔻🔻 カレンダー機能の裏側コード（正真正銘の完成版） 🔻🔻🔻
-@st.cache_data(ttl=600)  # 👈 キャッシュ（記憶機能）を復活！
+@st.cache_data(ttl=100)  # 👈 キャッシュ（記憶機能）を復活！
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
     if not token: return {}
