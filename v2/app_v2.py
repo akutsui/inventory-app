@@ -982,7 +982,48 @@ try:
                         ws.append_row(row)
                         get_all_data.clear()
                         st.session_state.zaiko_reg_success = True; st.rerun()
-        with main_tab3: st.info("※CSV一括入出力はスペース節約のため省略。以前のコード同様に動作します。")
+        with main_tab3:
+            col_csv1, col_csv2 = st.columns(2)
+            
+            # 📤 CSVダウンロード（出力）
+            with col_csv1:
+                st.markdown(f"##### 📤 {cat} データのCSV出力")
+                cat_df = df[df['カテゴリ'] == cat] if not df.empty and 'カテゴリ' in df.columns else pd.DataFrame()
+                if not cat_df.empty:
+                    csv_data = cat_df.to_csv(index=False).encode('utf-8-sig')
+                    st.download_button(
+                        label=f"📥 {cat} 一覧をCSVでダウンロード",
+                        data=csv_data,
+                        file_name=f"{cat}_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv",
+                        key=f"dl_csv_{cat}"
+                    )
+                else:
+                    st.info("ダウンロードできるデータがありません。")
+            
+            # 📥 CSV一括インポート（入力・更新）
+            with col_csv2:
+                st.markdown(f"##### 📥 {cat} データのCSV一括取り込み")
+                uploaded_file = st.file_uploader(f"{cat} のCSVファイルをアップロード", type=["csv"], key=f"ul_csv_{cat}")
+                if uploaded_file is not None:
+                    try:
+                        df_uploaded = pd.read_csv(uploaded_file)
+                        st.write("🔍 アップロード内容の確認:")
+                        st.dataframe(df_uploaded.head(), use_container_width=True)
+                        
+                        if st.button(f"⚠️ {cat} データをスプレッドシートに反映する", key=f"save_csv_{cat}"):
+                            ws = doc.worksheet(CATEGORY_MAP[cat])
+                            ws.clear()
+                            
+                            # 空白補正
+                            df_clean = df_uploaded.fillna("")
+                            ws.update([df_clean.columns.values.tolist()] + df_clean.values.tolist())
+                            
+                            st.success(f"✅ {cat} データを正常に一括更新しました！")
+                            get_all_data.clear() # キャッシュをクリアして最新化
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"CSV読み込みエラー: {e}")
 
     # ==========================================
     # 🔐 ページ：電子証明書管理
