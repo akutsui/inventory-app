@@ -13,8 +13,8 @@ import io
 # ページ基本設定
 # ==========================================
 st.set_page_config(
-    page_title="業務管理ダッシュボード",
-    page_icon="📅",
+    page_title="業務・物品統合管理ダッシュボード",
+    page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -25,6 +25,7 @@ st.markdown("""
     .stApp { background-color: #0e1117; color: #ffffff; }
     .cassette-green { background-color: #1b4332; border-left: 5px solid #2d6a4f; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
     .cassette-blue { background-color: #1a3a5f; border-left: 5px solid #2b6cb0; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
+    .cassette-amber { background-color: #4a3b10; border-left: 5px solid #d97706; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -46,38 +47,45 @@ def get_gspread_client():
         st.error(f"Googleスプレッドシート認証エラー: {e}")
         return None
 
-def get_all_data():
+def get_sheet_data(sheet_name):
     client = get_gspread_client()
     if not client: return pd.DataFrame()
     try:
         spreadsheet_id = st.secrets["spreadsheet"]["id"]
         sh = client.open_by_key(spreadsheet_id)
         
-        # タスクシート
-        ws_task = sh.worksheet("タスク管理")
-        task_data = ws_task.get_all_records()
-        df_task = pd.DataFrame(task_data)
-        
-        return df_task
+        try:
+            ws = sh.worksheet(sheet_name)
+        except gspread.exceptions.WorksheetNotFound:
+            # シートが存在しない場合は空のシートを作成して返す
+            ws = sh.add_worksheet(title=sheet_name, rows="100", cols="20")
+            return pd.DataFrame()
+            
+        data = ws.get_all_records()
+        return pd.DataFrame(data)
     except Exception as e:
-        st.error(f"データ取得エラー: {e}")
+        st.error(f"データ取得エラー ({sheet_name}): {e}")
         return pd.DataFrame()
 
-def save_task_data(df):
+def save_sheet_data(sheet_name, df):
     client = get_gspread_client()
     if not client: return False
     try:
         spreadsheet_id = st.secrets["spreadsheet"]["id"]
         sh = client.open_by_key(spreadsheet_id)
-        ws_task = sh.worksheet("Tasks")
-        ws_task.clear()
         
-        # NaNやNullを空文字に変換して更新
+        try:
+            ws = sh.worksheet(sheet_name)
+        except gspread.exceptions.WorksheetNotFound:
+            ws = sh.add_worksheet(title=sheet_name, rows="100", cols="20")
+            
+        ws.clear()
         df_clean = df.fillna("")
-        ws_task.update([df_clean.columns.values.tolist()] + df_clean.values.tolist())
+        if not df_clean.empty:
+            ws.update([df_clean.columns.values.tolist()] + df_clean.values.tolist())
         return True
     except Exception as e:
-        st.error(f"タスク保存エラー: {e}")
+        st.error(f"データ保存エラー ({sheet_name}): {e}")
         return False
 
 # ==========================================
@@ -121,10 +129,8 @@ def get_lineworks_token():
         if res.status_code == 200:
             return res.json().get("access_token")
         else:
-            st.error(f"LINE WORKS Token取得エラー: {res.text}")
             return None
     except Exception as e:
-        st.error(f"LINE WORKS 認証例外エラー: {e}")
         return None
 
 def add_lineworks_calendar_event(user_name, task_name, due_date_str):
@@ -179,11 +185,9 @@ def fetch_absence_events(year, month):
     events_by_date = {}
     
     if res.status_code != 200:
-        st.error(f"❌ カレンダー通信エラー ({res.status_code}): {res.text}")
         return {}
         
     events = res.json().get("events", [])
-    
     target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "仁平"]
     exclude_words = ["リモート", "鹿沼便"]
     
@@ -225,7 +229,7 @@ def fetch_absence_events(year, month):
     return events_by_date
 
 def render_monthly_calendar(year, month, events_by_date):
-    cal = calendar.Calendar(firstweekday=6) # 日曜始まり
+    cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdatescalendar(year, month)
     
     html = """
@@ -257,20 +261,63 @@ def render_monthly_calendar(year, month, events_by_date):
     html += "</table>"
     return html
 
+# 汎用管理画面描画関数
+def render_generic_management_page(title, sheet_name, default_cols):
+    st.title(title)
+    df = get_sheet_data(sheet_name)
+    
+    if df.empty:
+        df = pd.DataFrame(columns=default_cols)
+        
+    with st.expander(f"➕ 新しい{title}を追加する", expanded=False):
+        with st.form(f"add_form_{sheet_name}"):
+            inputs = {}
+            for col in default_cols:
+                inputs[col] = st.text_input(col)
+            submitted = st.form_submit_button("保存")
+            if submitted:
+                if any(inputs.values()):
+                    df_new = pd.concat([df, pd.DataFrame([inputs])], ignore_index=True)
+                    if save_sheet_data(sheet_name, df_new):
+                        st.success("追加しました！")
+                        st.rerun()
+                        
+    st.markdown("---")
+    st.subheader(f"📋 {title} 一覧・編集")
+    edited_df = st.data_editor(
+        df,
+        num_rows="dynamic",
+        use_container_width=True,
+        key=f"editor_{sheet_name}"
+    )
+    if st.button(f"💾 {title} の編集内容を保存", key=f"btn_{sheet_name}"):
+        if save_sheet_data(sheet_name, edited_df):
+            st.success("保存しました！")
+            st.rerun()
+
 # ==========================================
 # 🚀 アプリケーション本体
 # ==========================================
 try:
-    df_task = get_all_data()
     today = datetime.now().date()
     
-    # ユーザーセッション状態の初期化
     if 'cal_year' not in st.session_state: st.session_state.cal_year = today.year
     if 'cal_month' not in st.session_state: st.session_state.cal_month = today.month
 
-    # サイドバー（ナビゲーション）
-    st.sidebar.title("📌 メニュー")
-    page_selection = st.sidebar.radio("機能を選択", ["🏠 ホーム", "📝 タスク管理", "📥 CSV一括入出力"])
+    # 📌 サイドバー（全メニュー復活！）
+    st.sidebar.title("📌 業務統合メニュー")
+    page_selection = st.sidebar.radio(
+        "機能を選択", 
+        [
+            "🏠 ホーム", 
+            "📝 タスク管理", 
+            "📦 在庫・消耗品管理", 
+            "🚗 社用車管理", 
+            "💻 PC・IT資産管理", 
+            "🛋️ 備品・設備管理",
+            "📥 CSV一括入出力"
+        ]
+    )
 
     # ------------------------------------------
     # 🏠 ホーム画面
@@ -279,6 +326,7 @@ try:
         st.title("🏠 業務管理ダッシュボード")
         
         # 進行中タスク表示
+        df_task = get_sheet_data("Tasks")
         st.subheader("📌 進行中のタスク一覧")
         active_tasks = []
         if not df_task.empty and 'ステータス' in df_task.columns:
@@ -288,7 +336,7 @@ try:
                 df_active = df_active.sort_values(by='sort_date', ascending=True)
                 
                 for _, row in df_active.iterrows():
-                    active_tasks.append(f"📌 <strong>{row.get('タスク名', '')}</strong> &nbsp;&nbsp;(担当者: {row.get('担当者', '未定')}) &nbsp;&nbsp;📅 {row.get('期限', '未定')} まで")
+                    active_tasks.append(f"📌 <strong>{row.get('タスク名', '')}</strong> &nbsp;&nbsp;(担当: {row.get('担当者', '未定')}) &nbsp;&nbsp;📅 {row.get('期限', '未定')} まで")
         
         if active_tasks:
             st.markdown(f'<div class="cassette-blue">{"".join([f"<div>{task}</div>" for task in active_tasks])}</div>', unsafe_allow_html=True)
@@ -327,8 +375,8 @@ try:
     # ------------------------------------------
     elif page_selection == "📝 タスク管理":
         st.title("📝 タスク管理")
+        df_task = get_sheet_data("Tasks")
         
-        # 新規タスク追加フォーム
         with st.expander("➕ 新しいタスクを追加する", expanded=False):
             with st.form("add_task_form"):
                 task_name = st.text_input("タスク名")
@@ -346,7 +394,7 @@ try:
                         "ステータス": status
                     }
                     df_new = pd.concat([df_task, pd.DataFrame([new_row])], ignore_index=True)
-                    if save_task_data(df_new):
+                    if save_sheet_data("Tasks", df_new):
                         st.success("タスクを追加しました！")
                         if sync_lw:
                             if add_lineworks_calendar_event(assignee, task_name, due_date.strftime('%Y-%m-%d')):
@@ -357,7 +405,6 @@ try:
         st.subheader("📋 登録済みタスク一覧・編集")
         
         if not df_task.empty:
-            # データ編集テーブル
             edited_df = st.data_editor(
                 df_task,
                 num_rows="dynamic",
@@ -365,51 +412,74 @@ try:
                 key="task_editor"
             )
             if st.button("💾 編集内容を保存"):
-                if save_task_data(edited_df):
+                if save_sheet_data("Tasks", edited_df):
                     st.success("変更を保存しました！")
                     st.rerun()
         else:
             st.info("タスクがまだ登録されていません。")
 
     # ------------------------------------------
-    # 📥 CSV一括入出力画面（復活機能！）
+    # 📦 在庫・消耗品管理
+    # ------------------------------------------
+    elif page_selection == "📦 在庫・消耗品管理":
+        render_generic_management_page("📦 在庫・消耗品管理", "Inventory", ["品名", "カテゴリ", "現在数", "適正在庫", "保管場所", "備考"])
+
+    # ------------------------------------------
+    # 🚗 社用車管理
+    # ------------------------------------------
+    elif page_selection == "🚗 社用車管理":
+        render_generic_management_page("🚗 社用車管理", "Vehicles", ["車両名", "ナンバー", "管理者", "車検期限", "次回点検日", "状態"])
+
+    # ------------------------------------------
+    # 💻 PC・IT資産管理
+    # ------------------------------------------
+    elif page_selection == "💻 PC・IT資産管理":
+        render_generic_management_page("💻 PC・IT資産管理", "IT_Assets", ["機器名", "管理番号", "使用者", "OS/スペック", "購入日", "状態"])
+
+    # ------------------------------------------
+    # 🛋️ 備品・設備管理
+    # ------------------------------------------
+    elif page_selection == "🛋️ 備品・設備管理":
+        render_generic_management_page("🛋️ 備品・設備管理", "Equipment", ["備品名", "設置場所", "管理担当", "購入時期", "状態", "備考"])
+
+    # ------------------------------------------
+    # 📥 CSV一括入出力画面
     # ------------------------------------------
     elif page_selection == "📥 CSV一括入出力":
         st.title("📥 CSV一括入出力")
-        st.write("スプレッドシートのタスクデータをCSVファイルで一括ダウンロード・アップロードできます。")
+        target_sheet = st.selectbox("対象データを選択", ["Tasks", "Inventory", "Vehicles", "IT_Assets", "Equipment"])
         
+        df_target = get_sheet_data(target_sheet)
         col_csv1, col_csv2 = st.columns(2)
         
-        # CSVエクスポート
         with col_csv1:
             st.subheader("📤 CSVダウンロード")
-            if not df_task.empty:
-                csv_data = df_task.to_csv(index=False).encode('utf-8-sig')
+            if not df_target.empty:
+                csv_data = df_target.to_csv(index=False).encode('utf-8-sig')
                 st.download_button(
-                    label="📥 タスク一覧CSVをダウンロード",
+                    label=f"📥 {target_sheet} のCSVをダウンロード",
                     data=csv_data,
-                    file_name=f"tasks_{datetime.now().strftime('%Y%m%d')}.csv",
+                    file_name=f"{target_sheet}_{datetime.now().strftime('%Y%m%d')}.csv",
                     mime="text/csv"
                 )
             else:
-                st.info("ダウンロードできるタスクデータがありません。")
+                st.info("ダウンロードできるデータがありません。")
                 
-        # CSVインポート
         with col_csv2:
             st.subheader("📥 CSV一括インポート")
             uploaded_file = st.file_uploader("CSVファイルをアップロードしてください", type=["csv"])
             if uploaded_file is not None:
                 try:
                     df_uploaded = pd.read_csv(uploaded_file)
-                    st.write("🔍 アップロード内容のプレビュー:")
+                    st.write("🔍 プレビュー:")
                     st.dataframe(df_uploaded.head())
                     
                     if st.button("⚠️ 上書き保存を実行する"):
-                        if save_task_data(df_uploaded):
-                            st.success("CSVデータで上書き保存が完了しました！")
+                        if save_sheet_data(target_sheet, df_uploaded):
+                            st.success(f"{target_sheet} のデータを上書き保存しました！")
                             st.rerun()
                 except Exception as e:
-                    st.error(f"CSVファイルの読み込みエラー: {e}")
+                    st.error(f"CSV読み込みエラー: {e}")
 
 except Exception as e:
     st.error(f"予期せぬシステムエラーが発生しました: {e}")
