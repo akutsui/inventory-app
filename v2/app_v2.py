@@ -982,6 +982,7 @@ try:
                         ws.append_row(row)
                         get_all_data.clear()
                         st.session_state.zaiko_reg_success = True; st.rerun()
+        # 🔻🔻🔻 カテゴリ専用の列だけに絞り込むCSV一括入出力 🔻🔻🔻
         with main_tab3:
             col_csv1, col_csv2 = st.columns(2)
             
@@ -989,8 +990,21 @@ try:
             with col_csv1:
                 st.markdown(f"##### 📤 {cat} データのCSV出力")
                 cat_df = df[df['カテゴリ'] == cat] if not df.empty and 'カテゴリ' in df.columns else pd.DataFrame()
+                
                 if not cat_df.empty:
-                    csv_data = cat_df.to_csv(index=False).encode('utf-8-sig')
+                    # 💡 そのカテゴリに必要な列だけを順番通りに抽出する処理
+                    base_cols = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日']
+                    if cat == "ウイルスバスター":
+                        custom_cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"]
+                    else:
+                        custom_cols = COLUMNS_DEF.get(cat, [])
+                    
+                    target_cols = base_cols + custom_cols
+                    # 存在する列だけを選択し、不要な他カテゴリの空列をカット
+                    export_cols = [c for c in target_cols if c in cat_df.columns]
+                    export_df = cat_df[export_cols]
+                    
+                    csv_data = export_df.to_csv(index=False).encode('utf-8-sig')
                     st.download_button(
                         label=f"📥 {cat} 一覧をCSVでダウンロード",
                         data=csv_data,
@@ -1015,12 +1029,11 @@ try:
                             ws = doc.worksheet(CATEGORY_MAP[cat])
                             ws.clear()
                             
-                            # 空白補正
                             df_clean = df_uploaded.fillna("")
                             ws.update([df_clean.columns.values.tolist()] + df_clean.values.tolist())
                             
                             st.success(f"✅ {cat} データを正常に一括更新しました！")
-                            get_all_data.clear() # キャッシュをクリアして最新化
+                            get_all_data.clear()
                             st.rerun()
                     except Exception as e:
                         st.error(f"CSV読み込みエラー: {e}")
