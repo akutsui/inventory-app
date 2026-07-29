@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import time
 import jwt
 import requests
-import calendar  # 👈 これを追加！
+import calendar
 
 # --- ページ設定 ---
 st.set_page_config(page_title="総務管理アプリ v2", page_icon="🏢", layout="wide")
@@ -20,17 +20,15 @@ def change_page(page_name):
     st.session_state['active_search_query'] = ""
     st.session_state['page_number'] = 0  # 💡 ページ移動時に1ページ目にリセット
 
-# --- 🌟 CSS省略（レイアウト設定） 🌟 ---
+# --- CSS設定 ---
 st.markdown("""
     <style>
         .stApp, .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
         
-        /* 🚨 1. ヘッダーを透明にして残すことで、サイドバー開閉の「＞」「＜」ボタンを復活させます */
         [data-testid="stHeader"] { 
             background: transparent !important; 
         }
         
-        /* 🚨 2. ヘッダーを残しつつ、メインコンテンツだけを上に引っ張り上げて余白を消します */
         .main .block-container { 
             padding-top: 0px !important; 
             margin-top: -60px !important; 
@@ -48,7 +46,6 @@ st.markdown("""
         [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
         .date-display-box { text-align: right; font-size: 1.1rem; padding-top: 0px !important; margin-top: 0px !important; line-height: 1.2 !important; }
         
-        /* サイドバーデザイン */
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] { background-color: #7f7f7f !important; }
         [data-testid="stSidebar"] * { color: #ffffff !important; }
         [data-testid="stSidebar"] [data-testid="stExpander"], [data-testid="stSidebar"] [data-testid="stExpander"] details, [data-testid="stSidebar"] [data-testid="stExpander"] summary, [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] { border: none !important; background-color: transparent !important; background: none !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
@@ -59,14 +56,12 @@ st.markdown("""
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-top: 0px !important; padding-bottom: 0px !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] { margin: 0 !important; padding: 0 !important; width: 100% !important; }
         
-        /* 通常のメニューボタン */
         [data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button > div, [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div { width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button p { text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
         
-        /* 🚨 「データを最新にする」更新ボタンだけ青色で目立たせる特別CSS */
         [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button {
             background-color: #4285f4 !important;
             border-radius: 6px !important;
@@ -409,7 +404,7 @@ def show_detail_dialog(row_data):
                 cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
                 for col in cols: row_to_save.append(custom_values.get(col, ''))
                 worksheet.update(f"A{cell.row}", [row_to_save])
-                get_all_data.clear() # 備品更新時は備品キャッシュをクリア
+                get_all_data.clear()
                 st.rerun()
 
 @st.dialog("📝 入職準備タスク管理")
@@ -442,7 +437,7 @@ def show_onboarding_task_dialog(row_data):
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
-            get_new_employee_data.clear() # 該当キャッシュだけクリア
+            get_new_employee_data.clear()
             st.rerun()
 
 @st.dialog("📝 電子証明書の編集")
@@ -459,7 +454,7 @@ def show_cert_dialog(row_data):
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
-            get_certificate_data.clear() # 該当キャッシュだけクリア
+            get_certificate_data.clear()
             st.rerun()
 
 @st.dialog("📝 産休育休者の編集")
@@ -483,7 +478,7 @@ def show_maternity_dialog(row_data):
             row_to_save = [data_dict.get(h, "") for h in headers]
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
-            get_maternity_data.clear() # 該当キャッシュだけクリア
+            get_maternity_data.clear()
             st.rerun()
 
 @st.dialog("📝 ORCA証明書の編集")
@@ -655,7 +650,7 @@ def show_task_dialog(row_data):
                 worksheet.update(f"A{cell.row}", [row_to_save])
                 
                 st.toast("スプレッドシートとLINE WORKSカレンダーを完全に同期しました！", icon="📅")
-                get_task_data.clear() # タスクキャッシュだけクリア
+                get_task_data.clear()
                 st.rerun()
 
 # ==========================================
@@ -677,18 +672,14 @@ with st.sidebar:
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
     st.button("👶 産休育休者管理", on_click=change_page, args=("👶 産休育休者管理",), use_container_width=True)
-    
     st.button("🅿️ 駐車場管理", on_click=change_page, args=("🅿️ 駐車場管理",), use_container_width=True)
-    
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
     st.button("📅 5年経過リスト", on_click=change_page, args=("📅 5年経過リスト (PC/iPad)",), use_container_width=True)
     st.markdown("---")
     
-    # 💡 外部への総務マニュアルリンク (NotebookLM)
     st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    # 🚀 更新ボタンを一番下に戻す
     st.markdown("---")
     if st.button("🔄 データを最新にする", use_container_width=True): 
         get_all_data.clear()
@@ -702,7 +693,7 @@ with st.sidebar:
 
 MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
 
-# 🔻🔻🔻 カレンダー機能の裏側コード（時間指定・終日 両対応版） 🔻🔻🔻
+# 🔻🔻🔻 カレンダー機能の裏側コード（時間指定・終日 両対応修正版） 🔻🔻🔻
 @st.cache_data(ttl=180)
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
@@ -759,7 +750,6 @@ def fetch_absence_events(year, month):
                 
                 # 終日予定の場合は終了日が含まれないケースがあるため補正
                 if end_str and end_str != start_str:
-                    # 時間指定(dateTime)の場合は同じ日ならその日だけ、跨ぐならその日まで
                     if "T" in end_raw:
                         dt_end = datetime.strptime(end_str, '%Y-%m-%d') + timedelta(days=1)
                     else:
@@ -774,7 +764,6 @@ def fetch_absence_events(year, month):
                     events_by_date[d_key].append(summary)
                     curr_dt += timedelta(days=1)
     return events_by_date
-# 🔺🔺🔺 ここまで 🔺🔺🔺
 
 def render_monthly_calendar(year, month, events_by_date):
     cal = calendar.Calendar(firstweekday=6) # 日曜始まり
@@ -808,7 +797,6 @@ def render_monthly_calendar(year, month, events_by_date):
         html += "</tr>"
     html += "</table>"
     return html
-# 🔺🔺🔺 カレンダー機能の裏側コード ここまで 🔺🔺🔺
 
 try:
     df = get_all_data()
@@ -867,12 +855,9 @@ try:
         if active_tasks: st.markdown(f'<div class="cassette-blue">{"".join([f"<div>{task}</div>" for task in active_tasks])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-blue">🎉 現在、進行中のタスクはありません。</div>', unsafe_allow_html=True)
 
-
-        # 🔻🔻🔻 ここからダッシュボードの一番下に貼り付け！ 🔻🔻🔻
         st.markdown("<br><hr><br>", unsafe_allow_html=True)
         st.subheader("📅 総務メンバー 不在・予定カレンダー")
         
-        # 表示する「年・月」をコントロールする設定
         if 'cal_year' not in st.session_state: st.session_state['cal_year'] = datetime.now().year
         if 'cal_month' not in st.session_state: st.session_state['cal_month'] = datetime.now().month
 
@@ -894,16 +879,11 @@ try:
                     st.session_state['cal_year'] += 1
                 st.rerun()
 
-        # データの取得とHTML描画
         with st.spinner("カレンダー情報を取得中..."):
             events_by_date = fetch_absence_events(st.session_state['cal_year'], st.session_state['cal_month'])
             cal_html = render_monthly_calendar(st.session_state['cal_year'], st.session_state['cal_month'], events_by_date)
             st.markdown(cal_html, unsafe_allow_html=True)
-        # 🔺🔺🔺 カレンダーの表示コード ここまで 🔺🔺🔺
 
-    # ==========================================
-    # 📦 ページ：備品・ソフトウェア個別管理
-    
     # ==========================================
     # 📦 ページ：備品・ソフトウェア個別管理
     # ==========================================
@@ -926,7 +906,6 @@ try:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     
-                    # --- 💡 ページネーション設定 ---
                     ITEMS_PER_PAGE = 50
                     total_items = len(display_df)
                     total_pages = (total_items - 1) // ITEMS_PER_PAGE + 1 if total_items > 0 else 1
@@ -960,7 +939,6 @@ try:
                         c[5].write(str(right_col_val))
                         st.markdown("<hr>", unsafe_allow_html=True)
                         
-                    # --- 💡 ページネーションボタン ---
                     if total_pages > 1:
                         st.markdown("<br>", unsafe_allow_html=True)
                         pc1, pc2, pc3 = st.columns([1, 2, 1])
@@ -1002,7 +980,7 @@ try:
                         cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
                         for col in cols: row.append(custom_vals.get(col, ""))
                         ws.append_row(row)
-                        get_all_data.clear() # キャッシュクリア
+                        get_all_data.clear()
                         st.session_state.zaiko_reg_success = True; st.rerun()
         with main_tab3: st.info("※CSV一括入出力はスペース節約のため省略。以前のコード同様に動作します。")
 
@@ -1056,7 +1034,7 @@ try:
                 if st.form_submit_button("登録"):
                     ws = doc.worksheet(SHEET_CERTIFICATE)
                     ws.append_row([c_id, c_type, c_dev, str(c_exp), ""])
-                    get_certificate_data.clear() # キャッシュクリア
+                    get_certificate_data.clear()
                     st.success("登録しました"); st.rerun()
 
     # ==========================================
@@ -1165,17 +1143,13 @@ try:
             </div>
         """, unsafe_allow_html=True)
         
-        # 💡 URLの設定場所（ここに実際のURLを貼り付けてください）
-        url_view_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/edit?gid=591211712#gid=591211712" # 全体閲覧用のURL
+        url_view_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/edit?gid=591211712#gid=591211712"
         url_all_pdf = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=591211712#gid=591211712&portrait=false&fitw=true"
         url_company_pdf = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=485728313#gid=485728313&portrait=false&fitw=true"
         url_private_pdf = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=130019541#gid=130019541&portrait=false&fitw=true"
 
-        
-        # 💡 閲覧用のリンク（全体のみ）
         st.link_button("🔗 全体配置図をブラウザで開く (閲覧専用)", url_view_all, use_container_width=True)
         
-        # 💡 PDFダウンロード用のリンク群
         mc1, mc2, mc3 = st.columns(3)
         mc1.link_button("📥 全体配置図 (PDF)", url_all_pdf, use_container_width=True)
         mc2.link_button("📥 訪問車のみ (PDF)", url_company_pdf, use_container_width=True)
@@ -1300,7 +1274,7 @@ try:
                 if st.form_submit_button("登録"):
                     ws = doc.worksheet(SHEET_NEW_EMPLOYEE)
                     ws.append_row([e_id, e_name, e_furi, str(e_date), e_type, e_dept, "準備中"] + [""]*13 + [""])
-                    get_new_employee_data.clear() # キャッシュクリア
+                    get_new_employee_data.clear()
                     st.success("登録しました"); st.rerun()
 
     # ==========================================
@@ -1373,7 +1347,7 @@ try:
                             
                             ws.append_row([m_id, m_name, m_dept, str(m_start) if m_start else '', str(m_return) if m_return else '', m_status, m_note])
                             st.session_state.mat_reg_success = True
-                            get_maternity_data.clear() # キャッシュクリア
+                            get_maternity_data.clear()
                             st.rerun()
 
     # ==========================================
@@ -1432,12 +1406,12 @@ try:
                             if current_status != '完了':
                                 if c[8].button("✅ 完了にする", key=f"comp_{task_id_str}"):
                                     if update_task_status(task_id_str, "完了"): 
-                                        get_task_data.clear() # タスクだけクリア
+                                        get_task_data.clear()
                                         st.rerun()
                             else:
                                 if c[8].button("↩️ 未完了に戻す", key=f"rev_{task_id_str}"):
                                     if update_task_status(task_id_str, "未着手"): 
-                                        get_task_data.clear() # タスクだけクリア
+                                        get_task_data.clear()
                                         st.rerun()
                             st.markdown("<hr>", unsafe_allow_html=True)
                         except Exception as inner_e:
@@ -1484,7 +1458,7 @@ try:
                                 worksheet.append_row(row_to_save)
                                 st.toast("カレンダー連携 成功!", icon="✅")
                                 st.session_state.task_reg_success = True
-                                get_task_data.clear() # タスクキャッシュだけクリア
+                                get_task_data.clear()
                                 st.rerun()
                             except Exception as e: st.error(f"登録エラー: {e}")
 
