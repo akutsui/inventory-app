@@ -54,7 +54,7 @@ def get_all_data():
         sh = client.open_by_key(spreadsheet_id)
         
         # タスクシート
-        ws_task = sh.worksheet("Tasks")
+        ws_task = sh.worksheet("タスク管理")
         task_data = ws_task.get_all_records()
         df_task = pd.DataFrame(task_data)
         
