@@ -92,7 +92,6 @@ SHEET_MATERNITY = "産休育休"
 SHEET_ORCA_CERT = "ORCA証明書"
 SHEET_PARKING = "駐車場データ"
 
-# 💡 レンタル医療機器に「使用拠点」を追加
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
     "訪問車": ["登録番号", "洗車グループ", "駐車場", "タイヤサイズ", "スタッドレス有無", "タイヤ保管場所", "リース開始日", "リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日", "使用部署", "備考"],
@@ -120,6 +119,15 @@ if 'page_number' not in st.session_state: st.session_state['page_number'] = 0
 if 'active_search_query' not in st.session_state: st.session_state['active_search_query'] = ""
 for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_reg_success', 'mat_reg_success', 'orca_reg_success', 'parking_reg_success']:
     if key not in st.session_state: st.session_state[key] = False
+
+# 💡 日付加算（6ヶ月後）用ヘルパー関数
+def add_months(sourcedate, months=6):
+    if not sourcedate: return None
+    month = sourcedate.month - 1 + months
+    year = sourcedate.year + month // 12
+    month = month % 12 + 1
+    day = min(sourcedate.day, calendar.monthrange(year, month)[1])
+    return datetime(year, month, day).date()
 
 # ==========================================
 # 🔐 LINE WORKS 連携ロジック 🔐
@@ -359,6 +367,24 @@ def show_detail_dialog(row_data):
             d_exp = st.date_input("期限", value=parse_date(row_data.get('期限')))
             custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
+        elif cat == "医療機器":
+            for col in COLUMNS_DEF[cat]:
+                val = row_data.get(col, '')
+                if col == "前回点検日":
+                    d_prev = st.date_input(col, value=parse_date(val))
+                    custom_values[col] = d_prev.strftime('%Y-%m-%d') if d_prev else ''
+                elif col == "次回点検日":
+                    # 前回点検日がある場合は自動で6ヶ月後を計算
+                    d_prev_parsed = parse_date(row_data.get('前回点検日', ''))
+                    default_next = add_months(d_prev_parsed, 6) if d_prev_parsed else None
+                    curr_next = parse_date(val) or default_next
+                    d_next = st.date_input(col, value=curr_next)
+                    custom_values[col] = d_next.strftime('%Y-%m-%d') if d_next else ''
+                elif '日' in col:
+                    d_val = st.date_input(col, value=parse_date(val))
+                    custom_values[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
+                else:
+                    custom_values[col] = st.text_input(col, value=val)
         else:
             for col in COLUMNS_DEF[cat]:
                 val = row_data.get(col, '')
@@ -809,22 +835,28 @@ try:
                     current_page_df = display_df.iloc[start_idx:end_idx]
                     
                     for idx, row in current_page_df.iterrows():
-                        c = st.columns([0.8, 1, 3, 2, 1.5, 1])
-                        if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
-                        c[1].write(row.get('ID', ''))
-                        
-                        # 💡 一覧表示の列を整理（レンタル医療機器に「使用拠点」反映）
+                        # 💡 医療機器の一覧表示を「使用拠点・機器名・型番・前回点検日・次回点検日」に更新
                         if cat == "医療機器":
-                            c[2].write(f"**{safe_text(row.get('機器名', ''))}**")
-                            c[3].write(row.get('使用拠点', ''))
+                            c = st.columns([0.8, 1, 1.5, 2.5, 1.5, 1.5, 1.5])
+                            if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
+                            c[1].write(row.get('ID', ''))
+                            c[2].write(row.get('使用拠点', ''))
+                            c[3].write(f"**{safe_text(row.get('機器名', ''))}**")
                             c[4].write(row.get('型番', ''))
-                            c[5].write(str(row.get('個体番号', '')))
+                            c[5].write(str(row.get('前回点検日', '')))
+                            c[6].write(str(row.get('次回点検日', '')))
                         elif cat == "レンタル医療機器":
+                            c = st.columns([0.8, 1, 3, 2, 1.5, 1])
+                            if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
+                            c[1].write(row.get('ID', ''))
                             c[2].write(f"**{safe_text(row.get('使用機器', ''))}**")
                             c[3].write(row.get('レンタル会社', ''))
                             c[4].write(row.get('使用拠点', ''))
                             c[5].write(str(row.get('利用患者', '')))
                         else:
+                            c = st.columns([0.8, 1, 3, 2, 1.5, 1])
+                            if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
+                            c[1].write(row.get('ID', ''))
                             c[2].write(f"**{safe_text(row.get('品名', ''))}**")
                             c[3].write(row.get('利用者', ''))
                             c[4].write(row.get('ステータス', ''))
@@ -875,6 +907,22 @@ try:
                             custom_vals['利用者5'] = st.text_input("利用者5")
                             custom_vals['利用者6'] = st.text_input("利用者6")
                         custom_vals['期限'] = str(st.date_input("期限"))
+                    elif cat == "医療機器":
+                        # 💡 医療機器登録時：前回点検日を入れると次回点検日が自動計算（6ヶ月後）
+                        for col in COLUMNS_DEF[cat]:
+                            if col == "前回点検日":
+                                d_prev = st.date_input(col, value=None)
+                                custom_vals[col] = d_prev.strftime('%Y-%m-%d') if d_prev else ''
+                            elif col == "次回点検日":
+                                d_prev_parsed = parse_date(custom_vals.get("前回点検日", "")) if "前回点検日" in custom_vals else None
+                                auto_next = add_months(d_prev_parsed, 6) if d_prev_parsed else None
+                                d_next = st.date_input(col, value=auto_next)
+                                custom_vals[col] = d_next.strftime('%Y-%m-%d') if d_next else ''
+                            elif '日' in col:
+                                d_val = st.date_input(col, value=None)
+                                custom_vals[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
+                            else:
+                                custom_vals[col] = st.text_input(col)
                     else:
                         for col in COLUMNS_DEF[cat]:
                             if '日' in col or '期限' in col:
