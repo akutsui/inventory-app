@@ -120,7 +120,6 @@ if 'active_search_query' not in st.session_state: st.session_state['active_searc
 for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_reg_success', 'mat_reg_success', 'orca_reg_success', 'parking_reg_success']:
     if key not in st.session_state: st.session_state[key] = False
 
-# 💡 日付加算（6ヶ月後）用ヘルパー関数
 def add_months(sourcedate, months=6):
     if not sourcedate: return None
     month = sourcedate.month - 1 + months
@@ -374,7 +373,6 @@ def show_detail_dialog(row_data):
                     d_prev = st.date_input(col, value=parse_date(val))
                     custom_values[col] = d_prev.strftime('%Y-%m-%d') if d_prev else ''
                 elif col == "次回点検日":
-                    # 前回点検日がある場合は自動で6ヶ月後を計算
                     d_prev_parsed = parse_date(row_data.get('前回点検日', ''))
                     default_next = add_months(d_prev_parsed, 6) if d_prev_parsed else None
                     curr_next = parse_date(val) or default_next
@@ -738,6 +736,7 @@ try:
         st.markdown("---")        
         st.subheader("期日アラート")
         
+        # 訪問車アラート
         alert_cars = []
         if not df.empty and 'カテゴリ' in df.columns:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
@@ -748,6 +747,7 @@ try:
                     if dt and (dt.date() - today).days <= 45: single_car_alerts.append(f"{col}: あと{(dt.date()-today).days}日")
                 if single_car_alerts: alert_cars.append(f"<strong>【{row.get('品名', '不明')}】</strong> " + " ・ ".join(single_car_alerts))
         
+        # 電子証明書アラート
         df_cert = get_certificate_data()
         alert_certs = []
         if not df_cert.empty:
@@ -757,12 +757,31 @@ try:
                     msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
                     alert_certs.append(f"<strong>【{row.get('端末','')}】{row.get('種類','')}</strong>: 期限切れまで{msg}")
 
+        # 💡 医療機器点検日アラート（次回点検日 21日前）
+        alert_medicals = []
+        if not df.empty and 'カテゴリ' in df.columns:
+            for idx, row in df[df['カテゴリ']=="医療機器"].iterrows():
+                dt = parse_date(row.get('次回点検日'))
+                if dt:
+                    diff = (dt.date() - today).days
+                    if diff <= 21:
+                        msg = f"あと{diff}日" if diff >= 0 else "超過"
+                        m_name = row.get('機器名', row.get('表示名', '不明'))
+                        m_place = row.get('使用拠点', '')
+                        alert_medicals.append(f"<strong>【{m_name}】({m_place})</strong>: 次回点検日まで {msg} ({dt.strftime('%Y-%m-%d')})")
+
         st.write("訪問車")
         if alert_cars: st.markdown(f'<div class="cassette-orange">{"".join([f"<div>🚨 {car}</div>" for car in alert_cars])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-orange">✅ 現在、訪問車の期日アラートはありません。</div>', unsafe_allow_html=True)
+        
         st.write("電子証明書")
         if alert_certs: st.markdown(f'<div class="cassette-green">{"".join([f"<div>📅 {cert}</div>" for cert in alert_certs])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-green">✅ 現在、電子証明書の期日アラートはありません。</div>', unsafe_allow_html=True)
+
+        # 💡 画面への描画（電子証明書の下に追加）
+        st.write("医療機器点検日")
+        if alert_medicals: st.markdown(f'<div class="cassette-orange">{"".join([f"<div>🩺 {med}</div>" for med in alert_medicals])}</div>', unsafe_allow_html=True)
+        else: st.markdown('<div class="cassette-orange">✅ 現在、医療機器の点検期日アラートはありません。</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.subheader("進行中のタスク一覧")
@@ -826,7 +845,6 @@ try:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     
-                    # 💡 1. 医療機器・レンタル医療機器・その他備品のヘッダー行を追加
                     if cat == "医療機器":
                         hc = st.columns([0.8, 1, 1.5, 2.5, 1.5, 1.5, 1.5])
                         headers_text = ["操作", "ID", "使用拠点", "機器名", "型番", "前回点検日", "次回点検日"]
@@ -841,7 +859,6 @@ try:
                         hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                     st.markdown("<hr>", unsafe_allow_html=True)
 
-                    # 2. 一覧データの描画ループ
                     ITEMS_PER_PAGE = 50
                     total_items = len(display_df)
                     total_pages = (total_items - 1) // ITEMS_PER_PAGE + 1 if total_items > 0 else 1
@@ -924,7 +941,6 @@ try:
                             custom_vals['利用者6'] = st.text_input("利用者6")
                         custom_vals['期限'] = str(st.date_input("期限"))
                     elif cat == "医療機器":
-                        # 💡 医療機器登録時：前回点検日を入れると次回点検日が自動計算（6ヶ月後）
                         for col in COLUMNS_DEF[cat]:
                             if col == "前回点検日":
                                 d_prev = st.date_input(col, value=None)
