@@ -605,6 +605,10 @@ def show_task_dialog(row_data):
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
     st.button("🏠 ホーム (ダッシュボード)", on_click=change_page, args=("🏠 ホーム (ダッシュボード)",), use_container_width=True)
+    
+    # 💡 別アプリ（決裁申請システム）へのリンクを追加
+    st.markdown('<a href="https://script.google.com/macros/s/AKfycbwdw7WbKLQoW2YwZ0YLM5rJ5tPZsmN3q2AzIYu3j1Q9nZn1oYLV7KSqhkmK1nzT0Un0xg/exec?mode=admin" target="_blank" class="sidebar-link">📝 決裁申請システム管理画面</a>', unsafe_allow_html=True)
+    
     with st.expander("📦 備品管理", expanded=True):
         st.button("💻 パソコン", on_click=change_page, args=(" 💻 パソコン",), use_container_width=True)
         st.button("🚗 訪問車", on_click=change_page, args=(" 🚗 訪問車",), use_container_width=True)
@@ -736,7 +740,6 @@ try:
         st.markdown("---")        
         st.subheader("期日アラート")
         
-        # 訪問車アラート
         alert_cars = []
         if not df.empty and 'カテゴリ' in df.columns:
             for idx, row in df[df['カテゴリ']=="訪問車"].iterrows():
@@ -747,7 +750,6 @@ try:
                     if dt and (dt.date() - today).days <= 45: single_car_alerts.append(f"{col}: あと{(dt.date()-today).days}日")
                 if single_car_alerts: alert_cars.append(f"<strong>【{row.get('品名', '不明')}】</strong> " + " ・ ".join(single_car_alerts))
         
-        # 電子証明書アラート
         df_cert = get_certificate_data()
         alert_certs = []
         if not df_cert.empty:
@@ -757,7 +759,6 @@ try:
                     msg = f"あと{(dt.date()-today).days}日" if (dt.date()-today).days >= 0 else "超過"
                     alert_certs.append(f"<strong>【{row.get('端末','')}】{row.get('種類','')}</strong>: 期限切れまで{msg}")
 
-        # 💡 医療機器点検日アラート（次回点検日 21日前）
         alert_medicals = []
         if not df.empty and 'カテゴリ' in df.columns:
             for idx, row in df[df['カテゴリ']=="医療機器"].iterrows():
@@ -773,12 +774,9 @@ try:
         st.write("訪問車")
         if alert_cars: st.markdown(f'<div class="cassette-orange">{"".join([f"<div>🚨 {car}</div>" for car in alert_cars])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-orange">✅ 現在、訪問車の期日アラートはありません。</div>', unsafe_allow_html=True)
-        
         st.write("電子証明書")
         if alert_certs: st.markdown(f'<div class="cassette-green">{"".join([f"<div>📅 {cert}</div>" for cert in alert_certs])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-green">✅ 現在、電子証明書の期日アラートはありません。</div>', unsafe_allow_html=True)
-
-        # 💡 画面への描画（電子証明書の下に追加）
         st.write("医療機器点検日")
         if alert_medicals: st.markdown(f'<div class="cassette-orange">{"".join([f"<div>🩺 {med}</div>" for med in alert_medicals])}</div>', unsafe_allow_html=True)
         else: st.markdown('<div class="cassette-orange">✅ 現在、医療機器の点検期日アラートはありません。</div>', unsafe_allow_html=True)
