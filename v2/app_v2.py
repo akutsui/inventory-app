@@ -24,8 +24,17 @@ def change_page(page_name):
 st.markdown("""
     <style>
         .stApp, .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
-        [data-testid="stHeader"] { background: transparent !important; }
-        .main .block-container { padding-top: 0px !important; margin-top: -60px !important; padding-bottom: 1rem !important; }
+        
+        [data-testid="stHeader"] { 
+            background: transparent !important; 
+        }
+        
+        .main .block-container { 
+            padding-top: 0px !important; 
+            margin-top: -60px !important; 
+            padding-bottom: 1rem !important; 
+        }
+        
         h2, h3, h4, h5, h6, p, span, label, div.stMarkdown { color: #ffffff !important; }
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
         .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
@@ -36,6 +45,7 @@ st.markdown("""
         [data-testid="stTabs"] { margin-top: 5px !important; padding-top: 0px !important; }
         [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
         .date-display-box { text-align: right; font-size: 1.1rem; padding-top: 0px !important; margin-top: 0px !important; line-height: 1.2 !important; }
+        
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] { background-color: #7f7f7f !important; }
         [data-testid="stSidebar"] * { color: #ffffff !important; }
         [data-testid="stSidebar"] [data-testid="stExpander"], [data-testid="stSidebar"] [data-testid="stExpander"] details, [data-testid="stSidebar"] [data-testid="stExpander"] summary, [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] { border: none !important; background-color: transparent !important; background: none !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
@@ -45,24 +55,60 @@ st.markdown("""
         [data-testid="stSidebar"] .element-container { margin-bottom: 0px !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-top: 0px !important; padding-bottom: 0px !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+        
         [data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button > div, [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div { width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button p { text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button { background-color: #4285f4 !important; border-radius: 6px !important; justify-content: center !important; height: 2.2rem !important; min-height: 2.2rem !important; margin-bottom: 10px !important; box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important; }
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button p { text-align: center !important; font-weight: bold !important; font-size: 0.9rem !important; }
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button:hover { background-color: #3367d6 !important; }
+        
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button {
+            background-color: #4285f4 !important;
+            border-radius: 6px !important;
+            justify-content: center !important;
+            height: 2.2rem !important;
+            min-height: 2.2rem !important;
+            margin-bottom: 10px !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important;
+        }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button p {
+            text-align: center !important;
+            font-weight: bold !important;
+            font-size: 0.9rem !important;
+        }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button:hover {
+            background-color: #3367d6 !important;
+        }
+
         button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { height: 1.6rem !important; background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important; transition: none !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
+        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
+        
         html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div { background-color: #222222 !important; color: #ffffff !important; }
+        
+        /* 🚨 1. リストの行間とデザインを復元 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) { background-color: #7f7f7f !important; padding: 10px 15px !important; border-radius: 8px !important; margin-top: 8px !important; margin-bottom: 15px !important; }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] { margin-bottom: -10px !important; margin-top: -10px !important; align-items: center !important; }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div.element-container { margin-bottom: 0px !important; }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) p, div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stMarkdownContainer"] { margin-bottom: 0px !important; padding-bottom: 0px !important; line-height: 1.1 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button p, div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button * { white-space: nowrap !important; }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button { height: 1.4rem !important; min-height: 1.4rem !important; padding: 0px 5px !important; }
+        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr { margin-top: 2px !important; margin-bottom: 2px !important; border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; }
+
+        /* 🚨 2. カセット背景の文字色を復元 */
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #ea4335; }
+        html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
+        
         .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #34a853; }
+        html body .stApp .cassette-green, html body .stApp .cassette-green * { color: #1e8e3e !important; }
+        
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
+        html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
+        
         hr { border-top: 1px solid #333333 !important; }
         .sidebar-link { display: flex !important; align-items: center !important; padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important; color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important; margin-bottom: 5px !important; }
     </style>
