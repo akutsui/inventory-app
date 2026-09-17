@@ -24,17 +24,8 @@ def change_page(page_name):
 st.markdown("""
     <style>
         .stApp, .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
-        
-        [data-testid="stHeader"] { 
-            background: transparent !important; 
-        }
-        
-        .main .block-container { 
-            padding-top: 0px !important; 
-            margin-top: -60px !important; 
-            padding-bottom: 1rem !important; 
-        }
-        
+        [data-testid="stHeader"] { background: transparent !important; }
+        .main .block-container { padding-top: 0px !important; margin-top: -60px !important; padding-bottom: 1rem !important; }
         h2, h3, h4, h5, h6, p, span, label, div.stMarkdown { color: #ffffff !important; }
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
         .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
@@ -45,7 +36,6 @@ st.markdown("""
         [data-testid="stTabs"] { margin-top: 5px !important; padding-top: 0px !important; }
         [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
         .date-display-box { text-align: right; font-size: 1.1rem; padding-top: 0px !important; margin-top: 0px !important; line-height: 1.2 !important; }
-        
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] { background-color: #7f7f7f !important; }
         [data-testid="stSidebar"] * { color: #ffffff !important; }
         [data-testid="stSidebar"] [data-testid="stExpander"], [data-testid="stSidebar"] [data-testid="stExpander"] details, [data-testid="stSidebar"] [data-testid="stExpander"] summary, [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] { border: none !important; background-color: transparent !important; background: none !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
@@ -55,41 +45,20 @@ st.markdown("""
         [data-testid="stSidebar"] .element-container { margin-bottom: 0px !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-top: 0px !important; padding-bottom: 0px !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-        
         [data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button > div, [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div { width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button p { text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
-        
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button {
-            background-color: #4285f4 !important;
-            border-radius: 6px !important;
-            justify-content: center !important;
-            height: 2.2rem !important;
-            min-height: 2.2rem !important;
-            margin-bottom: 10px !important;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button p {
-            text-align: center !important;
-            font-weight: bold !important;
-            font-size: 0.9rem !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button:hover {
-            background-color: #3367d6 !important;
-        }
-
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button { background-color: #4285f4 !important; border-radius: 6px !important; justify-content: center !important; height: 2.2rem !important; min-height: 2.2rem !important; margin-bottom: 10px !important; box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button p { text-align: center !important; font-weight: bold !important; font-size: 0.9rem !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button:hover { background-color: #3367d6 !important; }
         button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { height: 1.6rem !important; background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important; transition: none !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
-        
         html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div { background-color: #222222 !important; color: #ffffff !important; }
-        
-        /* 🚨 1. リストの行間とデザインを復元 */
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) { background-color: #7f7f7f !important; padding: 10px 15px !important; border-radius: 8px !important; margin-top: 8px !important; margin-bottom: 15px !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] { margin-bottom: -10px !important; margin-top: -10px !important; align-items: center !important; }
@@ -98,23 +67,17 @@ st.markdown("""
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button p, div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button * { white-space: nowrap !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button { height: 1.4rem !important; min-height: 1.4rem !important; padding: 0px 5px !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr { margin-top: 2px !important; margin-bottom: 2px !important; border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; }
-
-        /* 🚨 2. カセット背景の文字色を復元 */
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #ea4335; }
         html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
-        
         .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #34a853; }
         html body .stApp .cassette-green, html body .stApp .cassette-green * { color: #1e8e3e !important; }
-        
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
         html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
-        
         hr { border-top: 1px solid #333333 !important; }
         .sidebar-link { display: flex !important; align-items: center !important; padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important; color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important; margin-bottom: 5px !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# 💡 カテゴリマップに医療機器を追加[cite: 3]
 CATEGORY_MAP = {
     "PC": "PC", "訪問車": "訪問車", "iPad": "iPad", "携帯電話": "携帯電話",
     "Office365": "Office365", "ウイルスバスター": "ウイルスバスター", "その他機器": "その他機器",
@@ -129,7 +92,7 @@ SHEET_MATERNITY = "産休育休"
 SHEET_ORCA_CERT = "ORCA証明書"
 SHEET_PARKING = "駐車場データ"
 
-# 💡 カラム定義を追加[cite: 3]
+# 💡 「機器名」を「使用拠点」の前に追加しました
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
     "訪問車": ["登録番号", "洗車グループ", "駐車場", "タイヤサイズ", "スタッドレス有無", "タイヤ保管場所", "リース開始日", "リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日", "使用部署", "備考"],
@@ -138,7 +101,7 @@ COLUMNS_DEF = {
     "Office365": ["アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"],
     "ウイルスバスター": ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"],
     "その他機器": ["使用部署", "使用場所", "使用開始日", "備考"],
-    "医療機器": ["使用拠点", "型番", "表示名", "商品名", "個体番号", "製造年月日", "前回点検日", "次回点検日", "備考"],
+    "医療機器": ["機器名", "使用拠点", "型番", "表示名", "商品名", "個体番号", "製造年月日", "前回点検日", "次回点検日", "備考"],
     "レンタル医療機器": ["使用機器", "レンタル会社", "利用患者", "利用患者ID", "主治医", "担当看護師", "備考"]
 }
 
@@ -305,7 +268,6 @@ def generate_auto_id(df_target, prefix, id_col='ID'):
                 except: pass
     return f"{prefix}{max_num + 1:04d}"
 
-# 💡 自動ID用プレフィックスの割り当て[cite: 3]
 def get_auto_id(category, current_df):
     prefix_dict = {
         "PC":"A", "訪問車":"B", "iPad":"C", "携帯電話":"D", "Office365":"E", "ウイルスバスター":"F", "その他機器":"G",
@@ -370,14 +332,19 @@ def submit_search():
 @st.dialog("📝 詳細情報の編集")
 def show_detail_dialog(row_data):
     cat = row_data['カテゴリ']
+    is_medical = cat in ["医療機器", "レンタル医療機器"]
+    
     with st.form("edit_dialog_form"):
         st.write(f"**ID:** {row_data.get('ID','')} / **カテゴリ:** {cat}")
-        c1, c2 = st.columns(2)
-        with c1: new_name = st.text_input("品名", value=row_data.get('品名', ''))
-        with c2: new_user = st.text_input("利用者(代表)", value=row_data.get('利用者', ''))
-        status_options = ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"]
-        curr_status = row_data.get('ステータス', '利用可能')
-        new_status = st.selectbox("ステータス", status_options, index=status_options.index(curr_status) if curr_status in status_options else 0)
+        
+        if not is_medical:
+            c1, c2 = st.columns(2)
+            with c1: new_name = st.text_input("品名", value=row_data.get('品名', ''))
+            with c2: new_user = st.text_input("利用者(代表)", value=row_data.get('利用者', ''))
+            status_options = ["利用可能", "利用中", "貸出中", "故障/修理中", "廃棄"]
+            curr_status = row_data.get('ステータス', '利用可能')
+            new_status = st.selectbox("ステータス", status_options, index=status_options.index(curr_status) if curr_status in status_options else 0)
+        
         custom_values = {}
         if cat == "ウイルスバスター":
             v1, v2 = st.columns(2)
@@ -399,6 +366,7 @@ def show_detail_dialog(row_data):
                     d_val = st.date_input(col, value=parse_date(val))
                     custom_values[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
                 else: custom_values[col] = st.text_input(col, value=val)
+                
         if st.form_submit_button("✅ 更新する"):
             try:
                 worksheet = doc.worksheet(CATEGORY_MAP[cat])
@@ -407,8 +375,13 @@ def show_detail_dialog(row_data):
             
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell:
-                row_to_save = [row_data.get('ID',''), cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
-                cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
+                if is_medical:
+                    row_to_save = [row_data.get('ID','')]
+                    cols = COLUMNS_DEF[cat]
+                else:
+                    row_to_save = [row_data.get('ID',''), cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
+                    cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
+                
                 for col in cols: row_to_save.append(custom_values.get(col, ''))
                 worksheet.update(f"A{cell.row}", [row_to_save])
                 get_all_data.clear()
@@ -603,7 +576,7 @@ def show_task_dialog(row_data):
                 st.rerun()
 
 # ==========================================
-# 🌟 左側：階層化されたサイドバーメニュー 🌟[cite: 3]
+# 🌟 左側：階層化されたサイドバーメニュー 🌟
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
@@ -619,7 +592,6 @@ with st.sidebar:
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
         st.button("🏥 ORCA証明書", on_click=change_page, args=("🏥 ORCA証明書管理",), use_container_width=True)
     
-    # 💡 医療機器管理のエクスパンダーを新設[cite: 3]
     with st.expander("🩺 医療機器管理", expanded=True):
         st.button("🩺 医療機器", on_click=change_page, args=(" 🩺 医療機器",), use_container_width=True)
         st.button("🩺 レンタル医療機器", on_click=change_page, args=(" 🩺 レンタル医療機器",), use_container_width=True)
@@ -645,7 +617,6 @@ with st.sidebar:
         get_parking_data.clear()
         st.rerun()
 
-# 💡 カテゴリ紐付け辞書の更新[cite: 3]
 MENU_TO_CAT = {
     " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器",
     " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター",
@@ -807,9 +778,11 @@ try:
             cal_html = render_monthly_calendar(st.session_state['cal_year'], st.session_state['cal_month'], events_by_date)
             st.markdown(cal_html, unsafe_allow_html=True)
 
-    # 📦 ページ：備品・ソフトウェア・医療機器個別管理[cite: 3]
+    # 📦 ページ：備品・ソフトウェア・医療機器個別管理
     elif page_selection in MENU_TO_CAT:
         cat = MENU_TO_CAT[page_selection]
+        is_medical = cat in ["医療機器", "レンタル医療機器"]
+        
         st.markdown(f"""
             <div class="page-title-box">
                 <h2>🗃️ {page_selection.strip()} 管理</h2>
@@ -839,17 +812,31 @@ try:
                         c = st.columns([0.8, 1, 3, 2, 1.5, 1])
                         if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
                         c[1].write(row.get('ID', ''))
-                        c[2].write(f"**{safe_text(row.get('品名', ''))}**")
-                        c[3].write(row.get('利用者', ''))
-                        c[4].write(row.get('ステータス', ''))
                         
-                        right_col_val = ""
-                        if cat == "訪問車": right_col_val = row.get('登録番号', '')
-                        elif cat in ["Office365", "ウイルスバスター"]: right_col_val = row.get('備考', '')
-                        else: right_col_val = row.get('購入日', row.get('登録番号', ''))
-                        
-                        if pd.isna(right_col_val) or str(right_col_val).strip().lower() == 'nan': right_col_val = ""
-                        c[5].write(str(right_col_val))
+                        # 💡 医療機器の一覧表示に「機器名」を追加
+                        if cat == "医療機器":
+                            c[2].write(f"**{safe_text(row.get('機器名', ''))}**")
+                            c[3].write(row.get('使用拠点', ''))
+                            c[4].write(row.get('型番', ''))
+                            c[5].write(str(row.get('個体番号', '')))
+                        elif cat == "レンタル医療機器":
+                            c[2].write(f"**{safe_text(row.get('使用機器', ''))}**")
+                            c[3].write(row.get('利用患者', ''))
+                            c[4].write(row.get('レンタル会社', ''))
+                            c[5].write(str(row.get('主治医', '')))
+                        else:
+                            c[2].write(f"**{safe_text(row.get('品名', ''))}**")
+                            c[3].write(row.get('利用者', ''))
+                            c[4].write(row.get('ステータス', ''))
+                            
+                            right_col_val = ""
+                            if cat == "訪問車": right_col_val = row.get('登録番号', '')
+                            elif cat in ["Office365", "ウイルスバスター"]: right_col_val = row.get('備考', '')
+                            else: right_col_val = row.get('購入日', row.get('登録番号', ''))
+                            
+                            if pd.isna(right_col_val) or str(right_col_val).strip().lower() == 'nan': right_col_val = ""
+                            c[5].write(str(right_col_val))
+                            
                         st.markdown("<hr>", unsafe_allow_html=True)
                         
                     if total_pages > 1:
@@ -871,8 +858,11 @@ try:
                 with st.form("zaiko_reg"):
                     auto_id = get_auto_id(cat, df)
                     i_id = st.text_input("ID ※自動採番", value=auto_id)
-                    i_name = st.text_input("品名")
-                    i_user = st.text_input("利用者")
+                    
+                    if not is_medical:
+                        i_name = st.text_input("品名")
+                        i_user = st.text_input("利用者")
+                        
                     custom_vals = {}
                     if cat == "ウイルスバスター":
                         v1, v2 = st.columns(2)
@@ -892,16 +882,22 @@ try:
                                 custom_vals[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
                             else:
                                 custom_vals[col] = st.text_input(col)
+                                
                     if st.form_submit_button("登録"):
                         try:
                             ws = doc.worksheet(CATEGORY_MAP[cat])
                         except gspread.exceptions.WorksheetNotFound:
                             ws = doc.add_worksheet(title=CATEGORY_MAP[cat], rows="100", cols="20")
-                            header_row = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日'] + COLUMNS_DEF[cat]
+                            header_row = ['ID'] + COLUMNS_DEF[cat] if is_medical else ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日'] + COLUMNS_DEF[cat]
                             ws.append_row(header_row)
 
-                        row = [i_id, cat, i_name, i_user, "利用可能", datetime.now().strftime('%Y-%m-%d')]
-                        cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
+                        if is_medical:
+                            row = [i_id]
+                            cols = COLUMNS_DEF[cat]
+                        else:
+                            row = [i_id, cat, i_name, i_user, "利用可能", datetime.now().strftime('%Y-%m-%d')]
+                            cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
+                            
                         for col in cols: row.append(custom_vals.get(col, ""))
                         ws.append_row(row)
                         get_all_data.clear()
@@ -913,9 +909,10 @@ try:
                 st.markdown(f"##### 📤 {cat} データのCSV出力")
                 cat_df = df[df['カテゴリ'] == cat] if not df.empty and 'カテゴリ' in df.columns else pd.DataFrame()
                 if not cat_df.empty:
-                    base_cols = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日']
+                    base_cols = ['ID'] if is_medical else ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日']
                     if cat == "ウイルスバスター": custom_cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"]
                     else: custom_cols = COLUMNS_DEF.get(cat, [])
+                    
                     target_cols = base_cols + custom_cols
                     export_cols = [c for c in target_cols if c in cat_df.columns]
                     export_df = cat_df[export_cols]
