@@ -825,6 +825,23 @@ try:
             else:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
+                    
+                    # 💡 1. 医療機器・レンタル医療機器・その他備品のヘッダー行を追加
+                    if cat == "医療機器":
+                        hc = st.columns([0.8, 1, 1.5, 2.5, 1.5, 1.5, 1.5])
+                        headers_text = ["操作", "ID", "使用拠点", "機器名", "型番", "前回点検日", "次回点検日"]
+                    elif cat == "レンタル医療機器":
+                        hc = st.columns([0.8, 1, 2.5, 1.5, 1.5, 1.5])
+                        headers_text = ["操作", "ID", "使用機器", "レンタル会社", "使用拠点", "利用患者"]
+                    else:
+                        hc = st.columns([0.8, 1, 3, 2, 1.5, 1])
+                        headers_text = ["操作", "ID", "品名", "利用者", "ステータス", "詳細/購入日"]
+                    
+                    for i, h_text in enumerate(headers_text):
+                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    st.markdown("<hr>", unsafe_allow_html=True)
+
+                    # 2. 一覧データの描画ループ
                     ITEMS_PER_PAGE = 50
                     total_items = len(display_df)
                     total_pages = (total_items - 1) // ITEMS_PER_PAGE + 1 if total_items > 0 else 1
@@ -835,7 +852,6 @@ try:
                     current_page_df = display_df.iloc[start_idx:end_idx]
                     
                     for idx, row in current_page_df.iterrows():
-                        # 💡 医療機器の一覧表示を「使用拠点・機器名・型番・前回点検日・次回点検日」に更新
                         if cat == "医療機器":
                             c = st.columns([0.8, 1, 1.5, 2.5, 1.5, 1.5, 1.5])
                             if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
@@ -846,7 +862,7 @@ try:
                             c[5].write(str(row.get('前回点検日', '')))
                             c[6].write(str(row.get('次回点検日', '')))
                         elif cat == "レンタル医療機器":
-                            c = st.columns([0.8, 1, 3, 2, 1.5, 1])
+                            c = st.columns([0.8, 1, 2.5, 1.5, 1.5, 1.5])
                             if c[0].button("詳細", key=f"btn_{cat}_{idx}"): show_detail_dialog(row)
                             c[1].write(row.get('ID', ''))
                             c[2].write(f"**{safe_text(row.get('使用機器', ''))}**")
