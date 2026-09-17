@@ -271,7 +271,7 @@ def generate_auto_id(df_target, prefix, id_col='ID'):
 def get_auto_id(category, current_df):
     prefix_dict = {
         "PC":"A", "訪問車":"B", "iPad":"C", "携帯電話":"D", "Office365":"E", "ウイルスバスター":"F", "その他機器":"G",
-        "医療機器":"M", "レンタル医療機器":"RM"
+        "医療機器":"J", "レンタル医療機器":"K"
     }
     if not current_df.empty and 'カテゴリ' in current_df.columns: target_df = current_df[current_df['カテゴリ']==category]
     else: target_df = pd.DataFrame()
