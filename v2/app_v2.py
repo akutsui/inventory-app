@@ -18,23 +18,14 @@ if 'page_selection' not in st.session_state:
 def change_page(page_name):
     st.session_state['page_selection'] = page_name
     st.session_state['active_search_query'] = ""
-    st.session_state['page_number'] = 0  # 💡 ページ移動時に1ページ目にリセット
+    st.session_state['page_number'] = 0
 
 # --- CSS設定 ---
 st.markdown("""
     <style>
         .stApp, .main .block-container { background-color: #000000 !important; color: #ffffff !important; }
-        
-        [data-testid="stHeader"] { 
-            background: transparent !important; 
-        }
-        
-        .main .block-container { 
-            padding-top: 0px !important; 
-            margin-top: -60px !important; 
-            padding-bottom: 1rem !important; 
-        }
-        
+        [data-testid="stHeader"] { background: transparent !important; }
+        .main .block-container { padding-top: 0px !important; margin-top: -60px !important; padding-bottom: 1rem !important; }
         h2, h3, h4, h5, h6, p, span, label, div.stMarkdown { color: #ffffff !important; }
         .text-alert, .text-alert * { color: #ff4b4b !important; font-weight: bold !important; }
         .text-warning, .text-warning * { color: #faca2b !important; font-weight: bold !important; }
@@ -45,7 +36,6 @@ st.markdown("""
         [data-testid="stTabs"] { margin-top: 5px !important; padding-top: 0px !important; }
         [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
         .date-display-box { text-align: right; font-size: 1.1rem; padding-top: 0px !important; margin-top: 0px !important; line-height: 1.2 !important; }
-        
         [data-testid="stSidebar"], [data-testid="stSidebarSidebarNav"] { background-color: #7f7f7f !important; }
         [data-testid="stSidebar"] * { color: #ffffff !important; }
         [data-testid="stSidebar"] [data-testid="stExpander"], [data-testid="stSidebar"] [data-testid="stExpander"] details, [data-testid="stSidebar"] [data-testid="stExpander"] summary, [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] { border: none !important; background-color: transparent !important; background: none !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
@@ -55,72 +45,34 @@ st.markdown("""
         [data-testid="stSidebar"] .element-container { margin-bottom: 0px !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] { padding-top: 0px !important; padding-bottom: 0px !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-        
         [data-testid="stSidebar"] div[data-testid="stButton"] > button { background-color: transparent !important; border: none !important; display: flex !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; margin: 0 !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; width: 100% !important; height: 1.6rem !important; min-height: 1.6rem !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button > div, [data-testid="stSidebar"] div[data-testid="stButton"] > button > div > div { width: 100% !important; display: flex !important; justify-content: flex-start !important; align-items: center !important; margin: 0 !important; padding: 0 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button p { text-align: left !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important; width: 100% !important; line-height: 1 !important; }
         [data-testid="stSidebar"] div[data-testid="stButton"] > button:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
         [data-testid="stSidebar"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] > button { padding-left: 30px !important; }
-        
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button {
-            background-color: #4285f4 !important;
-            border-radius: 6px !important;
-            justify-content: center !important;
-            height: 2.2rem !important;
-            min-height: 2.2rem !important;
-            margin-bottom: 10px !important;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button p {
-            text-align: center !important;
-            font-weight: bold !important;
-            font-size: 0.9rem !important;
-        }
-        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button:hover {
-            background-color: #3367d6 !important;
-        }
-
-        button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; -webkit-box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { height: 1.6rem !important; background-color: #ffffff !important; background: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important; box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; transition: none !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button { background-color: #4285f4 !important; border-radius: 6px !important; justify-content: center !important; height: 2.2rem !important; min-height: 2.2rem !important; margin-bottom: 10px !important; box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button p { text-align: center !important; font-weight: bold !important; font-size: 0.9rem !important; }
+        [data-testid="stSidebar"] div[data-testid="stButton"]:has(p:contains("データを最新にする")) > button:hover { background-color: #3367d6 !important; }
+        button:focus, button:active, button:focus-visible { box-shadow: transparent 0px 0px 0px 0px !important; outline: none !important; }
+        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button { height: 1.6rem !important; background-color: #ffffff !important; color: #000000 !important; border: 1px solid #cccccc !important; justify-content: center !important; display: flex !important; align-items: center !important; transition: none !important; }
         html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button *, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button *, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button *, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button * { color: #000000 !important; font-weight: bold !important; font-size: 0.8rem !important; }
-        html body .stApp [data-testid="stMain"] div[data-testid="stButton"] > button:hover, html body .stApp [data-testid="stMain"] div[data-formsubmitbutton] > button:hover, html body .stApp div[role="dialog"] div[data-testid="stButton"] > button:hover, html body .stApp div[role="dialog"] div[data-formsubmitbutton] > button:hover { background-color: #eeeeee !important; background: #eeeeee !important; border: 1px solid #999999 !important; color: #000000 !important; }
-        html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; -webkit-text-fill-color: #ffffff !important; }
+        html body .stApp div[data-testid="stTextInput"] input, html body .stApp div[data-testid="stTextArea"] textarea, html body .stApp div[data-testid="stDateInput"] div[data-baseweb="input"], html body .stApp div[data-testid="stDateInput"] input { background-color: #222222 !important; color: #ffffff !important; border: 1px solid #555555 !important; }
         html body .stApp div[data-baseweb="select"] > div { background-color: #222222 !important; border: 1px solid #555555 !important; }
-        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div, html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div > div { background-color: #222222 !important; color: #ffffff !important; }
-        html body .stApp div[data-baseweb="select"] span, html body .stApp div[data-baseweb="select"] div[aria-selected="true"] { color: #ffffff !important; background-color: transparent !important; }
-        html body .stApp div[data-baseweb="select"] div[aria-placeholder] { color: #aaaaaa !important; background-color: transparent !important; }
-        html body .stApp div[data-baseweb="select"] svg { fill: #ffffff !important; }
-        html body .stApp span[data-baseweb="tag"] { background-color: #ea4335 !important; border: none !important; }
-        html body .stApp span[data-baseweb="tag"] * { color: #ffffff !important; background-color: transparent !important; }
-        html body .stApp ul[role="listbox"], html body .stApp ul[data-baseweb="menu"] { background-color: #333333 !important; }
-        html body .stApp ul[role="listbox"] li, html body .stApp ul[data-baseweb="menu"] li { background-color: #333333 !important; color: #ffffff !important; }
-        html body .stApp ul[role="listbox"] li:hover, html body .stApp ul[data-baseweb="menu"] li:hover { background-color: #555555 !important; }
-        html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"] { background-color: #ffffff !important; color: #000000 !important; -webkit-text-fill-color: #000000 !important; border: 2px solid #cccccc !important; font-weight: bold !important; }
-        html body .stApp div[data-testid="stTextInput"] input[placeholder="Enterで検索"]::placeholder { color: #888888 !important; -webkit-text-fill-color: #888888 !important; font-weight: normal !important; }
+        html body .stApp div[data-testid="stSelectbox"] div[data-baseweb="select"] > div > div { background-color: #222222 !important; color: #ffffff !important; }
         div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) { background-color: #7f7f7f !important; padding: 10px 15px !important; border-radius: 8px !important; margin-top: 8px !important; margin-bottom: 15px !important; }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) > div[data-testid="stVerticalBlock"] { gap: 0rem !important; }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stHorizontalBlock"] { margin-bottom: -10px !important; margin-top: -10px !important; align-items: center !important; }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div.element-container { margin-bottom: 0px !important; }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) p, div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stMarkdownContainer"] { margin-bottom: 0px !important; padding-bottom: 0px !important; line-height: 1.1 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button p, div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button * { white-space: nowrap !important; }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) div[data-testid="stButton"] > button { height: 1.4rem !important; min-height: 1.4rem !important; padding: 0px 5px !important; }
-        div[data-testid="stVerticalBlock"]:has(> div.element-container .list-bg-marker) hr { margin-top: 2px !important; margin-bottom: 2px !important; border-top: 1px dashed rgba(255, 255, 255, 0.4) !important; }
-        * { -webkit-tap-highlight-color: transparent !important; }
         .cassette-orange { background-color: #fce8e6 !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #ea4335; }
-        html body .stApp .cassette-orange, html body .stApp .cassette-orange * { color: #a51d24 !important; }
         .cassette-green { background-color: #e6f4ea !important; padding: 15px 18px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #34a853; }
-        html body .stApp .cassette-green, html body .stApp .cassette-green * { color: #a51d24 !important; }
         .cassette-blue { background-color: #e8f0fe !important; padding: 18px 22px; border-radius: 8px; margin-bottom: 15px; font-size: 0.82rem !important; border-left: 5px solid #4285f4; line-height: 1.4rem; }
-        html body .stApp .cassette-blue, html body .stApp .cassette-blue * { color: #000000 !important; }
         hr { border-top: 1px solid #333333 !important; }
-        .sidebar-link { display: flex !important; align-items: center !important; justify-content: flex-start !important; padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important; color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important; margin-bottom: 5px !important; }
-        .sidebar-link:hover { background-color: rgba(255, 255, 255, 0.1) !important; color: #ffffff !important; text-decoration: none !important; }
+        .sidebar-link { display: flex !important; align-items: center !important; padding: 0px 0px 0px 10px !important; width: 100% !important; height: 1.6rem !important; color: #ffffff !important; text-decoration: none !important; font-size: 0.82rem !important; margin-bottom: 5px !important; }
     </style>
 """, unsafe_allow_html=True)
 
+# 💡 カテゴリマップに医療機器を追加[cite: 3]
 CATEGORY_MAP = {
     "PC": "PC", "訪問車": "訪問車", "iPad": "iPad", "携帯電話": "携帯電話",
-    "Office365": "Office365", "ウイルスバスター": "ウイルスバスター", "その他機器": "その他機器"
+    "Office365": "Office365", "ウイルスバスター": "ウイルスバスター", "その他機器": "その他機器",
+    "医療機器": "医療機器", "レンタル医療機器": "レンタル医療機器"
 }
 
 SHEET_NEW_EMPLOYEE = "新規入職者"
@@ -131,6 +83,7 @@ SHEET_MATERNITY = "産休育休"
 SHEET_ORCA_CERT = "ORCA証明書"
 SHEET_PARKING = "駐車場データ"
 
+# 💡 カラム定義を追加[cite: 3]
 COLUMNS_DEF = {
     "PC": ["使用部署", "購入日", "OS", "プロダクトID(シリアルNo)", "ラベル", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "officeのアカウント割振", "ウィルスバスターシリアルNo", "ウィルスバスター期限", "ウィルスバスター識別ネーム", "チームビューワID", "チームビューワPW", "備考"],
     "訪問車": ["登録番号", "洗車グループ", "駐車場", "タイヤサイズ", "スタッドレス有無", "タイヤ保管場所", "リース開始日", "リース満了日", "車検満了日", "駐禁除外指定満了日", "通行禁止許可満了日", "使用部署", "備考"],
@@ -138,7 +91,9 @@ COLUMNS_DEF = {
     "携帯電話": ["購入日", "電話番号", "SIM", "メーカー", "製造番号", "使用部署", "保管場所", "キャリア", "備考"],
     "Office365": ["アカウントID", "パスワード", "利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "備考"],
     "ウイルスバスター": ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"],
-    "その他機器": ["使用部署", "使用場所", "使用開始日", "備考"]
+    "その他機器": ["使用部署", "使用場所", "使用開始日", "備考"],
+    "医療機器": ["使用拠点", "型番", "表示名", "商品名", "個体番号", "製造年月日", "前回点検日", "次回点検日", "備考"],
+    "レンタル医療機器": ["使用機器", "レンタル会社", "利用患者", "利用患者ID", "主治医", "担当看護師", "備考"]
 }
 
 SPREADSHEET_NAME = 'management_db'
@@ -173,9 +128,7 @@ def get_lineworks_token():
         private_key = lw_secrets["private_key"]
         
         current_time = int(time.time())
-        payload = {
-            "iss": client_id, "sub": service_account, "iat": current_time, "exp": current_time + 3600
-        }
+        payload = {"iss": client_id, "sub": service_account, "iat": current_time, "exp": current_time + 3600}
         encoded_jwt = jwt.encode(payload, private_key, algorithm="RS256")
         
         url = "https://auth.worksmobile.com/oauth2/v2.0/token"
@@ -306,8 +259,12 @@ def generate_auto_id(df_target, prefix, id_col='ID'):
                 except: pass
     return f"{prefix}{max_num + 1:04d}"
 
+# 💡 自動ID用プレフィックスの割り当て[cite: 3]
 def get_auto_id(category, current_df):
-    prefix_dict = {"PC":"A","訪問車":"B","iPad":"C","携帯電話":"D","Office365":"E","ウイルスバスター":"F","その他機器":"G"}
+    prefix_dict = {
+        "PC":"A", "訪問車":"B", "iPad":"C", "携帯電話":"D", "Office365":"E", "ウイルスバスター":"F", "その他機器":"G",
+        "医療機器":"M", "レンタル医療機器":"RM"
+    }
     if not current_df.empty and 'カテゴリ' in current_df.columns: target_df = current_df[current_df['カテゴリ']==category]
     else: target_df = pd.DataFrame()
     return generate_auto_id(target_df, prefix_dict.get(category, "Z"))
@@ -397,7 +354,11 @@ def show_detail_dialog(row_data):
                     custom_values[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
                 else: custom_values[col] = st.text_input(col, value=val)
         if st.form_submit_button("✅ 更新する"):
-            worksheet = doc.worksheet(CATEGORY_MAP[cat])
+            try:
+                worksheet = doc.worksheet(CATEGORY_MAP[cat])
+            except gspread.exceptions.WorksheetNotFound:
+                worksheet = doc.add_worksheet(title=CATEGORY_MAP[cat], rows="100", cols="20")
+            
             cell = worksheet.find(str(row_data.get('ID','')))
             if cell:
                 row_to_save = [row_data.get('ID',''), cat, new_name, new_user, new_status, datetime.now().strftime('%Y-%m-%d')]
@@ -413,7 +374,6 @@ def show_onboarding_task_dialog(row_data):
         c1, c2 = st.columns(2)
         with c1: new_name = st.text_input("氏名", value=row_data.get('氏名', ''))
         with c2: new_furi = st.text_input("フリガナ", value=row_data.get('フリガナ', ''))
-        
         c3, c4 = st.columns(2)
         with c3: new_type = st.text_input("職種", value=row_data.get('職種', ''))
         with c4: new_dept = st.text_input("部署", value=row_data.get('部署', ''))
@@ -464,12 +424,10 @@ def show_maternity_dialog(row_data):
         new_dept = st.text_input("部署", value=row_data.get('部署', ''))
         new_start = st.date_input("休暇開始日", value=parse_date(row_data.get('休暇開始日')))
         new_return = st.date_input("復帰予定日", value=parse_date(row_data.get('復帰予定日')))
-        
         m_opts = ["取得中", "復職済"]
         curr_m_st = str(row_data.get('ステータス', '')).strip()
         m_index = m_opts.index(curr_m_st) if curr_m_st in m_opts else 0
         new_status = st.selectbox("ステータス", m_opts, index=m_index)
-        
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_MATERNITY)
@@ -487,7 +445,6 @@ def show_orca_cert_dialog(row_data):
     cert_u = str(row_data.get('ORCA宇都宮', '')).strip()
     cert_k = str(row_data.get('ORCA鹿沼', '')).strip()
     cert_m = str(row_data.get('ORCA益子', '')).strip()
-    
     with st.form("orca_edit_form"):
         new_name = st.text_input("使用者", value=cert_name)
         new_dept = st.text_input("部署", value=row_data.get('部署', ''))
@@ -495,7 +452,6 @@ def show_orca_cert_dialog(row_data):
         new_kanu = st.text_input("ORCA鹿沼", value=cert_k)
         new_mashi = st.text_input("ORCA益子", value=cert_m)
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
-        
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_ORCA_CERT)
             headers = worksheet.row_values(1)
@@ -505,38 +461,6 @@ def show_orca_cert_dialog(row_data):
             if cell: worksheet.update(f"A{cell.row}", [row_to_save])
             get_orca_cert_data.clear()
             st.rerun()
-            
-    st.markdown("---")
-    st.markdown(f"##### 💻 この証明書が紐付いているPC")
-    
-    df_all = get_all_data()
-    installed_pcs = []
-    
-    if not df_all.empty and 'カテゴリ' in df_all.columns:
-        df_pc = df_all[df_all['カテゴリ'] == 'PC']
-        
-        def is_match_list(pc_val, cert_val):
-            if not pc_val or not cert_val: return False
-            v_str = pc_val.replace('、', ',').replace(' ', ',').replace(' ', ',')
-            v_list = [v.strip() for v in v_str.split(',') if v.strip()]
-            return cert_val in v_list or cert_val == pc_val.strip()
-        
-        for _, pc_row in df_pc.iterrows():
-            pc_u = str(pc_row.get('ORCA宇都宮', '')).strip()
-            pc_k = str(pc_row.get('ORCA鹿沼', '')).strip()
-            pc_m = str(pc_row.get('ORCA益子', '')).strip()
-            
-            if is_match_list(pc_u, cert_u) or is_match_list(pc_k, cert_k) or is_match_list(pc_m, cert_m):
-                installed_pcs.append(pc_row)
-    
-    if installed_pcs:
-        for pc in installed_pcs:
-            pid = pc.get('ID', '')
-            pname = pc.get('品名', '')
-            puser = pc.get('利用者', '')
-            st.markdown(f"- **{pid}**: {pname} （利用者: {puser}）")
-    else:
-        st.info("現在、この証明書が紐付いているPCは見つかりませんでした。")
 
 @st.dialog("📝 駐車場区画の編集")
 def show_parking_dialog(row_data):
@@ -544,29 +468,21 @@ def show_parking_dialog(row_data):
         st.write(f"**区画番号:** {row_data.get('区画番号', '')}")
         new_name = st.text_input("駐車場名", value=row_data.get('駐車場名', ''))
         new_park_num = st.text_input("駐車番号", value=row_data.get('駐車番号', ''))
-        
         type_opts = ["訪問車", "自家用車", "来客用", "空き"]
         curr_type = str(row_data.get('区分', '')).strip()
         type_index = type_opts.index(curr_type) if curr_type in type_opts else 0
         new_type = st.selectbox("区分", type_opts, index=type_index)
-        
         new_user = st.text_input("使用者", value=row_data.get('使用者', ''))
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
-        
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_PARKING)
             headers = worksheet.row_values(1)
             data_dict = {"区画番号": row_data.get('区画番号', ''), "駐車場名": new_name, "駐車番号": new_park_num, "区分": new_type, "使用者": new_user, "備考": new_note}
             row_to_save = [data_dict.get(h, "") for h in headers]
-            
             id_col_idx = headers.index("区画番号") + 1
             cell = worksheet.find(str(row_data.get('区画番号', '')), in_column=id_col_idx)
-            
-            if cell: 
-                worksheet.update(f"A{cell.row}", [row_to_save])
-            else:
-                worksheet.append_row(row_to_save)
-                
+            if cell: worksheet.update(f"A{cell.row}", [row_to_save])
+            else: worksheet.append_row(row_to_save)
             get_parking_data.clear()
             st.rerun()
 
@@ -574,16 +490,13 @@ def show_parking_dialog(row_data):
 def show_task_dialog(row_data):
     with st.form("task_edit_form"):
         new_name = st.text_input("タスク名", value=row_data.get('タスク名', ''))
-        
         curr_creator = row_data.get('作成者', '')
         new_creator = st.selectbox("作成者", options=USER_OPTIONS, index=USER_OPTIONS.index(curr_creator) if curr_creator in USER_OPTIONS else 0)
-        
         curr_assignees = [u.strip() for u in str(row_data.get('担当者', '')).split(',') if u.strip() in USER_OPTIONS]
         curr_watchers = [u.strip() for u in str(row_data.get('関係者', '')).split(',') if u.strip() in USER_OPTIONS]
         c1, c2 = st.columns(2)
         with c1: sel_assignees = st.multiselect("担当者", options=USER_OPTIONS, default=curr_assignees)
         with c2: sel_watchers = st.multiselect("関係者", options=USER_OPTIONS, default=curr_watchers)
-        
         new_limit = st.date_input("期限", value=parse_date(row_data.get('期限')))
         c3, c4 = st.columns(2)
         with c3:
@@ -595,30 +508,23 @@ def show_task_dialog(row_data):
             curr_s = row_data.get('ステータス', '未着手')
             new_status = st.selectbox("ステータス", sts, index=sts.index(curr_s) if curr_s in sts else 0)
         new_note = st.text_area("備考", value=row_data.get('備考', ''))
-        
         if st.form_submit_button("✅ 更新する"):
             worksheet = doc.worksheet(SHEET_TASK)
             headers = worksheet.row_values(1)
-            
             if "イベントID" not in headers:
                 worksheet.update_cell(1, len(headers) + 1, "イベントID")
                 headers.append("イベントID")
-            
             id_col_idx = headers.index("ID") + 1
             cell = worksheet.find(str(row_data.get('ID', '')), in_column=id_col_idx)
-            
             if cell:
                 existing_row = worksheet.row_values(cell.row)
                 while len(existing_row) < len(headers): existing_row.append("")
                 row_dict = dict(zip(headers, existing_row))
-                
                 new_assignee_str = ", ".join(sel_assignees)
                 new_watchers_str = ", ".join(sel_watchers)
                 new_limit_str = str(new_limit) if new_limit else ""
-                
                 event_id = row_dict.get("イベントID", "").strip()
                 old_limit = row_dict.get("期限", "").strip()
-                
                 if new_status == "完了":
                     if event_id: delete_lineworks_calendar_event(event_id)
                     event_id = ""
@@ -635,7 +541,6 @@ def show_task_dialog(row_data):
                         creator_id = LINEWORKS_USER_MAP.get(new_creator)
                         new_event_id = register_lineworks_calendar_event(new_name, new_assignee_str, new_limit_str, new_pri, new_note, creator_id, new_creator)
                         if new_event_id: event_id = new_event_id
-                
                 row_dict["タスク名"] = new_name
                 row_dict["作成者"] = new_creator
                 row_dict["担当者"] = new_assignee_str
@@ -645,16 +550,14 @@ def show_task_dialog(row_data):
                 row_dict["ステータス"] = new_status
                 row_dict["備考"] = new_note
                 row_dict["イベントID"] = event_id
-                
                 row_to_save = [row_dict.get(h, "") for h in headers]
                 worksheet.update(f"A{cell.row}", [row_to_save])
-                
                 st.toast("スプレッドシートとLINE WORKSカレンダーを完全に同期しました！", icon="📅")
                 get_task_data.clear()
                 st.rerun()
 
 # ==========================================
-# 🌟 左側：階層化されたサイドバーメニュー 🌟
+# 🌟 左側：階層化されたサイドバーメニュー 🌟[cite: 3]
 # ==========================================
 with st.sidebar:
     st.markdown("### 🛠️ メニュー")
@@ -669,6 +572,12 @@ with st.sidebar:
         st.button("📧 Office365", on_click=change_page, args=(" 📧 Office365",), use_container_width=True)
         st.button("🛡️ ウィルスバスター", on_click=change_page, args=(" 🛡️ ウィルスバスター",), use_container_width=True)
         st.button("🏥 ORCA証明書", on_click=change_page, args=("🏥 ORCA証明書管理",), use_container_width=True)
+    
+    # 💡 医療機器管理のエクスパンダーを新設[cite: 3]
+    with st.expander("🩺 医療機器管理", expanded=True):
+        st.button("🩺 医療機器", on_click=change_page, args=(" 🩺 医療機器",), use_container_width=True)
+        st.button("🩺 レンタル医療機器", on_click=change_page, args=(" 🩺 レンタル医療機器",), use_container_width=True)
+
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
     st.button("👶 産休育休者管理", on_click=change_page, args=("👶 産休育休者管理",), use_container_width=True)
@@ -678,7 +587,6 @@ with st.sidebar:
     st.markdown("---")
     
     st.markdown('<a href="https://notebooklm.google.com/notebook/736514d4-30dc-462d-99b9-a8324feafef9" target="_blank" class="sidebar-link">📖 総務マニュアル (NotebookLM)</a>', unsafe_allow_html=True)
-
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
     if st.button("🔄 データを最新にする", use_container_width=True): 
@@ -691,72 +599,48 @@ with st.sidebar:
         get_parking_data.clear()
         st.rerun()
 
-MENU_TO_CAT = { " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器", " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター" }
+# 💡 カテゴリ紐付け辞書の更新[cite: 3]
+MENU_TO_CAT = {
+    " 💻 パソコン": "PC", " 🚗 訪問車": "訪問車", " 📱 iPad": "iPad", " 📞 携帯電話": "携帯電話", " ⚙️ その他機器": "その他機器",
+    " 📧 Office365": "Office365", " 🛡️ ウィルスバスター": "ウイルスバスター",
+    " 🩺 医療機器": "医療機器", " 🩺 レンタル医療機器": "レンタル医療機器"
+}
 
-# 🔻🔻🔻 カレンダー機能の裏側コード（時間指定・終日 両対応修正版） 🔻🔻🔻
 @st.cache_data(ttl=180)
 def fetch_absence_events(year, month):
     token = get_lineworks_token()
     if not token: return {}
-    
     service_account = st.secrets["lineworks"]["service_account"]
     calendar_id = "16f4dc1f-4b82-4c6e-9fb8-f2f27d7caf99"
     url = f"https://www.worksapis.com/v1.0/users/{service_account}/calendars/{calendar_id}/events"
-    
     start_date = datetime(year, month, 1)
     end_date = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
-    
     headers = {"Authorization": f"Bearer {token}"}
-    params = {
-        "fromDateTime": start_date.strftime('%Y-%m-%dT00:00:00+09:00'),
-        "untilDateTime": end_date.strftime('%Y-%m-%dT00:00:00+09:00'),
-        "maxResults": 1000
-    }
-    
+    params = {"fromDateTime": start_date.strftime('%Y-%m-%dT00:00:00+09:00'), "untilDateTime": end_date.strftime('%Y-%m-%dT00:00:00+09:00'), "maxResults": 1000}
     res = requests.get(url, headers=headers, params=params)
     events_by_date = {}
-    
-    if res.status_code != 200:
-        st.error(f"❌ カレンダー通信エラー ({res.status_code}): {res.text}")
-        return {}
-        
+    if res.status_code != 200: return {}
     events = res.json().get("events", [])
-    
     target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "面曽"]
     exclude_words = ["リモート", "鹿沼便"]
-    
     for item in events:
         components = item.get("eventComponents", [])
-        if not components:
-            continue
-            
+        if not components: continue
         comp = components[0]
         summary = comp.get("summary", "")
-        
-        # 名前が含まれ、除外ワードが含まれない場合
         if any(n in summary for n in target_names) and not any(w in summary for w in exclude_words):
             start_dict = comp.get("start", {})
             end_dict = comp.get("end", {})
-            
-            # 💡 終日(date)でも時間指定(dateTime)でも確実に「YYYY-MM-DD」を抽出する処理
             start_raw = start_dict.get("date") or start_dict.get("dateTime", "")
             end_raw = end_dict.get("date") or end_dict.get("dateTime", "")
-            
             start_str = start_raw[:10] if len(start_raw) >= 10 else ""
             end_str = end_raw[:10] if len(end_raw) >= 10 else ""
-            
             if start_str:
                 dt_start = datetime.strptime(start_str, '%Y-%m-%d')
-                
-                # 終日予定の場合は終了日が含まれないケースがあるため補正
                 if end_str and end_str != start_str:
-                    if "T" in end_raw:
-                        dt_end = datetime.strptime(end_str, '%Y-%m-%d') + timedelta(days=1)
-                    else:
-                        dt_end = datetime.strptime(end_str, '%Y-%m-%d')
-                else:
-                    dt_end = dt_start + timedelta(days=1)
-                
+                    if "T" in end_raw: dt_end = datetime.strptime(end_str, '%Y-%m-%d') + timedelta(days=1)
+                    else: dt_end = datetime.strptime(end_str, '%Y-%m-%d')
+                else: dt_end = dt_start + timedelta(days=1)
                 curr_dt = dt_start
                 while curr_dt < dt_end:
                     d_key = curr_dt.strftime('%Y-%m-%d')
@@ -766,9 +650,8 @@ def fetch_absence_events(year, month):
     return events_by_date
 
 def render_monthly_calendar(year, month, events_by_date):
-    cal = calendar.Calendar(firstweekday=6) # 日曜始まり
+    cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdatescalendar(year, month)
-    
     html = """
     <style>
     .custom-calendar { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
@@ -783,14 +666,12 @@ def render_monthly_calendar(year, month, events_by_date):
     <table class="custom-calendar">
     <tr><th style="color:#ff6b6b;">日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th style="color:#4dabf7;">土</th></tr>
     """
-    
     for week in month_days:
         html += "<tr>"
         for date_obj in week:
             td_class = "different-month" if date_obj.month != month else ""
             day_class = "sunday" if date_obj.weekday() == 6 else ("saturday" if date_obj.weekday() == 5 else "")
             html += f'<td class="{td_class}"><div class="day-num {day_class}">{date_obj.day}</div>'
-            
             day_events = events_by_date.get(date_obj.strftime('%Y-%m-%d'), [])
             for ev in day_events: html += f'<div class="event-item" title="{ev}">{ev}</div>'
             html += "</td>"
@@ -803,10 +684,7 @@ try:
     today = datetime.now().date()
     page_selection = st.session_state['page_selection']
 
-# ==========================================
-# 🏠 ページ：ホーム (動的ダッシュボード)
-# ==========================================
-    
+    # 🏠 ページ：ホーム (ダッシュボード)
     if page_selection == "🏠 ホーム (ダッシュボード)":
         st.markdown(f"""
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0px !important; padding: 0px; width: 100%;">
@@ -857,7 +735,6 @@ try:
 
         st.markdown("<br><hr><br>", unsafe_allow_html=True)
         st.subheader("📅 総務メンバー 不在・予定カレンダー")
-        
         if 'cal_year' not in st.session_state: st.session_state['cal_year'] = datetime.now().year
         if 'cal_month' not in st.session_state: st.session_state['cal_month'] = datetime.now().month
 
@@ -884,9 +761,7 @@ try:
             cal_html = render_monthly_calendar(st.session_state['cal_year'], st.session_state['cal_month'], events_by_date)
             st.markdown(cal_html, unsafe_allow_html=True)
 
-    # ==========================================
-    # 📦 ページ：備品・ソフトウェア個別管理
-    # ==========================================
+    # 📦 ページ：備品・ソフトウェア・医療機器個別管理[cite: 3]
     elif page_selection in MENU_TO_CAT:
         cat = MENU_TO_CAT[page_selection]
         st.markdown(f"""
@@ -905,13 +780,10 @@ try:
             else:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                    
                     ITEMS_PER_PAGE = 50
                     total_items = len(display_df)
                     total_pages = (total_items - 1) // ITEMS_PER_PAGE + 1 if total_items > 0 else 1
-                    
-                    if st.session_state.page_number >= total_pages:
-                        st.session_state.page_number = 0
+                    if st.session_state.page_number >= total_pages: st.session_state.page_number = 0
                         
                     start_idx = st.session_state.page_number * ITEMS_PER_PAGE
                     end_idx = start_idx + ITEMS_PER_PAGE
@@ -926,16 +798,11 @@ try:
                         c[4].write(row.get('ステータス', ''))
                         
                         right_col_val = ""
-                        if cat == "訪問車":
-                            right_col_val = row.get('登録番号', '')
-                        elif cat in ["Office365", "ウイルスバスター"]:
-                            right_col_val = row.get('備考', '')
-                        else:
-                            right_col_val = row.get('購入日', row.get('登録番号', ''))
+                        if cat == "訪問車": right_col_val = row.get('登録番号', '')
+                        elif cat in ["Office365", "ウイルスバスター"]: right_col_val = row.get('備考', '')
+                        else: right_col_val = row.get('購入日', row.get('登録番号', ''))
                         
-                        if pd.isna(right_col_val) or str(right_col_val).strip().lower() == 'nan':
-                            right_col_val = ""
-                        
+                        if pd.isna(right_col_val) or str(right_col_val).strip().lower() == 'nan': right_col_val = ""
                         c[5].write(str(right_col_val))
                         st.markdown("<hr>", unsafe_allow_html=True)
                         
@@ -973,49 +840,42 @@ try:
                             custom_vals['利用者6'] = st.text_input("利用者6")
                         custom_vals['期限'] = str(st.date_input("期限"))
                     else:
-                        for col in COLUMNS_DEF[cat]: custom_vals[col] = st.text_input(col)
+                        for col in COLUMNS_DEF[cat]:
+                            if '日' in col or '期限' in col:
+                                d_val = st.date_input(col, value=None)
+                                custom_vals[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
+                            else:
+                                custom_vals[col] = st.text_input(col)
                     if st.form_submit_button("登録"):
-                        ws = doc.worksheet(CATEGORY_MAP[cat])
+                        try:
+                            ws = doc.worksheet(CATEGORY_MAP[cat])
+                        except gspread.exceptions.WorksheetNotFound:
+                            ws = doc.add_worksheet(title=CATEGORY_MAP[cat], rows="100", cols="20")
+                            header_row = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日'] + COLUMNS_DEF[cat]
+                            ws.append_row(header_row)
+
                         row = [i_id, cat, i_name, i_user, "利用可能", datetime.now().strftime('%Y-%m-%d')]
                         cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"] if cat == "ウイルスバスター" else COLUMNS_DEF[cat]
                         for col in cols: row.append(custom_vals.get(col, ""))
                         ws.append_row(row)
                         get_all_data.clear()
                         st.session_state.zaiko_reg_success = True; st.rerun()
-        # 🔻🔻🔻 カテゴリ専用の列だけに絞り込むCSV一括入出力 🔻🔻🔻
+
         with main_tab3:
             col_csv1, col_csv2 = st.columns(2)
-            
-            # 📤 CSVダウンロード（出力）
             with col_csv1:
                 st.markdown(f"##### 📤 {cat} データのCSV出力")
                 cat_df = df[df['カテゴリ'] == cat] if not df.empty and 'カテゴリ' in df.columns else pd.DataFrame()
-                
                 if not cat_df.empty:
-                    # 💡 そのカテゴリに必要な列だけを順番通りに抽出する処理
                     base_cols = ['ID', 'カテゴリ', '品名', '利用者', 'ステータス', '更新日']
-                    if cat == "ウイルスバスター":
-                        custom_cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"]
-                    else:
-                        custom_cols = COLUMNS_DEF.get(cat, [])
-                    
+                    if cat == "ウイルスバスター": custom_cols = ["利用者1", "利用者2", "利用者3", "利用者4", "利用者5", "利用者6", "期限", "備考"]
+                    else: custom_cols = COLUMNS_DEF.get(cat, [])
                     target_cols = base_cols + custom_cols
-                    # 存在する列だけを選択し、不要な他カテゴリの空列をカット
                     export_cols = [c for c in target_cols if c in cat_df.columns]
                     export_df = cat_df[export_cols]
-                    
                     csv_data = export_df.to_csv(index=False).encode('utf-8-sig')
-                    st.download_button(
-                        label=f"📥 {cat} 一覧をCSVでダウンロード",
-                        data=csv_data,
-                        file_name=f"{cat}_{datetime.now().strftime('%Y%m%d')}.csv",
-                        mime="text/csv",
-                        key=f"dl_csv_{cat}"
-                    )
-                else:
-                    st.info("ダウンロードできるデータがありません。")
-            
-            # 📥 CSV一括インポート（入力・更新）
+                    st.download_button(label=f"📥 {cat} 一覧をCSVでダウンロード", data=csv_data, file_name=f"{cat}_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", key=f"dl_csv_{cat}")
+                else: st.info("ダウンロードできるデータがありません。")
             with col_csv2:
                 st.markdown(f"##### 📥 {cat} データのCSV一括取り込み")
                 uploaded_file = st.file_uploader(f"{cat} のCSVファイルをアップロード", type=["csv"], key=f"ul_csv_{cat}")
@@ -1024,30 +884,20 @@ try:
                         df_uploaded = pd.read_csv(uploaded_file)
                         st.write("🔍 アップロード内容の確認:")
                         st.dataframe(df_uploaded.head(), use_container_width=True)
-                        
                         if st.button(f"⚠️ {cat} データをスプレッドシートに反映する", key=f"save_csv_{cat}"):
-                            ws = doc.worksheet(CATEGORY_MAP[cat])
+                            try: ws = doc.worksheet(CATEGORY_MAP[cat])
+                            except gspread.exceptions.WorksheetNotFound: ws = doc.add_worksheet(title=CATEGORY_MAP[cat], rows="100", cols="20")
                             ws.clear()
-                            
                             df_clean = df_uploaded.fillna("")
                             ws.update([df_clean.columns.values.tolist()] + df_clean.values.tolist())
-                            
                             st.success(f"✅ {cat} データを正常に一括更新しました！")
                             get_all_data.clear()
                             st.rerun()
-                    except Exception as e:
-                        st.error(f"CSV読み込みエラー: {e}")
+                    except Exception as e: st.error(f"CSV読み込みエラー: {e}")
 
-    # ==========================================
     # 🔐 ページ：電子証明書管理
-    # ==========================================
     elif page_selection == "🔐 電子証明書管理":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>🔐 電子証明書管理</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown("""<div class="page-title-box"><h2>🔐 電子証明書管理</h2></div>""", unsafe_allow_html=True)
         t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
         df_cert = get_certificate_data()
         with t1:
@@ -1063,19 +913,13 @@ try:
                         c[1].write(str(row.get('ID', '')))
                         c[2].write(f"**{safe_text(row.get('種類', ''))}**")
                         c[3].write(str(row.get('端末', '')))
-                        
                         dt = parse_date(row.get('有効期限'))
                         if dt:
                             diff = (dt.date() - datetime.now().date()).days
-                            if diff < 0:
-                                c[4].markdown(f"<div class='text-alert'>{row.get('有効期限')} (超過)</div>", unsafe_allow_html=True)
-                            elif diff <= 75:
-                                c[4].markdown(f"<div class='text-warning'>{row.get('有効期限')} (あと{diff}日)</div>", unsafe_allow_html=True)
-                            else:
-                                c[4].write(row.get('有効期限'))
-                        else:
-                            c[4].write(row.get('有効期限', ''))
-                            
+                            if diff < 0: c[4].markdown(f"<div class='text-alert'>{row.get('有効期限')} (超過)</div>", unsafe_allow_html=True)
+                            elif diff <= 75: c[4].markdown(f"<div class='text-warning'>{row.get('有効期限')} (あと{diff}日)</div>", unsafe_allow_html=True)
+                            else: c[4].write(row.get('有効期限'))
+                        else: c[4].write(row.get('有効期限', ''))
                         c[5].write(str(row.get('備考', '')))
                         st.markdown("<hr>", unsafe_allow_html=True)
             else: st.info("データがありません。")
@@ -1091,203 +935,127 @@ try:
                     get_certificate_data.clear()
                     st.success("登録しました"); st.rerun()
 
-    # ==========================================
     # 🏥 ページ：ORCA証明書管理
-    # ==========================================
     elif page_selection == "🏥 ORCA証明書管理":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>🏥 ORCA証明書管理</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown("""<div class="page-title-box"><h2>🏥 ORCA証明書管理</h2></div>""", unsafe_allow_html=True)
         t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
         df_orca = get_orca_cert_data()
-        
         with t1:
             if not df_orca.empty:
-                if 'ID' in df_orca.columns:
-                    df_orca = df_orca.sort_values(by='ID', ascending=True)
-                
+                if 'ID' in df_orca.columns: df_orca = df_orca.sort_values(by='ID', ascending=True)
                 df_all_pc = pd.DataFrame()
-                if not df.empty and 'カテゴリ' in df.columns:
-                    df_all_pc = df[df['カテゴリ'] == 'PC']
-                
+                if not df.empty and 'カテゴリ' in df.columns: df_all_pc = df[df['カテゴリ'] == 'PC']
                 def is_match_list(pc_val, cert_val):
                     if not pc_val or not cert_val: return False
                     v_str = pc_val.replace('、', ',').replace(' ', ',').replace(' ', ',')
                     v_list = [v.strip() for v in v_str.split(',') if v.strip()]
                     return cert_val in v_list or cert_val == pc_val.strip()
-
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     hc = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
                     headers_text = ["操作", "ID", "使用者", "部署", "宇都宮", "鹿沼", "益子", "紐付くPC"]
-                    for i, h_text in enumerate(headers_text):
-                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    for i, h_text in enumerate(headers_text): hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                     st.markdown("<hr>", unsafe_allow_html=True)
-                    
                     for idx, row in df_orca.iterrows():
                         cert_u = str(row.get('ORCA宇都宮', '')).strip()
                         cert_k = str(row.get('ORCA鹿沼', '')).strip()
                         cert_m = str(row.get('ORCA益子', '')).strip()
-                        
                         linked_pcs = []
                         if not df_all_pc.empty:
                             for _, pc_row in df_all_pc.iterrows():
                                 pc_u = str(pc_row.get('ORCA宇都宮', '')).strip()
                                 pc_k = str(pc_row.get('ORCA鹿沼', '')).strip()
                                 pc_m = str(pc_row.get('ORCA益子', '')).strip()
-                                
                                 if is_match_list(pc_u, cert_u) or is_match_list(pc_k, cert_k) or is_match_list(pc_m, cert_m):
                                     pc_id = str(pc_row.get('ID', ''))
                                     pc_user = str(pc_row.get('利用者', ''))
                                     linked_pcs.append(f"{pc_id}({pc_user})")
-                        
                         pc_disp_text = ", ".join(linked_pcs) if linked_pcs else "-"
-                        
                         c = st.columns([0.8, 0.8, 1.5, 1.2, 1.1, 1.1, 1.1, 2.4])
                         if c[0].button("詳細", key=f"orca_edit_{idx}"): show_orca_cert_dialog(row)
                         c[1].write(str(row.get('ID', '')))
                         c[2].write(f"**{safe_text(row.get('使用者', ''))}**")
                         c[3].write(str(row.get('部署', '')))
-                        c[4].write(cert_u)
-                        c[5].write(cert_k)
-                        c[6].write(cert_m)
+                        c[4].write(cert_u); c[5].write(cert_k); c[6].write(cert_m)
                         c[7].markdown(f"<span style='font-size:0.75rem; color:#aaaaaa;'>{pc_disp_text}</span>", unsafe_allow_html=True)
                         st.markdown("<hr>", unsafe_allow_html=True)
-            else:
-                st.info("データがありません。")
-                
+            else: st.info("データがありません。")
         with t2:
             if st.session_state.orca_reg_success:
-                st.success("✅ 登録完了しました！")
-                st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'orca_reg_success', False))
+                st.success("✅ 登録完了しました！"); st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'orca_reg_success', False))
             else:
                 with st.form("orca_reg_form"):
                     o_id = st.text_input("ID", value=generate_auto_id(df_orca, "O"))
-                    o_name = st.text_input("使用者")
-                    o_dept = st.text_input("部署")
-                    o_utsu = st.text_input("ORCA宇都宮")
-                    o_kanu = st.text_input("ORCA鹿沼")
-                    o_mashi = st.text_input("ORCA益子")
-                    o_note = st.text_area("備考")
+                    o_name = st.text_input("使用者"); o_dept = st.text_input("部署"); o_utsu = st.text_input("ORCA宇都宮"); o_kanu = st.text_input("ORCA鹿沼"); o_mashi = st.text_input("ORCA益子"); o_note = st.text_area("備考")
                     if st.form_submit_button("登録する"):
-                        if not o_name:
-                            st.error("使用者の入力は必須です。")
+                        if not o_name: st.error("使用者の入力は必須です。")
                         else:
-                            try:
-                                ws = doc.worksheet(SHEET_ORCA_CERT)
+                            try: ws = doc.worksheet(SHEET_ORCA_CERT)
                             except gspread.exceptions.WorksheetNotFound:
                                 ws = doc.add_worksheet(title=SHEET_ORCA_CERT, rows="100", cols="10")
                                 ws.append_row(["ID", "使用者", "部署", "ORCA宇都宮", "ORCA鹿沼", "ORCA益子", "備考"])
-                            
                             ws.append_row([o_id, o_name, o_dept, o_utsu, o_kanu, o_mashi, o_note])
-                            st.session_state.orca_reg_success = True
-                            get_orca_cert_data.clear()
-                            st.rerun()
+                            st.session_state.orca_reg_success = True; get_orca_cert_data.clear(); st.rerun()
 
-    # ==========================================
     # 🅿️ ページ：駐車場管理
-    # ==========================================
     elif page_selection == "🅿️ 駐車場管理":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>🅿️ 駐車場管理</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown("""<div class="page-title-box"><h2>🅿️ 駐車場管理</h2></div>""", unsafe_allow_html=True)
         url_view_all = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/edit?gid=591211712#gid=591211712"
         url_all_pdf = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=591211712#gid=591211712&portrait=false&fitw=true"
         url_company_pdf = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=485728313#gid=485728313&portrait=false&fitw=true"
         url_private_pdf = "https://docs.google.com/spreadsheets/d/1Z7rTUly4R9Z-R4WbyJBERg9BP4bMMsQvzbTLEGUvoKY/export?format=pdf&gid=130019541#gid=130019541&portrait=false&fitw=true"
-
         st.link_button("🔗 全体配置図をブラウザで開く (閲覧専用)", url_view_all, use_container_width=True)
-        
         mc1, mc2, mc3 = st.columns(3)
         mc1.link_button("📥 全体配置図 (PDF)", url_all_pdf, use_container_width=True)
         mc2.link_button("📥 訪問車のみ (PDF)", url_company_pdf, use_container_width=True)
         mc3.link_button("📥 自家用車のみ (PDF)", url_private_pdf, use_container_width=True)
         st.markdown("<hr style='margin-top: 5px; margin-bottom: 15px;'>", unsafe_allow_html=True)
-        
         t1, t2 = st.tabs(["📋 区画・使用者一覧", "➕ 新規区画の登録"])
         df_park = get_parking_data()
-        
         with t1:
             st.text_input("フリーワード検索（区画番号や名前で検索）", placeholder="Enterで検索", key="input_search_key", on_change=submit_search)
             if not df_park.empty:
                 display_df = df_park.copy()
-                if st.session_state.active_search_query:
-                    display_df = display_df[display_df.astype(str).apply(lambda r: r.str.contains(st.session_state.active_search_query, case=False).any(), axis=1)]
-                
-                if display_df.empty:
-                    st.info("該当するデータがありません。")
+                if st.session_state.active_search_query: display_df = display_df[display_df.astype(str).apply(lambda r: r.str.contains(st.session_state.active_search_query, case=False).any(), axis=1)]
+                if display_df.empty: st.info("該当するデータがありません。")
                 else:
                     with st.container():
                         st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                         hc = st.columns([0.8, 1.2, 1.8, 1.2, 1.2, 1.8, 2.0])
                         headers_text = ["操作", "区画番号", "駐車場名", "駐車番号", "区分", "使用者", "備考"]
-                        for i, h_text in enumerate(headers_text):
-                            hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                        for i, h_text in enumerate(headers_text): hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                         st.markdown("<hr>", unsafe_allow_html=True)
-                        
                         for idx, row in display_df.iterrows():
                             c = st.columns([0.8, 1.2, 1.8, 1.2, 1.2, 1.8, 2.0])
                             if c[0].button("詳細", key=f"park_{idx}"): show_parking_dialog(row)
-                            c[1].write(f"**{str(row.get('区画番号', ''))}**")
-                            c[2].write(str(row.get('駐車場名', '')))
-                            c[3].write(str(row.get('駐車番号', '')))
-                            
+                            c[1].write(f"**{str(row.get('区画番号', ''))}**"); c[2].write(str(row.get('駐車場名', ''))); c[3].write(str(row.get('駐車番号', '')))
                             p_type = str(row.get('区分', ''))
                             if p_type == "訪問車": c[4].markdown(f"<span style='color:#4285f4; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
                             elif p_type == "自家用車": c[4].markdown(f"<span style='color:#34a853; font-weight:bold;'>{p_type}</span>", unsafe_allow_html=True)
                             else: c[4].write(p_type)
-                            
-                            c[5].write(f"**{safe_text(row.get('使用者', ''))}**")
-                            c[6].write(str(row.get('備考', '')))
+                            c[5].write(f"**{safe_text(row.get('使用者', ''))}**"); c[6].write(str(row.get('備考', '')))
                             st.markdown("<hr>", unsafe_allow_html=True)
-            else:
-                st.info("データがありません。右のタブから区画と使用者を登録してください。")
-                
+            else: st.info("データがありません。右のタブから区画と使用者を登録してください。")
         with t2:
             if st.session_state.parking_reg_success:
-                st.success("✅ 登録完了しました！")
-                st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'parking_reg_success', False))
+                st.success("✅ 登録完了しました！"); st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'parking_reg_success', False))
             else:
                 with st.form("park_reg_form"):
                     st.info("※「区画番号」は配置図のVLOOKUP関数と一致させるためのキーになります。正確に入力してください。（例：第1-01）")
-                    p_id = st.text_input("区画番号 (必須)")
-                    p_name = st.text_input("駐車場名")
-                    p_num = st.text_input("駐車番号")
-                    p_type = st.selectbox("区分", ["訪問車", "自家用車", "来客用", "空き"])
-                    p_user = st.text_input("使用者")
-                    p_note = st.text_area("備考")
-                    
+                    p_id = st.text_input("区画番号 (必須)"); p_name = st.text_input("駐車場名"); p_num = st.text_input("駐車番号"); p_type = st.selectbox("区分", ["訪問車", "自家用車", "来客用", "空き"]); p_user = st.text_input("使用者"); p_note = st.text_area("備考")
                     if st.form_submit_button("登録する"):
-                        if not p_id:
-                            st.error("区画番号の入力は必須です。")
+                        if not p_id: st.error("区画番号の入力は必須です。")
                         else:
-                            try:
-                                ws = doc.worksheet(SHEET_PARKING)
+                            try: ws = doc.worksheet(SHEET_PARKING)
                             except gspread.exceptions.WorksheetNotFound:
                                 ws = doc.add_worksheet(title=SHEET_PARKING, rows="100", cols="10")
                                 ws.append_row(["区画番号", "駐車場名", "駐車番号", "区分", "使用者", "備考"])
-                            
                             ws.append_row([p_id, p_name, p_num, p_type, p_user, p_note])
-                            st.session_state.parking_reg_success = True
-                            get_parking_data.clear()
-                            st.rerun()
+                            st.session_state.parking_reg_success = True; get_parking_data.clear(); st.rerun()
 
-    # ==========================================
     # 👤 ページ：新規入職者管理
-    # ==========================================
     elif page_selection == "👤 新規入職者管理":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>👤 新規入職者管理</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown("""<div class="page-title-box"><h2>👤 新規入職者管理</h2></div>""", unsafe_allow_html=True)
         t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
         df_emp = get_new_employee_data()
         with t1:
@@ -1295,32 +1063,22 @@ try:
                 status_weight = {"準備中": 0, "保留": 1, "完了": 2}
                 df_emp['sort_weight'] = df_emp['ステータス'].apply(lambda x: status_weight.get(str(x).strip(), 9))
                 df_emp = df_emp.sort_values(by='sort_weight', ascending=True)
-                
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     hc = st.columns([0.8, 1.0, 1.5, 1.5, 1.2, 1.5, 1.5, 1.2])
                     headers_text = ["操作", "ID", "氏名", "フリガナ", "職種", "部署", "入職日", "ステータス"]
-                    for i, h_text in enumerate(headers_text):
-                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    for i, h_text in enumerate(headers_text): hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                     st.markdown("<hr>", unsafe_allow_html=True)
-                    
                     for idx, row in df_emp.iterrows():
                         c = st.columns([0.8, 1.0, 1.5, 1.5, 1.2, 1.5, 1.5, 1.2])
                         if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
-                        c[1].write(str(row.get('ID','')))
-                        c[2].write(f"**{safe_text(row.get('氏名',''))}**")
-                        c[3].write(str(row.get('フリガナ','')))
-                        c[4].write(str(row.get('職種','')))
-                        c[5].write(str(row.get('部署','')))
-                        c[6].write(str(row.get('入職日','')))
-                        c[7].write(str(row.get('ステータス','')))
+                        c[1].write(str(row.get('ID',''))); c[2].write(f"**{safe_text(row.get('氏名',''))}**"); c[3].write(str(row.get('フリガナ',''))); c[4].write(str(row.get('職種',''))); c[5].write(str(row.get('部署',''))); c[6].write(str(row.get('入職日',''))); c[7].write(str(row.get('ステータス','')))
                         st.markdown("<hr>", unsafe_allow_html=True)
             else: st.info("データがありません。")
         with t2:
             with st.form("emp_reg"):
                 e_id = st.text_input("ID", value=generate_auto_id(df_emp, "H"))
-                e_name = st.text_input("氏名")
-                e_furi = st.text_input("フリガナ")
+                e_name = st.text_input("氏名"); e_furi = st.text_input("フリガナ")
                 col_type, col_dept = st.columns(2)
                 with col_type: e_type = st.text_input("職種")
                 with col_dept: e_dept = st.text_input("部署")
@@ -1328,92 +1086,52 @@ try:
                 if st.form_submit_button("登録"):
                     ws = doc.worksheet(SHEET_NEW_EMPLOYEE)
                     ws.append_row([e_id, e_name, e_furi, str(e_date), e_type, e_dept, "準備中"] + [""]*13 + [""])
-                    get_new_employee_data.clear()
-                    st.success("登録しました"); st.rerun()
+                    get_new_employee_data.clear(); st.success("登録しました"); st.rerun()
 
-    # ==========================================
     # 👶 ページ：産休育休者管理
-    # ==========================================
     elif page_selection == "👶 産休育休者管理":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>👶 産休育休者管理</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown("""<div class="page-title-box"><h2>👶 産休育休者管理</h2></div>""", unsafe_allow_html=True)
         t1, t2 = st.tabs(["📋 休暇者一覧", "➕ 新規登録"])
         df_mat = get_maternity_data()
-        
         with t1:
             if not df_mat.empty:
                 mat_status_weight = {"取得中": 0, "復職済": 1}
                 df_mat['sort_weight'] = df_mat['ステータス'].apply(lambda x: mat_status_weight.get(str(x).strip(), 9))
                 df_mat = df_mat.sort_values(by='sort_weight', ascending=True)
-                
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     hc = st.columns([0.8, 1.0, 1.8, 2.0, 2.0, 2.0, 1.8])
                     headers_text = ["操作", "ID", "名前", "部署", "休暇開始日", "復帰予定日", "ステータス"]
-                    for i, h_text in enumerate(headers_text):
-                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    for i, h_text in enumerate(headers_text): hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                     st.markdown("<hr>", unsafe_allow_html=True)
-                    
                     for idx, row in df_mat.iterrows():
                         c = st.columns([0.8, 1.0, 1.8, 2.0, 2.0, 2.0, 1.8])
                         if c[0].button("詳細", key=f"mat_edit_{idx}"): show_maternity_dialog(row)
-                        c[1].write(str(row.get('ID', '')))
-                        c[2].write(f"**{safe_text(row.get('名前', ''))}**")
-                        c[3].write(str(row.get('部署', '')))
-                        c[4].write(str(row.get('休暇開始日', '')))
-                        c[5].write(str(row.get('復帰予定日', '')))
-                        
+                        c[1].write(str(row.get('ID', ''))); c[2].write(f"**{safe_text(row.get('名前', ''))}**"); c[3].write(str(row.get('部署', ''))); c[4].write(str(row.get('休暇開始日', ''))); c[5].write(str(row.get('復帰予定日', '')))
                         curr_st = str(row.get('ステータス', '')).strip()
-                        if curr_st == "取得中":
-                            c[6].markdown(f"<span class='text-warning'>{curr_st}</span>", unsafe_allow_html=True)
-                        else:
-                            c[6].write(curr_st)
+                        if curr_st == "取得中": c[6].markdown(f"<span class='text-warning'>{curr_st}</span>", unsafe_allow_html=True)
+                        else: c[6].write(curr_st)
                         st.markdown("<hr>", unsafe_allow_html=True)
-            else:
-                st.info("データがありません。")
-                
+            else: st.info("データがありません。")
         with t2:
             if st.session_state.mat_reg_success:
-                st.success("✅ 登録完了しました！")
-                st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'mat_reg_success', False))
+                st.success("✅ 登録完了しました！"); st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'mat_reg_success', False))
             else:
                 with st.form("mat_reg_form"):
-                    m_id = st.text_input("ID", value=generate_auto_id(df_mat, "M"))
-                    m_name = st.text_input("名前")
-                    m_dept = st.text_input("部署")
-                    m_start = st.date_input("休暇開始日", value=None)
-                    m_return = st.date_input("復帰予定日", value=None)
-                    m_status = st.selectbox("ステータス", ["取得中", "復職済"])
-                    m_note = st.text_area("備考")
+                    m_id = st.text_input("ID", value=generate_auto_id(df_mat, "M")); m_name = st.text_input("名前"); m_dept = st.text_input("部署"); m_start = st.date_input("休暇開始日", value=None); m_return = st.date_input("復帰予定日", value=None); m_status = st.selectbox("ステータス", ["取得中", "復職済"]); m_note = st.text_area("備考")
                     if st.form_submit_button("登録する"):
-                        if not m_name or not m_dept:
-                            st.error("名前と部署の入力は必須です。")
+                        if not m_name or not m_dept: st.error("名前と部署の入力は必須です。")
                         else:
-                            try:
-                                ws = doc.worksheet(SHEET_MATERNITY)
+                            try: ws = doc.worksheet(SHEET_MATERNITY)
                             except gspread.exceptions.WorksheetNotFound:
                                 ws = doc.add_worksheet(title=SHEET_MATERNITY, rows="100", cols="20")
                                 ws.append_row(["ID", "名前", "部署", "休暇開始日", "復帰予定日", "ステータス", "備考"])
-                            
                             ws.append_row([m_id, m_name, m_dept, str(m_start) if m_start else '', str(m_return) if m_return else '', m_status, m_note])
-                            st.session_state.mat_reg_success = True
-                            get_maternity_data.clear()
-                            st.rerun()
+                            st.session_state.mat_reg_success = True; get_maternity_data.clear(); st.rerun()
 
-    # ==========================================
     # 📋 ページ：タスク管理
-    # ==========================================
     elif page_selection == "📋 タスク管理":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>📋 タスク管理</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown("""<div class="page-title-box"><h2>📋 タスク管理</h2></div>""", unsafe_allow_html=True)
         task_tab1, task_tab2 = st.tabs(["📋 タスク一覧", "➕ 新規タスク登録"])
         df_task = get_task_data()
         with task_tab1:
@@ -1424,72 +1142,44 @@ try:
                 with st.container():
                     st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
                     hc = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
-                    for i, h_text in enumerate(["操作", "タスク名", "作成者", "担当者", "関係者", "期限", "優先度", "状態", "クイック更新"]):
-                        hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
+                    for i, h_text in enumerate(["操作", "タスク名", "作成者", "担当者", "関係者", "期限", "優先度", "状態", "クイック更新"]): hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
                     st.markdown("<hr>", unsafe_allow_html=True)
-                    
                     for index, row in df_task.iterrows():
                         try:
                             c = st.columns([0.6, 2.0, 1.2, 1.2, 1.0, 1.2, 0.8, 1.0, 1.4])
                             task_id_str = str(row.get('ID', f"row_{index}"))
-                            
                             if c[0].button("詳細", key=f"task_btn_{task_id_str}"): show_task_dialog(row)
-                            c[1].write(f"**{safe_text(row.get('タスク名', ''))}**")
-                            c[2].write(f"👤 {row.get('作成者', '')}")
-                            c[3].write(str(row.get('担当者', '')))
-                            c[4].write(str(row.get('関係者', '')))
-                            
+                            c[1].write(f"**{safe_text(row.get('タスク名', ''))}**"); c[2].write(f"👤 {row.get('作成者', '')}"); c[3].write(str(row.get('担当者', ''))); c[4].write(str(row.get('関係者', '')))
                             dt = parse_date(row.get('期限'))
                             current_status = str(row.get('ステータス', '')).strip()
                             if dt and current_status != '完了':
                                 diff = (dt.date() - datetime.now().date()).days
-                                if diff < 0:
-                                    c[5].markdown(f"<div class='text-alert'>{row.get('期限')} (超過)</div>", unsafe_allow_html=True)
-                                elif diff == 0:
-                                    c[5].markdown(f"<div class='text-warning'>{row.get('期限')} (本日)</div>", unsafe_allow_html=True)
-                                elif diff <= 3:
-                                    c[5].markdown(f"<div class='text-warning'>{row.get('期限')} (あと{diff}日)</div>", unsafe_allow_html=True)
-                                else:
-                                    c[5].write(row.get('期限'))
-                            else:
-                                c[5].write(row.get('期限', ''))
-                            
-                            c[6].write(row.get('優先度', ''))
-                            c[7].write(row.get('ステータス', ''))
-                            
+                                if diff < 0: c[5].markdown(f"<div class='text-alert'>{row.get('期限')} (超過)</div>", unsafe_allow_html=True)
+                                elif diff == 0: c[5].markdown(f"<div class='text-warning'>{row.get('期限')} (本日)</div>", unsafe_allow_html=True)
+                                elif diff <= 3: c[5].markdown(f"<div class='text-warning'>{row.get('期限')} (あと{diff}日)</div>", unsafe_allow_html=True)
+                                else: c[5].write(row.get('期限'))
+                            else: c[5].write(row.get('期限', ''))
+                            c[6].write(row.get('優先度', '')); c[7].write(row.get('ステータス', ''))
                             if current_status != '完了':
                                 if c[8].button("✅ 完了にする", key=f"comp_{task_id_str}"):
-                                    if update_task_status(task_id_str, "完了"): 
-                                        get_task_data.clear()
-                                        st.rerun()
+                                    if update_task_status(task_id_str, "完了"): get_task_data.clear(); st.rerun()
                             else:
                                 if c[8].button("↩️ 未完了に戻す", key=f"rev_{task_id_str}"):
-                                    if update_task_status(task_id_str, "未着手"): 
-                                        get_task_data.clear()
-                                        st.rerun()
+                                    if update_task_status(task_id_str, "未着手"): get_task_data.clear(); st.rerun()
                             st.markdown("<hr>", unsafe_allow_html=True)
-                        except Exception as inner_e:
-                            st.warning(f"1件のタスクを描画できませんでした。")
+                        except Exception as inner_e: st.warning("1件のタスクを描画できませんでした。")
             else: st.info("データがありません。")
         with task_tab2:
             if st.session_state.task_reg_success:
-                st.success("✅ 登録完了しました！ カレンダーへ自動反映されました。")
-                st.button("続けてタスクを登録する", on_click=lambda: setattr(st.session_state, 'task_reg_success', False))
+                st.success("✅ 登録完了しました！ カレンダーへ自動反映されました。"); st.button("続けてタスクを登録する", on_click=lambda: setattr(st.session_state, 'task_reg_success', False))
             else:
                 with st.form("add_task_form"):
                     col1, col2 = st.columns(2)
                     with col1:
-                        task_name = st.text_input("タスク名")
-                        task_creator = st.selectbox("作成者 (あなた)", options=USER_OPTIONS)
-                        sel_assignees = st.multiselect("担当者", options=USER_OPTIONS)
-                        task_assignee = ", ".join(sel_assignees)
+                        task_name = st.text_input("タスク名"); task_creator = st.selectbox("作成者 (あなた)", options=USER_OPTIONS); sel_assignees = st.multiselect("担当者", options=USER_OPTIONS); task_assignee = ", ".join(sel_assignees)
                     with col2:
-                        sel_watchers = st.multiselect("関係者/共有者", options=USER_OPTIONS)
-                        task_watchers = ", ".join(sel_watchers)
-                        task_limit = st.date_input("期限", value=None)
-                        task_pri = st.selectbox("優先度", ["高", "中", "低"], index=1)
-                    task_status = st.selectbox("ステータス", ["未着手", "進行中", "完了", "保留"], index=0)
-                    task_note = st.text_area("備考", placeholder="補足事項があれば入力してください")
+                        sel_watchers = st.multiselect("関係者/共有者", options=USER_OPTIONS); task_watchers = ", ".join(sel_watchers); task_limit = st.date_input("期限", value=None); task_pri = st.selectbox("優先度", ["高", "中", "低"], index=1)
+                    task_status = st.selectbox("ステータス", ["未着手", "進行中", "完了", "保留"], index=0); task_note = st.text_area("備考", placeholder="補足事項があれば入力してください")
                     if st.form_submit_button("登録してカレンダーに反映する"):
                         if not task_name: st.error("タスク名は必須です。")
                         else:
@@ -1501,31 +1191,20 @@ try:
                                     headers.append("イベントID")
                                 hidden_task_id = generate_auto_id(df_task, "T")
                                 creator_id = LINEWORKS_USER_MAP.get(task_creator)
-                                
                                 event_id = ""
                                 if task_limit:
                                     res_id = register_lineworks_calendar_event(task_name, task_assignee, str(task_limit), task_pri, task_note, creator_id, task_creator)
                                     if res_id: event_id = res_id
-                                
                                 data_dict = { "ID": hidden_task_id, "タスク名": task_name, "作成者": task_creator, "担当者": task_assignee, "関係者": task_watchers, "期限": str(task_limit) if task_limit else '', "優先度": task_pri, "ステータス": task_status, "備考": task_note, "イベントID": event_id }
                                 row_to_save = [data_dict.get(h, "") for h in headers]
                                 worksheet.append_row(row_to_save)
                                 st.toast("カレンダー連携 成功!", icon="✅")
-                                st.session_state.task_reg_success = True
-                                get_task_data.clear()
-                                st.rerun()
+                                st.session_state.task_reg_success = True; get_task_data.clear(); st.rerun()
                             except Exception as e: st.error(f"登録エラー: {e}")
 
-    # ==========================================
     # 📅 ページ：5年経過リスト
-    # ==========================================
     elif page_selection == "📅 5年経過リスト (PC/iPad)":
-        st.markdown(f"""
-            <div class="page-title-box">
-                <h2>📅 5年経過リスト (PC/iPad)</h2>
-            </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown("""<div class="page-title-box"><h2>📅 5年経過リスト (PC/iPad)</h2></div>""", unsafe_allow_html=True)
         if not df.empty and 'カテゴリ' in df.columns:
             df_old = df[df['カテゴリ'].isin(['PC', 'iPad'])].copy()
             if not df_old.empty:
