@@ -84,8 +84,8 @@ CATEGORY_MAP = {
     "医療機器": "医療機器", "レンタル医療機器": "レンタル医療機器"
 }
 
+# 💡 新規入職者の項目定義（ダッシュボード表示用として残します）
 SHEET_NEW_EMPLOYEE = "新規入職者"
-ONBOARDING_TASKS = ["PC", "iPad", "携帯", "駐車場", "LineworksID", "モバカルモバナーID", "MCS", "アルコールチェックID", "訪問車両", "備品", "机・椅子", "三文判", "シャチハタ"]
 SHEET_CERTIFICATE = "電子証明書"
 SHEET_TASK = "タスク管理"
 SHEET_MATERNITY = "産休育休"
@@ -117,7 +117,7 @@ doc = get_spreadsheet()
 
 if 'page_number' not in st.session_state: st.session_state['page_number'] = 0
 if 'active_search_query' not in st.session_state: st.session_state['active_search_query'] = ""
-for key in ['zaiko_reg_success', 'emp_reg_success', 'cert_reg_success', 'task_reg_success', 'mat_reg_success', 'orca_reg_success', 'parking_reg_success']:
+for key in ['zaiko_reg_success', 'cert_reg_success', 'task_reg_success', 'mat_reg_success', 'orca_reg_success', 'parking_reg_success']:
     if key not in st.session_state: st.session_state[key] = False
 
 def add_months(sourcedate, months=6):
@@ -411,38 +411,6 @@ def show_detail_dialog(row_data):
                 get_all_data.clear()
                 st.rerun()
 
-@st.dialog("📝 入職準備タスク管理")
-def show_onboarding_task_dialog(row_data):
-    with st.form("onboarding_task_form"):
-        c1, c2 = st.columns(2)
-        with c1: new_name = st.text_input("氏名", value=row_data.get('氏名', ''))
-        with c2: new_furi = st.text_input("フリガナ", value=row_data.get('フリガナ', ''))
-        c3, c4 = st.columns(2)
-        with c3: new_type = st.text_input("職種", value=row_data.get('職種', ''))
-        with c4: new_dept = st.text_input("部署", value=row_data.get('部署', ''))
-        
-        task_status = {}
-        cols = st.columns(2)
-        for i, task in enumerate(ONBOARDING_TASKS):
-            with cols[i % 2]: task_status[task] = st.text_input(task, value=row_data.get(task, ''))
-            
-        st_opts = ["準備中", "完了", "保留"]
-        curr_st = str(row_data.get('ステータス', '')).strip()
-        st_index = st_opts.index(curr_st) if curr_st in st_opts else 0
-        new_status = st.selectbox("全体のステータス", st_opts, index=st_index)
-        
-        new_note = st.text_area("備考", value=row_data.get('備考', ''))
-        if st.form_submit_button("✅ 更新する"):
-            worksheet = doc.worksheet(SHEET_NEW_EMPLOYEE)
-            headers = worksheet.row_values(1)
-            data_dict = {"ID":row_data.get('ID',''), "氏名":new_name, "フリガナ":new_furi, "入職日":row_data.get('入職日',''), "職種":new_type, "部署":new_dept, "ステータス":new_status, "備考":new_note}
-            for t in ONBOARDING_TASKS: data_dict[t] = task_status[t]
-            row_to_save = [data_dict.get(h, "") for h in headers]
-            cell = worksheet.find(str(row_data.get('ID','')))
-            if cell: worksheet.update(f"A{cell.row}", [row_to_save])
-            get_new_employee_data.clear()
-            st.rerun()
-
 @st.dialog("📝 電子証明書の編集")
 def show_cert_dialog(row_data):
     with st.form("cert_edit_form"):
@@ -625,7 +593,10 @@ with st.sidebar:
         st.button("🩺 レンタル医療機器", on_click=change_page, args=(" 🩺 レンタル医療機器",), use_container_width=True)
 
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
-    st.button("👤 新規入職者管理", on_click=change_page, args=("👤 新規入職者管理",), use_container_width=True)
+    
+    # 💡 新規入職者管理をリンク（別アプリ）に変更
+    st.markdown('<a href="https://script.google.com/macros/s/ダミーURL/exec" target="_blank" class="sidebar-link">👤 新規入職者管理 (別アプリ)</a>', unsafe_allow_html=True)
+    
     st.button("👶 産休育休者管理", on_click=change_page, args=("👶 産休育休者管理",), use_container_width=True)
     st.button("🅿️ 駐車場管理", on_click=change_page, args=("🅿️ 駐車場管理",), use_container_width=True)
     st.button("📋 タスク管理", on_click=change_page, args=("📋 タスク管理",), use_container_width=True)
@@ -782,6 +753,22 @@ try:
         else: st.markdown('<div class="cassette-orange">✅ 現在、医療機器の点検期日アラートはありません。</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 💡 新規入職者（入職予定）の一覧をダッシュボードに追加
+        st.subheader("👤 入職予定者一覧")
+        df_emp = get_new_employee_data()
+        active_emps = []
+        if not df_emp.empty:
+            df_emp['sort_date'] = pd.to_datetime(df_emp['入職日'], errors='coerce')
+            df_emp = df_emp.sort_values(by='sort_date', ascending=True)
+            for index, row in df_emp[df_emp['ステータス'] != '完了'].iterrows():
+                active_emps.append(f"📌 <strong>{row.get('氏名', '')}</strong> ({row.get('職種', '')} / {row.get('部署', '')}) &nbsp;&nbsp; 📅 入職日: {row.get('入職日', '未定')} &nbsp;&nbsp; [{row.get('ステータス', '')}]")
+        
+        if active_emps: st.markdown(f'<div class="cassette-blue">{"".join([f"<div>{emp}</div>" for emp in active_emps])}</div>', unsafe_allow_html=True)
+        else: st.markdown('<div class="cassette-blue">🎉 現在、入職予定者（準備中）はいません。</div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
         st.subheader("進行中のタスク一覧")
         df_task = get_task_data()
         active_tasks = []
@@ -1173,41 +1160,6 @@ try:
                                 ws.append_row(["区画番号", "駐車場名", "駐車番号", "区分", "使用者", "備考"])
                             ws.append_row([p_id, p_name, p_num, p_type, p_user, p_note])
                             st.session_state.parking_reg_success = True; get_parking_data.clear(); st.rerun()
-
-    # 👤 ページ：新規入職者管理
-    elif page_selection == "👤 新規入職者管理":
-        st.markdown("""<div class="page-title-box"><h2>👤 新規入職者管理</h2></div>""", unsafe_allow_html=True)
-        t1, t2 = st.tabs(["📋 一覧", "➕ 新規登録"])
-        df_emp = get_new_employee_data()
-        with t1:
-            if not df_emp.empty:
-                status_weight = {"準備中": 0, "保留": 1, "完了": 2}
-                df_emp['sort_weight'] = df_emp['ステータス'].apply(lambda x: status_weight.get(str(x).strip(), 9))
-                df_emp = df_emp.sort_values(by='sort_weight', ascending=True)
-                with st.container():
-                    st.markdown('<span class="list-bg-marker"></span>', unsafe_allow_html=True)
-                    hc = st.columns([0.8, 1.0, 1.5, 1.5, 1.2, 1.5, 1.5, 1.2])
-                    headers_text = ["操作", "ID", "氏名", "フリガナ", "職種", "部署", "入職日", "ステータス"]
-                    for i, h_text in enumerate(headers_text): hc[i].markdown(f"<span style='color:#eeeeee; font-size:0.85rem; font-weight:bold;'>{h_text}</span>", unsafe_allow_html=True)
-                    st.markdown("<hr>", unsafe_allow_html=True)
-                    for idx, row in df_emp.iterrows():
-                        c = st.columns([0.8, 1.0, 1.5, 1.5, 1.2, 1.5, 1.5, 1.2])
-                        if c[0].button("詳細", key=f"emp_{idx}"): show_onboarding_task_dialog(row)
-                        c[1].write(str(row.get('ID',''))); c[2].write(f"**{safe_text(row.get('氏名',''))}**"); c[3].write(str(row.get('フリガナ',''))); c[4].write(str(row.get('職種',''))); c[5].write(str(row.get('部署',''))); c[6].write(str(row.get('入職日',''))); c[7].write(str(row.get('ステータス','')))
-                        st.markdown("<hr>", unsafe_allow_html=True)
-            else: st.info("データがありません。")
-        with t2:
-            with st.form("emp_reg"):
-                e_id = st.text_input("ID", value=generate_auto_id(df_emp, "H"))
-                e_name = st.text_input("氏名"); e_furi = st.text_input("フリガナ")
-                col_type, col_dept = st.columns(2)
-                with col_type: e_type = st.text_input("職種")
-                with col_dept: e_dept = st.text_input("部署")
-                e_date = st.date_input("入職日")
-                if st.form_submit_button("登録"):
-                    ws = doc.worksheet(SHEET_NEW_EMPLOYEE)
-                    ws.append_row([e_id, e_name, e_furi, str(e_date), e_type, e_dept, "準備中"] + [""]*13 + [""])
-                    get_new_employee_data.clear(); st.success("登録しました"); st.rerun()
 
     # 👶 ページ：産休育休者管理
     elif page_selection == "👶 産休育休者管理":
