@@ -391,7 +391,12 @@ def show_detail_dialog(row_data):
                     custom_values[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
                 else: custom_values[col] = st.text_input(col, value=val)
                 
-        if st.form_submit_button("✅ 更新する"):
+        # --- ここから上書き ---
+        c_sub1, c_sub2 = st.columns(2)
+        update_btn = c_sub1.form_submit_button("✅ 更新する")
+        delete_btn = c_sub2.form_submit_button("🗑️ 削除する")
+        
+        if update_btn:
             try:
                 worksheet = doc.worksheet(CATEGORY_MAP[cat])
             except gspread.exceptions.WorksheetNotFound:
@@ -410,6 +415,18 @@ def show_detail_dialog(row_data):
                 worksheet.update(f"A{cell.row}", [row_to_save])
                 get_all_data.clear()
                 st.rerun()
+                
+        if delete_btn:
+            try:
+                worksheet = doc.worksheet(CATEGORY_MAP[cat])
+                cell = worksheet.find(str(row_data.get('ID','')))
+                if cell:
+                    worksheet.delete_rows(cell.row)  # 💡 スプレッドシートから行を削除
+                    get_all_data.clear()
+                    st.rerun()
+            except Exception as e:
+                st.error(f"削除中にエラーが発生しました: {e}")
+        # --- ここまで上書き ---
 
 @st.dialog("📝 電子証明書の編集")
 def show_cert_dialog(row_data):
