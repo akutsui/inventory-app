@@ -611,7 +611,7 @@ with st.sidebar:
     st.button("🔐 電子証明書管理", on_click=change_page, args=("🔐 電子証明書管理",), use_container_width=True)
     
     # 💡 新規入職者管理をリンク（別アプリ）に変更
-    st.markdown('<a href="https://script.google.com/macros/s/AKfycbyca89C0Y4CzdArEVlTADOcmU0Lst0dAmPBRgdnYlt0Qdr6ULlnk_a4mc0ahPKE8tRv/exec" target="_blank" class="sidebar-link">👤 新規入職者管理</a>', unsafe_allow_html=True)👤 新規入職者管理 (別アプリ)</a>', unsafe_allow_html=True)
+    st.markdown('<a href="https://script.google.com/macros/s/AKfycbyca89C0Y4CzdArEVlTADOcmU0Lst0dAmPBRgdnYlt0Qdr6ULlnk_a4mc0ahPKE8tRv/exec" target="_blank" class="sidebar-link">👤 新規入職者管理 (別アプリ)</a>', unsafe_allow_html=True)
     
     st.button("👶 産休育休者管理", on_click=change_page, args=("👶 産休育休者管理",), use_container_width=True)
     st.button("🅿️ 駐車場管理", on_click=change_page, args=("🅿️ 駐車場管理",), use_container_width=True)
