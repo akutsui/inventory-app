@@ -366,19 +366,16 @@ def show_detail_dialog(row_data):
             d_exp = st.date_input("期限", value=parse_date(row_data.get('期限')))
             custom_values['期限'] = d_exp.strftime('%Y-%m-%d') if d_exp else ''
             custom_values['備考'] = st.text_area("備考", value=row_data.get('備考', ''))
-       elif cat == "医療機器":
+        elif cat == "医療機器":
             for col in COLUMNS_DEF[cat]:
                 val = row_data.get(col, '')
                 if col == "前回点検日":
                     d_prev = st.date_input(col, value=parse_date(val))
                     custom_values[col] = d_prev.strftime('%Y-%m-%d') if d_prev else ''
                 elif col == "次回点検日":
-                    # 💡 変更：いまユーザーが画面で選んだ「前回点検日」をリアルタイムに取得して半年後を計算
                     new_prev_date_str = custom_values.get("前回点検日", "")
                     d_prev_parsed = parse_date(new_prev_date_str) if new_prev_date_str else None
                     auto_next = add_months(d_prev_parsed, 6) if d_prev_parsed else None
-                    
-                    # 前回点検日が変更されていれば auto_next を優先、未変更なら元の値(val)を表示
                     d_next = st.date_input(col, value=auto_next or parse_date(val))
                     custom_values[col] = d_next.strftime('%Y-%m-%d') if d_next else ''
                 elif '日' in col:
@@ -386,8 +383,14 @@ def show_detail_dialog(row_data):
                     custom_values[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
                 else:
                     custom_values[col] = st.text_input(col, value=val)
+        else:
+            for col in COLUMNS_DEF[cat]:
+                val = row_data.get(col, '')
+                if '日' in col or '期限' in col:
+                    d_val = st.date_input(col, value=parse_date(val))
+                    custom_values[col] = d_val.strftime('%Y-%m-%d') if d_val else ''
+                else: custom_values[col] = st.text_input(col, value=val)
                 
-        # --- ボタン配置 ---
         c_sub1, c_sub2 = st.columns(2)
         update_btn = c_sub1.form_submit_button("✅ 更新する")
         delete_btn = c_sub2.form_submit_button("🗑️ 削除する")
