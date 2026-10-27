@@ -946,7 +946,6 @@ with main_tab2:
                                 d_prev = st.date_input(col, value=None)
                                 custom_vals[col] = d_prev.strftime('%Y-%m-%d') if d_prev else ''
                             elif col == "次回点検日":
-                                # 💡 変更：前回点検日が入力されていれば半年後をセット、なければ空欄(None)
                                 d_prev_parsed = parse_date(custom_vals.get("前回点検日", ""))
                                 auto_next = add_months(d_prev_parsed, 6) if d_prev_parsed else None
                                 d_next = st.date_input(col, value=auto_next)
