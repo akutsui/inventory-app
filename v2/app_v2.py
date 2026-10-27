@@ -913,7 +913,7 @@ try:
                             if st.session_state.page_number < total_pages - 1:
                                 st.button("次のページ ➡️", key=f"next_{cat}", on_click=lambda: st.session_state.update(page_number=st.session_state.page_number + 1), use_container_width=True)
 
-        with main_tab2:
+with main_tab2:
             if st.session_state.zaiko_reg_success:
                 st.success("✅ 登録完了しました！"); st.button("続けて登録する", on_click=lambda: setattr(st.session_state, 'zaiko_reg_success', False))
             else:
