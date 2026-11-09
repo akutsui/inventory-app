@@ -652,7 +652,7 @@ def fetch_absence_events(year, month):
     events_by_date = {}
     if res.status_code != 200: return {}
     events = res.json().get("events", [])
-    target_names = ["橘田", "阿久津", "野崎", "水上", "森田", "面曽"]
+    target_names =["橘田", "阿久津", "野崎", "水上", "森田", "面曽", "山口"]
     exclude_words = ["リモート", "鹿沼便"]
     for item in events:
         components = item.get("eventComponents", [])
